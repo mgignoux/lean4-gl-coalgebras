@@ -25,25 +25,12 @@ instance {α} [DecidableEq α] (Γ : Finset α) : Union {x // x ∈ Γ.powerset}
 
 universe u
 
--- instance T_functor (Γ : Finset Formula) : CategoryTheory.Functor (Type u) (Type u) where
---   obj := λ (X : Type u) ↦ ((Γ.powerset × Γ.powerset × Multiset X) : Type u)
---   map := λ f ⟨Γ₁, Γ₂, A⟩ ↦ ⟨Γ₁, Γ₂, A.map f⟩
---   map_id := by aesop_cat
---   map_comp := by aesop_cat
-
 inductive RuleApp
   | top : (Δ : Finset Formula) → ⊤ ∈ Δ → RuleApp
   | ax : (Δ : Finset Formula) → (n : Nat) → (at n ∈ Δ ∧ na n ∈ Δ) → RuleApp
   | and : (Δ : Finset Formula) → (A : Formula) → (B : Formula) → (A & B) ∈ Δ → RuleApp
   | or : (Δ : Finset Formula) → (A : Formula) → (B : Formula) → (A v B) ∈ Δ → RuleApp
   | box : (Δ : Finset Formula) → (A : Formula) → (□ A) ∈ Δ → RuleApp
-
--- inductive RuleApp
---   | top : RuleApp
---   | ax : Nat → RuleApp
---   | and : Formula → Formula → RuleApp
---   | or : Formula → Formula → RuleApp
---   | box : Formula → RuleApp
 
 @[simp] def T : (CategoryTheory.Functor (Type u) (Type u)) :=
   ⟨⟨λ X ↦ ((RuleApp × List X) : Type u), by rintro X Y f ⟨r, A⟩; exact ⟨r, A.map f⟩⟩, by aesop_cat, by aesop_cat⟩
@@ -53,14 +40,6 @@ def D (Γ : Sequent) : Sequent := Finset.filter Formula.isDiamond Γ ∪ Finset.
   cases A <;> cases B
   all_goals
   simp_all [Formula.opUnDi])
-
-lemma Sequent.D_size_wod_leq_size_wod (Γ : Sequent) : (D Γ).size_without_diamond ≤ Γ.size_without_diamond := by
-  induction Γ using Finset.induction
-  case empty => simp [D]
-  case insert A Δ A_ni ih =>
-    have dis : Disjoint {A} Δ := Finset.disjoint_singleton_left.2 A_ni
-    simp only [Finset.insert_eq, size_wod_disjoint dis]
-    sorry -- very doable just annoying
 
 def fₚ : RuleApp → Finset Formula
   | RuleApp.top _ _ => {⊤}
@@ -76,7 +55,7 @@ def f : RuleApp → Finset Formula
   | RuleApp.or Δ _ _ _ => Δ
   | RuleApp.box Δ _ _ => Δ
 
-def fₙ : RuleApp → Finset Formula := fun Γ ↦ f Γ \ fₚ Γ
+def fₙ : RuleApp → Finset Formula := fun r ↦ f r \ fₚ r
 
 theorem fₙ_alternate (r : RuleApp) : fₙ r = match r with
   | RuleApp.top Δ _ => Δ \ {⊤}
@@ -84,6 +63,13 @@ theorem fₙ_alternate (r : RuleApp) : fₙ r = match r with
   | RuleApp.and Δ A B _ => Δ \ {A & B}
   | RuleApp.or Δ A B _ => Δ \ {A v B}
   | RuleApp.box Δ A _ => Δ \ {□ A} := by cases r <;> simp [fₙ, f, fₚ]
+
+theorem fₚ_sub_f {r : RuleApp} : fₚ r ⊆ f r := by
+  cases r <;> simp_all [fₚ, f]
+  · simp_all [Finset.subset_iff, Finset.mem_insert]
+
+theorem fₙ_sub_f {r : RuleApp} : fₙ r ⊆ f r := by
+  cases r <;> simp_all [fₙ, f]
 
 def isBox : RuleApp → Prop
   | RuleApp.box _ _ _ => True
@@ -93,52 +79,102 @@ def r {X : Type u} (α : X → T.obj X) (x : X) := (α x).1
 def p {X : Type u} (α : X → T.obj X) (x : X) := (α x).2
 def edge  {X : Type u} (α : X → T.obj X) (x y : X) : Prop := y ∈ p α x
 
-structure GLProof where
+structure Proof where
   X : Type
   α : X → T.obj X
   h : ∀ (x : X), match r α x with
-    | RuleApp.top _ _ => p α x = {}
-    | RuleApp.ax _ _ _ => p α x = {}
+    | RuleApp.top _ _ => p α x = []
+    | RuleApp.ax _ _ _ => p α x = []
     | RuleApp.and _ A B _ => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {A}, (fₙ (r α x)) ∪ {B}]
     | RuleApp.or _ A B _ => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {A, B}]
     | RuleApp.box _ A _ => (p α x).map (fun x ↦ f (r α x)) = [D (fₙ (r α x)) ∪ {A}]
- -- consider to maybe say that fₚ and fₙ are disjoint. Or maybe just add the nonprincipal formulas to RuleApp.
 
-instance (𝕏 : GLProof) : CategoryTheory.Endofunctor.Coalgebra T where
+instance (𝕏 : Proof) : CategoryTheory.Endofunctor.Coalgebra T where
   V := 𝕏.X
   str := 𝕏.α
 
+/- LEMMAS -/
+
+theorem edge_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : (edge 𝕏.α) x y) : f (r 𝕏.α y) ⊆ Sequent.FL (f (r 𝕏.α x)) := by
+  unfold edge at x_y
+  have := 𝕏.h x
+  cases rule : r 𝕏.α x <;> simp only [rule] at this
+  · exfalso; simp_all
+  · exfalso; simp_all
+  case and Δ φ ψ in_Δ =>
+    apply @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) at x_y
+    simp only [this, List.mem_cons, List.not_mem_nil, or_false] at x_y
+    rcases x_y with h|h <;> rw [h]
+    · simp only [Sequent.FL, Finset.subset_iff,
+      Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion]
+      intro χ χ_cases
+      rcases χ_cases with h|_ <;> subst_eqs
+      · exact ⟨χ, fₙ_sub_f h, Formula.FL_refl⟩
+      · exact ⟨φ & ψ, by simp [f, in_Δ], by simp [Formula.FL, Formula.FL_refl]⟩
+    · simp only [Sequent.FL, Finset.subset_iff,
+      Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion]
+      intro χ χ_cases
+      rcases χ_cases with h|_ <;> subst_eqs
+      · exact ⟨χ, fₙ_sub_f h, Formula.FL_refl⟩
+      · exact ⟨φ & ψ, by simp [f, in_Δ], by simp [Formula.FL, Formula.FL_refl]⟩
+  case or Δ φ ψ in_Δ =>
+    apply @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) at x_y
+    simp only [this, List.mem_singleton] at x_y
+    simp only [x_y, Finset.union_insert, Sequent.FL, Finset.subset_iff, Finset.mem_insert,
+      Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion]
+    intro χ χ_cases
+    rcases χ_cases with _|h|_ <;> subst_eqs
+    · exact ⟨φ v ψ, by simp [f, in_Δ], by simp [Formula.FL, Formula.FL_refl]⟩
+    · exact ⟨χ, fₙ_sub_f h, Formula.FL_refl⟩
+    · exact ⟨φ v ψ, by simp [f, in_Δ], by simp [Formula.FL, Formula.FL_refl]⟩
+  case box Δ φ in_Δ =>
+    apply @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) at x_y
+    simp only [this, List.mem_singleton] at x_y
+    simp only [x_y, Sequent.FL, Finset.subset_iff,
+      Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion]
+    intro χ χ_cases
+    rcases χ_cases with h|_ <;> subst_eqs
+    · simp [D] at h
+      rcases h with ⟨h,_⟩|⟨θ,h1,h2⟩
+      · refine ⟨χ, fₙ_sub_f h, by simp [Formula.FL_refl]⟩
+      · refine ⟨◇χ, ?_, by simp [Formula.FL, Formula.FL_refl]⟩
+        cases θ <;> simp [Formula.opUnDi] at h2
+        subst h2
+        exact fₙ_sub_f h1
+    · exact ⟨□ φ, by simp [f, in_Δ], by simp [Formula.FL, Formula.FL_refl]⟩
+
+theorem path_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y) : f (r 𝕏.α y) ⊆ Sequent.FL (f (r 𝕏.α x)) := by
+  induction x_y
+  case refl => exact Sequent.FL_refl
+  case tail y z x_y y_z fy_fx =>
+    apply Finset.Subset.trans (edge_in_FL y_z)
+    apply Sequent.FL_subset at fy_fx
+    simp only [Sequent.FL_idem] at fy_fx
+    exact fy_fx
+
 /- POINT GENERATION -/
 
-@[simp] def α_point (𝕐 : GLProof) (x : 𝕐.X) : {y : 𝕐.X // Relation.ReflTransGen (edge 𝕐.α) x y} → T.obj {y : 𝕐.X // Relation.ReflTransGen (edge 𝕐.α) x y} :=
+@[simp] def α_point (𝕐 : Proof) (x : 𝕐.X) : {y : 𝕐.X // Relation.ReflTransGen (edge 𝕐.α) x y} → T.obj {y : 𝕐.X // Relation.ReflTransGen (edge 𝕐.α) x y} :=
   fun y ↦ ⟨(𝕐.α y.1).1,
           List.pmap (fun x y ↦ ⟨x, y⟩) (𝕐.α y.1).2 (fun _ z_in ↦ Relation.ReflTransGen.tail y.2 z_in)⟩
 
-def PointGeneratedProof (𝕐 : GLProof) (x : 𝕐.X) : GLProof where -- dont call this point generated
+def PointGeneratedProof (𝕐 : Proof) (x : 𝕐.X) : Proof where
   X := {y : 𝕐.X // Relation.ReflTransGen (edge 𝕐.α) x y }
   α := α_point 𝕐 x
   h := by
     intro ⟨y, y_in⟩
     have h := 𝕐.h y
-    sorry -- need to be rewritten
-    -- rcases h with ⟨bot1, bot2⟩ | ⟨n, lem1, lem2⟩ | ⟨A, B, and1, and2⟩ | ⟨A, B, or1, or2⟩ | ⟨A, box1, box2⟩
-    -- · refine Or.inl ⟨bot1, ?_⟩
-    --   simp_all [p]
-    -- · refine Or.inr (Or.inl ⟨n, lem1, ?_⟩)
-    --   simp_all [p]
-    -- · refine Or.inr (Or.inr (Or.inl ⟨A, B, and1, ?_⟩))
-    --   simp_all [fₙ, p, Multiset.map_pmap]
-    --   simp [←and2, f, fₚ, fₙ, Multiset.pmap_eq_map]
-    -- · refine Or.inr (Or.inr (Or.inr (Or.inl ⟨A, B, or1, ?_⟩)))
-    --   simp_all [fₙ, p, Multiset.map_pmap]
-    --   simp [←or2, f, fₚ, fₙ, Multiset.pmap_eq_map]
-    -- · refine Or.inr (Or.inr (Or.inr (Or.inr ⟨A, box1, ?_⟩)))
-    --   simp_all [fₙ, p, Multiset.map_pmap]
-    --   simp [←box2, f, fₚ, fₙ, Multiset.pmap_eq_map]
+    simp_all only [r, α_point]
+    cases r_def : (𝕐.α y).1 <;> simp_all only [p, α_point, List.pmap, List.map_pmap, List.pmap_eq_map]
+
+lemma node_in_pg_sequent_in_FL (𝕏 : Proof) (x : 𝕏.X) : ∀ y : (PointGeneratedProof 𝕏 x).X, f (r (α_point 𝕏 x) y) ⊆ Sequent.FL (f (r 𝕏.α x)) := by
+  simp [PointGeneratedProof, r]
+  intro y x_y
+  exact path_in_FL x_y
 
 /- FILTRATIONS -/
 
-instance instSetoidX (𝕏 : GLProof) : Setoid 𝕏.X where
+instance instSetoidX (𝕏 : Proof) : Setoid 𝕏.X where
   r x y := f (r 𝕏.α x) = f (r 𝕏.α y)
   iseqv := ⟨by intro x; exact rfl,
             by intro x y h; exact Eq.symm h,
@@ -147,7 +183,7 @@ instance instSetoidX (𝕏 : GLProof) : Setoid 𝕏.X where
 @[simp] noncomputable def α_quot 𝕐 (x : Quotient (instSetoidX 𝕐)) :=
   T.map (Quotient.mk (instSetoidX 𝕐)) (𝕐.α (Quotient.out x))
 
-noncomputable def Filtration (𝕐 : GLProof) : GLProof where
+noncomputable def Filtration (𝕐 : Proof) : Proof where
   X := Quotient (instSetoidX 𝕐)
   -- x := ⟦𝕐.x⟧
   α := α_quot 𝕐
@@ -156,61 +192,55 @@ noncomputable def Filtration (𝕐 : GLProof) : GLProof where
     cases x using Quotient.inductionOn
     case h x =>
       have hyp := fun x ↦ @Quotient.mk_out _ (instSetoidX 𝕐) x
-      -- have claim : f (fun x ↦ (T.map (fun (x : 𝕐.X) ↦ (⟦x⟧ : Quotient (instSetoidX 𝕐)))) (𝕐.α (Quotient.out x))) ∘ (fun x ↦ ⟦x⟧) = f 𝕐.α := by
-      --   funext x
-      --   rw [←(hyp x)]
-      --   simp [f, fₚ, fₙ]
-        -- sorry -- redo this later
       have h := 𝕐.h (@Quotient.out _ (instSetoidX 𝕐) ⟦x⟧)
-      sorry
-      -- needs to be rewritten
-
-      -- rcases h with ⟨bot1, bot2⟩ | ⟨n, lem1, lem2⟩ | ⟨A, B, and1, and2⟩ | ⟨A, B, or1, or2⟩ | ⟨A, box1, box2⟩
-      -- · refine Or.inl ⟨bot1, ?_⟩
-      --   simp [p]
-      --   exact bot2
-      -- · refine Or.inr (Or.inl ⟨n, lem1, ?_⟩)
-      --   simp [p]
-      --   exact lem2
-      -- · refine Or.inr (Or.inr (Or.inl ⟨A, B, and1, ?_⟩))
-      --   simp only [fₙ, α_quot, T, f, p, Multiset.map_map]
-      --   simp only [fₙ] at and2
-      --   rw [←and2]
-      --   apply congr_arg₂ Multiset.map claim rfl
-      -- · refine Or.inr (Or.inr (Or.inr (Or.inl ⟨A, B, or1, ?_⟩)))
-      --   simp only [fₙ, α_quot, T, f, p, Multiset.map_map]
-      --   simp only [fₙ] at or2
-      --   rw [←or2]
-      --   apply congr_arg₂ Multiset.map claim rfl
-      -- · refine Or.inr (Or.inr (Or.inr (Or.inr ⟨A, box1, ?_⟩)))
-      --   simp only [fₙ, α_quot, T, f, p, Multiset.map_map]
-      --   simp only [fₙ] at box2
-      --   rw [←box2]
-      --   apply congr_arg₂ Multiset.map claim rfl
+      simp only [r,p,α_quot,T] at *
+      convert h -- wow
+      · simp only [List.map_eq_nil_iff]
+      · simp only [List.map_eq_nil_iff]
+      · simp only [List.map_map, List.map_inj_left, Function.comp_apply]
+        intro a a_in
+        exact hyp a
+      · simp only [List.map_map, List.map_inj_left, Function.comp_apply]
+        intro a a_in
+        exact hyp a
+      · simp only [List.map_map, List.map_inj_left, Function.comp_apply]
+        intro a a_in
+        exact hyp a
 
 /- SMALL MODEL PROPERTY -/
 
--- theorem bleh {α} {a b : α} {p : α → Prop} : p a → a = b → p b := by intro h1 h2; aesop
+def Proof.Proves (𝕏 : Proof) (Δ : Finset Formula) : Prop := ∃ x : 𝕏.X, f (r 𝕏.α x) = Δ
+infixr:6 "⊢" => Proof.Proves
 
+theorem finite_proof_of_proof (𝕏 : Proof) (Δ : Sequent) : (𝕏 ⊢ Δ) → ∃ 𝕐, Finite 𝕐.X ∧ (𝕐 ⊢ Δ) := by -- ask malvin
+  intro X_proves_Δ
+  have ⟨x, f_Δ⟩ := X_proves_Δ
+  use PointGeneratedProof (Filtration 𝕏) (Quotient.mk (instSetoidX 𝕏) x)
+  constructor
+  -- · refine ⟨?_, by simp⟩ -- just to get rid of the true thing
+  · have h : Finite (Sequent.FL Δ).powerset := by
+      apply Set.finite_coe_iff.1
+      apply Finset.finite_toSet
+    apply @Finite.of_injective _ _ h (fun y ↦ ⟨f (r ((PointGeneratedProof (Filtration 𝕏) ⟦x⟧).α) y), by
+      simp only [Finset.mem_powerset]
+      have in_fl := node_in_pg_sequent_in_FL (Filtration 𝕏) ⟦x⟧ y
+      convert in_fl
+      simp [←f_Δ, Filtration, r]
+      exact Eq.symm $ Quotient.mk_out x⟩)
+    simp [Function.Injective]
+    intro z1 z2 f_z_eq
+    simp [PointGeneratedProof, Filtration, r] at f_z_eq
+    apply Subtype.eq
+    apply Quotient.out_equiv_out.1
+    exact f_z_eq
+  · use ⟨Quotient.mk (instSetoidX 𝕏) x, Relation.ReflTransGen.refl⟩
+    rw [←f_Δ]
+    simp [r, Filtration, PointGeneratedProof]
+    exact Quotient.mk_out x
 
-#check Finite.of_injective -- USE THIS!
+/- THEOREMS ABOUT LOOPS -/
 
--- instance {Γ : Finset Formula} (𝕏 : InfiniteProof Γ) : Finite (Setoid.classes (instSetoidX 𝕏)) :=
---   have := Setoid.finite_classes_ker (fun x ↦ (𝕏.α x).1 ∪ (𝕏.α x).2.1)
---   apply bleh this
---   apply Setoid.classes_inj.1
---   simp [Setoid.ker]
---   apply Setoid.ext_iff.2
---   unfold instSetoidX
---   simp [Function.onFun, f, fₚ, fₙ]
---   intro a b
---   constructor
---   · intro mp
---     sorry
---   · intro mpp
---     sorry
-
-theorem loop_has_box_app (𝕏 : GLProof) (x : 𝕏.X) :
+theorem loop_has_box_app (𝕏 : Proof) (x : 𝕏.X) :
   (Relation.TransGen (edge 𝕏.α)) x x →
     ∃ (y : 𝕏.X), (Relation.ReflTransGen (edge 𝕏.α)) x y
       ∧ (Relation.ReflTransGen (edge 𝕏.α)) y x
@@ -220,11 +250,11 @@ theorem loop_has_box_app (𝕏 : GLProof) (x : 𝕏.X) :
   case single xex => sorry
   case tail => sorry
 
-def GLProof.Proves (𝕏 : GLProof) (Δ : Finset Formula) : Prop := ∃ x : 𝕏.X, f (r 𝕏.α x) = Δ
-infixr:6 "⊢" => GLProof.Proves
+
+/- ADMISSIBILITY -/
 
 def equiv (A : Formula) (B : Formula) : Prop :=
-  (∃ (𝕏 : GLProof), 𝕏 ⊢ {~A, B}) ∧ (∃ (𝕏 : GLProof), 𝕏 ⊢ {A, ~B})
+  (∃ (𝕏 : Proof), 𝕏 ⊢ {~A, B}) ∧ (∃ (𝕏 : Proof), 𝕏 ⊢ {A, ~B})
 infixr:7 "≅" => equiv
 
 theorem not_prove_empty : ¬ ∃ 𝕏, 𝕏 ⊢ {} := by
@@ -241,7 +271,7 @@ lemma form_in_seq_size_le {A : Formula} {Δ : Sequent} : A ∈ Δ → A.size ≤
   -- rw [h]
   -- simp [Sequent.size, Finset]
 
-theorem and_subproofs_left (𝕏 : GLProof) (x : 𝕏.X) (A B : Formula) (Δ : Finset Formula) (AB_in : (A & B) ∈ Δ)(h : r 𝕏.α x = RuleApp.and Δ A B AB_in) : 𝕏 ⊢ Δ \ {A & B} ∪ {A} := by
+theorem and_subproofs_left (𝕏 : Proof) (x : 𝕏.X) (A B : Formula) (Δ : Finset Formula) (AB_in : (A & B) ∈ Δ)(h : r 𝕏.α x = RuleApp.and Δ A B AB_in) : 𝕏 ⊢ Δ \ {A & B} ∪ {A} := by
   have := 𝕏.h x
   simp [h] at this
   have := congr_arg List.length this
@@ -257,7 +287,7 @@ theorem and_subproofs_left (𝕏 : GLProof) (x : 𝕏.X) (A B : Formula) (Δ : F
       cases (r 𝕏.α y) <;> simp [fₙ, f, fₚ]
     | y :: z :: x :: xs => by exfalso; simp [p_def] at this
 
-theorem and_subproofs_right (𝕏 : GLProof) (x : 𝕏.X) (A B : Formula) (Δ : Finset Formula) (AB_in : (A & B) ∈ Δ)(h : r 𝕏.α x = RuleApp.and Δ A B AB_in) : 𝕏 ⊢ Δ \ {A & B} ∪ {B} := by
+theorem and_subproofs_right (𝕏 : Proof) (x : 𝕏.X) (A B : Formula) (Δ : Finset Formula) (AB_in : (A & B) ∈ Δ)(h : r 𝕏.α x = RuleApp.and Δ A B AB_in) : 𝕏 ⊢ Δ \ {A & B} ∪ {B} := by
   have := 𝕏.h x
   simp [h] at this
   have := congr_arg List.length this
@@ -273,7 +303,7 @@ theorem and_subproofs_right (𝕏 : GLProof) (x : 𝕏.X) (A B : Formula) (Δ : 
       cases (r 𝕏.α y) <;> simp [fₙ, f, fₚ]
     | y :: z :: x :: xs => by exfalso; simp [p_def] at this
 
-theorem box_subproof (𝕏 : GLProof) (x : 𝕏.X) (A : Formula) (Δ : Finset Formula) (A_in : □ A ∈ Δ) (h : r 𝕏.α x = RuleApp.box Δ A A_in) : 𝕏 ⊢ D (Δ \ {□ A}) ∪ {A} := by
+theorem box_subproof (𝕏 : Proof) (x : 𝕏.X) (A : Formula) (Δ : Finset Formula) (A_in : □ A ∈ Δ) (h : r 𝕏.α x = RuleApp.box Δ A A_in) : 𝕏 ⊢ D (Δ \ {□ A}) ∪ {A} := by
   have := 𝕏.h x
   simp only [h] at this
   have := congr_arg List.length this
@@ -294,6 +324,13 @@ theorem weakening_helper {Γ : Finset Formula} {A B D : Formula} (A_ne : D ≠ A
   have h2 : {A} ∪ {B} = {B} ∪ ({A} : Finset Formula) := by simp [Finset.union_comm]
   simp [h1, h2]
 
+lemma Sequent.D_size_wod_leq_size_wod (Γ : Sequent) : (D Γ).size_without_diamond ≤ Γ.size_without_diamond := by
+  induction Γ using Finset.induction
+  case empty => simp [D]
+  case insert A Δ A_ni ih =>
+    have dis : Disjoint {A} Δ := Finset.disjoint_singleton_left.2 A_ni
+    simp only [Finset.insert_eq, size_wod_disjoint dis]
+    sorry -- very doable just annoying
 
 theorem weakening (A : Formula) (Δ : Finset Formula) : (∃ 𝕏, 𝕏 ⊢ Δ) → (∃ 𝕏, 𝕏 ⊢ Δ ∪ {A}) := by
   intro ⟨𝕏, x, x_Δ⟩
@@ -557,10 +594,7 @@ lemma helper {A B : Formula} : {A, ~A} ∪ {~B} = {A&B, ~A, ~B} \ {A&B} ∪ ({A}
       subst h_1
       simp_all only [true_or]
 
-
-
-
-theorem extended_lem (A : Formula) : ∃ (𝕏 : GLProof), 𝕏 ⊢ {A, ~A} := by
+theorem extended_lem (A : Formula) : ∃ (𝕏 : Proof), 𝕏 ⊢ {A, ~A} := by
   induction A <;> simp only [Formula.neg]
   case bottom =>
     use {
@@ -650,24 +684,3 @@ theorem extended_lem (A : Formula) : ∃ (𝕏 : GLProof), 𝕏 ⊢ {A, ~A} := b
     simp [r, f, α]
   all_goals
     sorry
-
-
--- instance instSetoid_equiv : Setoid Formula where
---   r := equiv
---   iseqv := ⟨by
---               intro A
---               have ⟨X, X_prop⟩ := extended_lem A
---               unfold equiv
---               refine ⟨⟨X, ?_⟩, X, X_prop⟩
---               have h : {~A, A} = ({A, (~A)} : Finset Formula) := by aesop
---               simp [h, X_prop],
---              by
---               intro A B ⟨h1, h2⟩
---               have h : {~B, A} = ({A, ~B} : Finset Formula) := by aesop
---               have g : {B, ~A} = ({~A, B} : Finset Formula) := by aesop
---               unfold equiv
---               simp [h, h2, g, h1],
---              by
---               intro A B C ⟨AiB, BiA⟩ ⟨BiC, CiB⟩
---               unfold equiv -- this is difficult to prove without cut, also we don't use it anywhere
---               sorry⟩

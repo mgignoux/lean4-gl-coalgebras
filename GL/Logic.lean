@@ -115,35 +115,9 @@ instance : DecidablePred isBox := by
   | □ A => ◇ (neg A)
   | ◇ A => □ (neg A)
 
-
 prefix:50 "~" => Formula.neg
 notation:55 φ:56 " ↣ " ψ:55 => (¬ φ) ∨ ψ
 notation:55 φ:56 " ⟷ " ψ:55 => (φ ↣ ψ) & (ψ ↣ φ)
-
-def instDecidableNeg (A B : Formula) : Decidable ((~A) = B) := by
-  by_cases (~A) = B
-  case pos eq => apply Decidable.isTrue; simp [eq]
-  case neg ne => apply Decidable.isFalse; exact ne
-  -- rcases A with _ | _ | n | n | ⟨A₁, A₂⟩ | ⟨A₁, A₂⟩ | A | A <;> rcases B with _ | _ | k | k | ⟨B₁, B₂⟩ | ⟨B₁, B₂⟩ | B | B
-  -- any_goals (solve | apply Decidable.isTrue; rfl)
-  -- any_goals (solve | apply Decidable.isFalse; simp)
-  -- · by_cases n = k
-  --   case pos eq => apply Decidable.isTrue; subst eq; rfl
-  --   case neg ne => apply Decidable.isFalse; simp; exact ne
-  -- · by_cases n = k
-  --   case pos eq => apply Decidable.isTrue; subst eq; rfl
-  --   case neg ne => apply Decidable.isFalse; simp; exact ne
-  -- · by_cases (~A₁) = B₁ ∧ (~A₂) = B₂
-  --   case pos eq => apply Decidable.isTrue; simp [eq]
-  --   case neg ne => apply Decidable.isFalse; simp only [neg, or.injEq]; exact ne
-
-
-
-
-
-
-
-
 
 def P := at 0
 def Q := at 1
@@ -168,19 +142,6 @@ def pp_form : Formula → String
   | □ A => "□" ++ pp_form A
   | ◇ A => "◇" ++ pp_form A
 
-unsafe def pp_forms (Γ : Sequent) : String :=
-  String.intercalate "," ((Quot.unquot Γ.val).map pp_form)
-
-unsafe def labelPrint (fs : Sequent) : String := match (Quot.unquot fs.val) with
-| [A] => match A with
-          | ⊥ => "⊥"
-          | _ & _ => "⋀"
-          | _ v _ => "∨"
-          | □ _ => "□"
-          | _ => "?"
-| [A, B] => if A.isAtomic ∧ B.isNegAtomic then "Ax" else if B.isAtomic ∧ A.isAtomic then "Ax" else "?"
-| _ => "?"
-
 def vocab : Formula → Finset Nat
   | ⊥ => ∅
   | ⊤ => ∅
@@ -192,20 +153,93 @@ def vocab : Formula → Finset Nat
   | ◇ A => vocab A
 
   /-- Get a fresh atomic proposition `x` not occuring in `A`. -/
-  def freshVar : Formula → Nat
-    | ⊤  => 0
-    | ⊥  => 0
-    | at n  => n + 1
-    | na n  => n + 1
-    | A & B  => max (freshVar A) (freshVar B)
-    | A v B  =>  max (freshVar A) (freshVar B)
-    | □ A  => freshVar A
-    | ◇ A  => freshVar A
+def freshVar : Formula → Nat
+  | ⊤  => 0
+  | ⊥  => 0
+  | at n  => n + 1
+  | na n  => n + 1
+  | A & B  => max (freshVar A) (freshVar B)
+  | A v B  =>  max (freshVar A) (freshVar B)
+  | □ A  => freshVar A
+  | ◇ A  => freshVar A
+
+def FL : Formula → Sequent
+  | ⊥ => {⊥}
+  | ⊤ => {⊤}
+  | at n => {at n}
+  | na n => {na n}
+  | φ v ψ => {φ v ψ} ∪ FL φ ∪ FL ψ
+  | φ & ψ => {φ & ψ} ∪ FL φ ∪ FL ψ
+  | □ φ => {□ φ} ∪ FL φ
+  | ◇ φ => {◇ φ} ∪ FL φ
+
+/- Lemmas about FL closure -/
+
+theorem FL_refl {φ : Formula} : φ ∈ FL φ := by cases φ <;> simp [FL, instBot, instTop]
+
+theorem FL_mon {φ ψ : Formula} (ψ_sub_φ : ψ ∈ FL φ) : FL ψ ⊆ FL φ := by
+  cases φ <;> simp_all [FL, ]
+  · rcases ψ_sub_φ with _|ψ_sub|ψ_sub <;> subst_eqs
+    · simp [FL]
+    · have := FL_mon ψ_sub
+      intro x x_in
+      simp; right; left; exact this x_in
+    · have := FL_mon ψ_sub
+      intro x x_in
+      simp; right; right; exact this x_in
+  · rcases ψ_sub_φ with _|ψ_sub|ψ_sub <;> subst_eqs
+    · simp [FL]
+    · have := FL_mon ψ_sub
+      intro x x_in
+      simp; right; left; exact this x_in
+    · have := FL_mon ψ_sub
+      intro x x_in
+      simp; right; right; exact this x_in
+  · rcases ψ_sub_φ with _|ψ_sub <;> subst_eqs
+    · simp [FL]
+    · have := FL_mon ψ_sub
+      intro x x_in
+      simp; right; exact this x_in
+  · rcases ψ_sub_φ with _|ψ_sub <;> subst_eqs
+    · simp [FL]
+    · have := FL_mon ψ_sub
+      intro x x_in
+      simp; right; exact this x_in
+
 
 end Formula
+
 namespace Sequent
 
 def size (Γ : Sequent) : Nat := Finset.sum Γ Formula.size
+
+unsafe def pp_form (Γ : Sequent) : String := String.intercalate "," ((Quot.unquot Γ.val).map Formula.pp_form)
+
+def FL : Sequent → Sequent := fun Δ ↦ Finset.biUnion Δ Formula.FL
+
+/- Lemmas about FL Closure of Sequents -/
+
+theorem FL_refl {Δ : Sequent} : Δ ⊆ FL Δ := by
+  simp [Finset.subset_iff, FL]
+  intro x x_in
+  exact ⟨x, x_in, Formula.FL_refl⟩
+
+theorem FL_subset {Δ Γ : Sequent} (Δ_sub_Γ : Δ ⊆ Γ) : FL Δ ⊆ FL Γ := by
+  simp_all [Finset.subset_iff, FL]
+  intro φ ψ ψ_in_Δ φ_sub_ψ
+  exact ⟨ψ, Δ_sub_Γ ψ_in_Δ, φ_sub_ψ⟩
+
+theorem FL_idem {Δ : Sequent} : FL (FL Δ) = FL Δ := by
+  simp [Finset.Subset.antisymm_iff]
+  constructor
+  · simp [Finset.subset_iff, FL]
+    intro φ ψ χ χ_in_Δ φ_sub_χ φ_sub_ψ
+    exact ⟨χ, χ_in_Δ, by apply Formula.FL_mon φ_sub_χ; simp_all⟩
+  · exact FL_subset (FL_refl)
+
+
+/- Helper Lemmas about Finset -/
+
 def size_without_diamond (Γ : Sequent) : Nat := Finset.sum (Γ.filter (λ A ↦ ¬ (Formula.isDiamond A))) Formula.size
 
 /-- Delete me! -/
@@ -245,17 +279,6 @@ theorem size_wod_disjoint {Γ Δ : Sequent} :
   exact Finset.sum_union dis_diamond
 
 def vocab (Γ : Sequent) : Finset Nat := Finset.biUnion Γ Formula.vocab
-
-def FLClosed (Γ : Sequent) : Prop := by unfold Sequent at Γ; exact
-  ∀ A ∈ Γ, match A with
-    | ⊥ => ⊥ ∈ Γ
-    | ⊤ => ⊤ ∈ Γ
-    | at n => at n ∈ Γ
-    | na n => na n ∈ Γ
-    | A & B => A ∈ Γ ∧ B ∈ Γ
-    | A v B => A ∈ Γ ∧ B ∈ Γ
-    | □ A => A ∈ Γ
-    | ◇ A => A ∈ Γ
 
 def freshVar (Γ : Finset Formula) : Nat :=
   if h : Γ = {} then 0 else Finset.max' (Γ.image (Formula.freshVar)) (by

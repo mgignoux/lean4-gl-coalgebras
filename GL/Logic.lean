@@ -152,6 +152,16 @@ def vocab : Formula → Finset Nat
   | □ A => vocab A
   | ◇ A => vocab A
 
+def atoms : Formula → Finset Nat
+  | ⊥ => ∅
+  | ⊤ => ∅
+  | at n => {n}
+  | na _ => ∅
+  | A & B => vocab A ∪ vocab B
+  | A v B => vocab A ∪ vocab B
+  | □ A => vocab A
+  | ◇ A => vocab A
+
   /-- Get a fresh atomic proposition `x` not occuring in `A`. -/
 def freshVar : Formula → Nat
   | ⊤  => 0

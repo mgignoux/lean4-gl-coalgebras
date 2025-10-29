@@ -54,6 +54,9 @@ def Proof.freeVar (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Nat :=
 noncomputable def encodeVar {𝕏 : Proof} [Fintype 𝕏.X] : 𝕏.X → Nat :=
   fun x ↦ 𝕏.freeVar + Fintype.equivFin 𝕏.X x
 
+noncomputable def unencodeVar {𝕏 : Proof} [Fintype 𝕏.X] (n : Nat) (h : n - 𝕏.freeVar < Fintype.card 𝕏.X): 𝕏.X :=
+  (Fintype.equivFin 𝕏.X).symm ⟨n - 𝕏.freeVar, h⟩
+
 lemma encodeVar_inj (𝕏 : Proof) [Fintype 𝕏.X] : Function.Injective (@encodeVar 𝕏 _) := by
   simp [Function.Injective]
   intro x y hyp
@@ -94,72 +97,114 @@ noncomputable def equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) 
     | [y] => □ at (encodeVar y)
     | y1 :: y2 :: ys => by exfalso; have := 𝕏.h x; simp [r, p_def] at this
 
+theorem helper_1 {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} {n : ℕ} (h : n ∈ Finset.image encodeVar Y) : n - 𝕏.freeVar < Fintype.card 𝕏.X := by
+  simp [encodeVar] at h
+  have ⟨y, y_in, y_eq⟩ := h
+  rw [←y_eq]
+  simp
+
+theorem helper_2 {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} {n : ℕ} (h : n ∈ Finset.image encodeVar Y) : unencodeVar n (helper_1 h) ∈ Y := by
+  simp [encodeVar] at h
+  have ⟨y, y_in, y_eq⟩ := h
+  simp [←y_eq, unencodeVar, y_in]
+
+
+
 -- apply_substitution
-noncomputable def extend {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (σ : 𝕏.X → Formula) : Formula → Formula
+noncomputable def extend {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} (Y_sub : Y ⊆ fin_X.elems) (σ : {x : 𝕏.X // x ∈ Y} → Formula) : Formula → Formula
   | ⊥ => ⊥
   | ⊤ => ⊤
-  | at n => if h : 𝕏.freeVar ≤ n ∧ n < 𝕏.freeVar + fin_X.card then σ ((Fintype.equivFin 𝕏.X).symm ⟨n - 𝕏.freeVar, by omega⟩) else at n
-  | na n => if h : 𝕏.freeVar ≤ n ∧ n < 𝕏.freeVar + fin_X.card then ~ σ ((Fintype.equivFin 𝕏.X).symm ⟨n - 𝕏.freeVar, by omega⟩) else na n
-  | A & B => (extend σ A) & (extend σ B)
-  | A v B => (extend σ A) v (extend σ B)
-  | □ A => □ (extend σ A)
-  | ◇ A => ◇ (extend σ A)
+  | at n => if h : n ∈ Y.image encodeVar then σ ⟨unencodeVar n (helper_1 h), helper_2 h⟩ else at n
+  | na n => if h : n ∈ Y.image encodeVar then ~ σ ⟨unencodeVar n (helper_1 h), helper_2 h⟩ else na n
+  | A & B => (extend Y_sub σ A) & (extend Y_sub σ B)
+  | A v B => (extend Y_sub σ A) v (extend Y_sub σ B)
+  | □ A => □ (extend Y_sub σ A)
+  | ◇ A => ◇ (extend Y_sub σ A)
 
-noncomputable def Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
-  (Y : Finset 𝕏.X) (Y_sub : Y ⊆ fin_X.elems) : 𝕏.X → Formula
-      -- ∀ y : {x : 𝕏.X // x ∈ Y},
-      --     (χ y.val ≅ extend χ (equation y.val))
-      --  ∧ (True) -- not a subformula property
+theorem extend_in {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} (Y_sub : Y ⊆ fin_X.elems) (σ : {x : 𝕏.X // x ∈ Y} → Formula) (A : Formula) :
+  (∀ y ∈ Y, encodeVar y ∉ Formula.vocab A) → (A = extend Y_sub σ A) := by
+  contrapose
+  intro hyp
+  induction A <;> simp_all [extend, Formula.instBot, Formula.instTop, not_true_eq_false, Formula.vocab, -not_and, not_and_or]
+  all_goals
+    aesop
+
+theorem encodeVar_in_equation_imp_pred {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {x y : 𝕏.X} :
+  encodeVar y ∈ (equation x).vocab → (edge 𝕏.α) x y := by
+  intro hyp
+  unfold equation at hyp
+  rcases rule_x : r 𝕏.α x -- why cant we simp or rw???
+  all_goals
+  sorry
+
+set_option maxHeartbeats 900000
+theorem Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
+  (Y : Finset 𝕏.X) (Y_sub : Y ⊆ fin_X.elems) :
+    ∃ σ : {x : 𝕏.X // x ∈ Y} → Formula,
+      ∀ y : {x : 𝕏.X // x ∈ Y},
+          ((σ y = extend Y_sub σ (equation y.val)) ∨ (σ y ≅ extend Y_sub σ (equation y.val)))
+       ∧ (True) -- not a subformula property)
       := by
   -- induction Y using Finset.induction_on --- DONT DO THIS, WE WANT TO SELECT THE ELEMENTS WE REMOVE
   by_cases Y = ∅
   case pos Y_em => -- if empty then vacuously done
     subst Y_em
-    use fun x ↦ ⊤ -- give any function
-    -- intro y
-    -- exfalso
-    -- simp_all only [Finset.empty_subset]
-    -- obtain ⟨val, property⟩ := y
-    -- simp_all only [Finset.notMem_empty]
+    simp
 
-  case neg Y_ne => -- if not empty then take an arbitrary element
-    let y := Exists.choose $ @Finset.Nonempty.exists_mem _ Y (by by_contra h; simp at h; exact Y_ne h) -- must be smarter way to do this
-    have := 𝕏.decidable
-    by_cases Relation.TransGen (fun y1 y2 ↦ edge 𝕏.α y1 y2 ∧ (y1 ∈ Y ∧ y2 ∈ Y)) y y
+  case neg Y_ne =>
+    have dec := 𝕏.decidable
+    by_cases ∃ y, Relation.TransGen (edge_restr (fun x ↦ x ∈ Y)) y y
 
     case pos h =>  -- if there is a loop then find the box node which must be in Y
-      let z := Exists.choose $ exists_box_on_loop y (by sorry) -- property of h
-      have z_in : z ∈ Y := by sorry -- this is not provable with the theorems now but is obvious
+      have ⟨y, y_y⟩ := h
+      have ⟨z, z_box, z_in⟩ := exists_box_on_restr_loop y (fun x ↦ x ∈ Y) y_y
 
-      have τ := Solution_strong (Y \ {z}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
+      have ⟨τ, τ_prop⟩ := Solution_strong (Y \ {z}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
 
-      sorry -- this is where we will need to use the FixedPointTheorem ....
+      -- use fun y ↦ (single (encodeVar z) (⊤)) (τ y) -- send the encodedVar for z to the fixpoint solution
+
+      -- intro ⟨y, y_in⟩
+      sorry
 
     case neg => -- if there is no loop then find a leaf in ↑y
 
-      have exists_leaf : ∃ l ∈ Y, (p 𝕏.α l).toFinset ∩ Y = ∅ := by sorry
-      let leaf := Exists.choose $ exists_leaf
+      have ⟨leaf, leaf_in, leaf_prop⟩ : ∃ l ∈ Y, (p 𝕏.α l).toFinset ∩ Y = ∅ := by sorry
 
       -- maybe do cases (r α leaf) here to see what type of leaf it is, or prove if something is a leaf then
 
-      have τ := Solution_strong (Y \ {leaf}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
+      have ⟨τ, τ_prop⟩ := Solution_strong (Y \ {leaf}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
 
-      use (single (encodeVar leaf) (equation leaf)) ∘ τ -- the composition
+      use fun x ↦ if h : x.1 = leaf then equation leaf else
+        (single (encodeVar leaf) (equation leaf)) (τ ⟨x.val, by aesop⟩)  -- the composition
 
-    --   intro y
-    --   by_cases y.val = leaf
-    --   case pos => sorry -- hard
-    --   case neg ne =>
-    --     have := τ_prop ⟨y, by aesop⟩
+      intro ⟨y, y_in⟩
+      by_cases y = leaf
+      case pos y_eq_leaf =>
+        subst y_eq_leaf
+        refine ⟨Or.inl ?_, by simp⟩
+        simp only [↓reduceDIte]
+        apply extend_in
+        by_contra h
+        simp at h
+        have ⟨z, z_prop⟩ := h
+        have := encodeVar_in_equation_imp_pred z_prop.2
+        -- this is a contradiction, z is in p α y, and z ∈ Y, so leaf_prop cannot hold
+        apply Finset.eq_empty_iff_forall_notMem.1 leaf_prop z
+        simp only [Finset.mem_inter, List.mem_toFinset]
+        exact ⟨this, z_prop.1⟩
 
-    --     simp
-    --     have h : single (encodeVar leaf) (equation leaf) (τ ↑y) = (τ ↑y) := by sorry
-    --     rw [h] -- introduce the cut coalgebras then we have transitivity of ≃
-    -- --    simp [equation]
-    --     have := 𝕏.h leaf
-    --     cases rule : r 𝕏.α leaf <;> rw [rule] at this <;> sorry
-    --     -- look at equation ↑y
+      case neg y_ne_leaf =>
+        have ⟨eq_or_equiv, prop⟩ := τ_prop ⟨y, by aesop⟩
+        rcases eq_or_equiv with eq | equiv
+        · refine ⟨Or.inl ?_, by simp⟩ -- recover the other goal here later
+          simp [y_ne_leaf]
+          simp at eq
+          sorry
 
+
+
+        · refine ⟨Or.inr ?_, by simp⟩ -- recover the other goal here later
+          sorry
 
 termination_by Finset.card Y
 decreasing_by
@@ -168,53 +213,51 @@ decreasing_by
     case zero h =>
       exfalso
       simp only [Finset.card_eq_zero, Finset.inter_singleton, z_in, ↓reduceIte, Finset.singleton_ne_empty] at value
-    case succ => sorry --simp only [lt_add_iff_pos_right, add_pos_iff, zero_lt_one, or_true]
+    case succ =>
+      simp only [lt_add_iff_pos_right, add_pos_iff, zero_lt_one, or_true]
   · rw [←Finset.card_sdiff_add_card_inter Y {leaf}]
     cases value : (Y ∩ {leaf}).card -- roundabout method
     case zero h =>
       exfalso
-      sorry
-      -- simp only [Finset.card_eq_zero, Finset.inter_singleton, leaf_in_Y, ↓reduceIte, Finset.singleton_ne_empty] at value
-    case succ => sorry -- simp only [lt_add_iff_pos_right, add_pos_iff, zero_lt_one, or_true]
+      simp only [Finset.card_eq_zero, Finset.inter_singleton, leaf_in, ↓reduceIte, Finset.singleton_ne_empty] at value
+    case succ => simp only [lt_add_iff_pos_right, add_pos_iff, zero_lt_one, or_true]
 
-theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
-  (Y : Finset 𝕏.X) (Y_sub : Y ⊆ fin_X.elems) :
-      ∀ y : {x : 𝕏.X // x ∈ Y},
-          (Solution_strong Y Y_sub y.val ≅ extend (Solution_strong Y Y_sub) (equation y.val)) := by sorry
-      --  ∧ (True) -- not a subformula property
-
+-- theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
+--   (Y : Finset 𝕏.X) (Y_sub : Y ⊆ fin_X.elems) :
+--       ∀ y : {x : 𝕏.X // x ∈ Y},
+--           (Solution_strong Y Y_sub y.val ≅ extend (Solution_strong Y Y_sub) (equation y.val)) := by
+--       --  ∧ (True) -- not a subformula property
+--   intro ⟨y, y_in⟩
+--   by_cases Y = ∅
+--   case pos Y_em =>
+--     subst Y_em
+--     simp at y_in
+--   case neg Y_ne =>
+--     by_cases Relation.TransGen (fun y1 y2 ↦ edge 𝕏.α y1 y2 ∧ (y1 ∈ Y ∧ y2 ∈ Y)) y y
+--     case pos h =>
+--       unfold Solution_strong
+--       simp [Y_ne, h]
 
 
 noncomputable def Interpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : 𝕏.X → Formula
-  := Solution_strong fin_X.elems (by simp)
+  := fun x ↦ (Solution_strong fin_X.elems (by simp)).choose ⟨x, by sorry⟩
       -- ∀ x : 𝕏.X, (σ x ≅ extend σ (equation x))
   --  ∧ ∀ x y : 𝕏.X, P y ∉ σ (P x)  -- how far can we get without this condition?
 
-theorem Solution_prop (𝕏 : Proof) [fin_X : Fintype 𝕏.X] :
-  ∀ x : 𝕏.X, (Interpolant x ≅ extend (@Interpolant 𝕏 _) (equation x)) := by
-  have := Solution_strong_prop fin_X.elems (by simp)
-  intro x
-  exact this ⟨x, by sorry⟩
 
+theorem Interpolant_prop (𝕏 : Proof) [fin_X : Fintype 𝕏.X] :
+    ∀ x : 𝕏.X, Interpolant x = extend (@Finset.Subset.rfl _ fin_X.elems) (fun x ↦ Interpolant x.val) (equation x) ∨ (Interpolant x ≅ extend (@Finset.Subset.rfl _ fin_X.elems) (fun x ↦ Interpolant x.val) (equation x))
   --  ∧ ∀ x y : 𝕏.X, P y ∉ σ (P x)  -- how far can we get without this condition?
-
-  -- := by
-  -- have ⟨σ, σ_pf⟩ := existsSolution_strong 𝕏 fin_X.elems (by simp)
-  -- use σ
-  -- intro x
-  -- simp at σ_pf
-  -- exact σ_pf x (fin_X.complete x)
-
--- theorem existsSolution (𝕏 : Proof) [fin_X : Fintype 𝕏.X] :
---   ∃ σ : 𝕏.X → Formula,
---       ∀ x : 𝕏.X, (σ x ≅ extend σ (equation x))
---   --  ∧ ∀ x y : 𝕏.X, P y ∉ σ (P x)  -- how far can we get without this condition?
---   := by
---   have ⟨σ, σ_pf⟩ := existsSolution_strong fin_X.elems (by simp)
---   use σ
---   intro x
---   simp at σ_pf
---   exact σ_pf x (fin_X.complete x)
+  := by
+  unfold Interpolant
+  have σ_pf := Exists.choose_spec $ Solution_strong fin_X.elems (by simp)
+  intro x
+  have := σ_pf ⟨x, by sorry⟩
+  rcases this with left | right
+  · left
+    exact left
+  · right
+    exact right -- funny thing: exact this doesn't work, but this does :)
 
 
 /- Defining Interpolants -/

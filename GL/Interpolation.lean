@@ -16,16 +16,31 @@ def single (n : Nat) (C : Formula) : Formula → Formula
   | □ A => □ (single n C A)
   | ◇ A => ◇ (single n C A)
 
+theorem single_neg (n : Nat) (C D : Formula) : single n C (~D) = Formula.neg (single n C D) := by
+  induction D <;> simp [Formula.neg, single]
+  case neg_atom m =>
+    by_cases m = n
+    case pos h =>
+      simp [h]
+      induction C <;> simp [Formula.neg, Formula.instTop, Formula.instBot]
+      case and ih1 ih2 => exact ⟨ih1, ih2⟩
+      case or ih1 ih2 => exact ⟨ih1, ih2⟩
+      case box ih => exact ih
+      case diamond ih => exact ih
+    case neg h => simp [h]
+  all_goals
+    aesop
+
 /-- Structure preserving map substituting all atoms meeting a certain criteria p --/
-def partial_ (p : Nat → Prop) [DecidablePred p] (σ : Subtype p → Formula) : Formula → Formula
+def partial_ {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) : Formula → Formula
   | ⊥ => ⊥
   | ⊤ => ⊤
   | at n => if h : p n then σ ⟨n, h⟩ else at n
-  | na n => if h : p n then ~ σ ⟨n, h⟩ else at n
-  | A & B => (partial_ p σ A) & (partial_ p σ B)
-  | A v B => (partial_ p σ A) v (partial_ p σ B)
-  | □ A => □ (partial_ p σ A)
-  | ◇ A => ◇ (partial_ p σ A)
+  | na n => if h : p n then ~ σ ⟨n, h⟩ else na n
+  | A & B => (partial_ σ A) & (partial_ σ B)
+  | A v B => (partial_ σ A) v (partial_ σ B)
+  | □ A => □ (partial_ σ A)
+  | ◇ A => ◇ (partial_ σ A)
 
 /-- Structure preserving map substituting all atoms via a transformation σ --/
 def full (σ : Nat → Formula) (A : Formula) : Formula := match A with
@@ -54,7 +69,7 @@ def Proof.freeVar (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Nat :=
 noncomputable def encodeVar {𝕏 : Proof} [Fintype 𝕏.X] : 𝕏.X → Nat :=
   fun x ↦ 𝕏.freeVar + Fintype.equivFin 𝕏.X x
 
-noncomputable def unencodeVar {𝕏 : Proof} [Fintype 𝕏.X] (n : Nat) (h : n - 𝕏.freeVar < Fintype.card 𝕏.X): 𝕏.X :=
+noncomputable def unencodeVar {𝕏 : Proof} [Fintype 𝕏.X] (n : Nat) (h : n - 𝕏.freeVar < Fintype.card 𝕏.X) : 𝕏.X :=
   (Fintype.equivFin 𝕏.X).symm ⟨n - 𝕏.freeVar, h⟩
 
 lemma encodeVar_inj (𝕏 : Proof) [Fintype 𝕏.X] : Function.Injective (@encodeVar 𝕏 _) := by
@@ -62,6 +77,8 @@ lemma encodeVar_inj (𝕏 : Proof) [Fintype 𝕏.X] : Function.Injective (@encod
   intro x y hyp
   simp [encodeVar, Fin.val_eq_val] at hyp
   exact hyp
+
+lemma encodeVar_inv (𝕏 : Proof) [Fintype 𝕏.X] (x : 𝕏.X) : unencodeVar (encodeVar x) (by simp [encodeVar]) = x := by sorry
 
 noncomputable def equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Formula := match r : r 𝕏.α x with
   | RuleApp.topₗ _ _ => ⊥
@@ -121,6 +138,15 @@ noncomputable def extend {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset �
   | □ A => □ (extend Y_sub σ A)
   | ◇ A => ◇ (extend Y_sub σ A)
 
+theorem partial_const {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) (A : Formula) :
+  (∀ n ∈ Formula.vocab A, ¬ p n) → (A = partial_ σ A) := by
+  contrapose
+  intro hyp
+  induction A <;> simp_all [partial_, Formula.instTop, Formula.instBot, not_true_eq_false, Formula.vocab, -not_and, not_and_or]
+  all_goals
+    aesop
+
+
 theorem extend_in {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} (Y_sub : Y ⊆ fin_X.elems) (σ : {x : 𝕏.X // x ∈ Y} → Formula) (A : Formula) :
   (∀ y ∈ Y, encodeVar y ∉ Formula.vocab A) → (A = extend Y_sub σ A) := by
   contrapose
@@ -140,9 +166,9 @@ theorem encodeVar_in_equation_imp_pred {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {
 set_option maxHeartbeats 900000
 theorem Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
   (Y : Finset 𝕏.X) (Y_sub : Y ⊆ fin_X.elems) :
-    ∃ σ : {x : 𝕏.X // x ∈ Y} → Formula,
-      ∀ y : {x : 𝕏.X // x ∈ Y},
-          ((σ y = extend Y_sub σ (equation y.val)) ∨ (σ y ≅ extend Y_sub σ (equation y.val)))
+    ∃ σ : {n // n ∈ Y.image encodeVar} → Formula,
+      ∀ n : {n // n ∈ Y.image encodeVar},
+          ((σ n = partial_ σ (equation (unencodeVar n (helper_1 n.2)))) ∨ (σ n ≅ partial_ σ (equation (unencodeVar n (helper_1 n.2)))))
        ∧ (True) -- not a subformula property)
       := by
   -- induction Y using Finset.induction_on --- DONT DO THIS, WE WANT TO SELECT THE ELEMENTS WE REMOVE
@@ -174,36 +200,108 @@ theorem Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
 
       have ⟨τ, τ_prop⟩ := Solution_strong (Y \ {leaf}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
 
-      use fun x ↦ if h : x.1 = leaf then equation leaf else
-        (single (encodeVar leaf) (equation leaf)) (τ ⟨x.val, by aesop⟩)  -- the composition
+      use fun n ↦ (single (encodeVar leaf) (equation leaf)) (partial_ τ (at n))
+
+      -- if h : x.1 = leaf then equation leaf else
+      --   (single (encodeVar leaf) (equation leaf)) (τ ⟨x.val, by aesop⟩)  -- the composition
 
       intro ⟨y, y_in⟩
-      by_cases y = leaf
+      by_cases y = encodeVar leaf
       case pos y_eq_leaf =>
         subst y_eq_leaf
         refine ⟨Or.inl ?_, by simp⟩
-        simp only [↓reduceDIte]
-        apply extend_in
+        have  h : ¬ encodeVar leaf ∈ Finset.image encodeVar (Y \ {leaf}) := by sorry
+        simp [partial_, h, single, encodeVar_inv]
+        apply partial_const
+        intro n n_in
         by_contra h
         simp at h
         have ⟨z, z_prop⟩ := h
-        have := encodeVar_in_equation_imp_pred z_prop.2
+        rw [←z_prop.2] at n_in
+        have y_z := encodeVar_in_equation_imp_pred n_in
         -- this is a contradiction, z is in p α y, and z ∈ Y, so leaf_prop cannot hold
         apply Finset.eq_empty_iff_forall_notMem.1 leaf_prop z
         simp only [Finset.mem_inter, List.mem_toFinset]
-        exact ⟨this, z_prop.1⟩
+        exact ⟨y_z, z_prop.1⟩
 
       case neg y_ne_leaf =>
         have ⟨eq_or_equiv, prop⟩ := τ_prop ⟨y, by aesop⟩
         rcases eq_or_equiv with eq | equiv
         · refine ⟨Or.inl ?_, by simp⟩ -- recover the other goal here later
-          simp [y_ne_leaf]
           simp at eq
-          sorry
+          -- substitution preserves equality
+          have  h : y ∈ Finset.image encodeVar (Y \ {leaf}) := by
+            simp
+            simp at y_in
+            have ⟨n, n_prop⟩ := y_in
+            refine ⟨n, ⟨n_prop.1, ?_⟩, n_prop.2⟩
+            intro con
+            rw [←con] at y_ne_leaf
+            exact y_ne_leaf (Eq.symm n_prop.2)
+          simp only [partial_, h, ↓reduceDIte, eq]
+          induction (equation (unencodeVar y (helper_1 y_in)))
+          case top => simp only [partial_, single]
+          case bottom => simp only [partial_, single]
+          case atom n =>
+            simp only [partial_]
+            by_cases n ∈ Finset.image encodeVar (Y \ {leaf})
+            case pos h =>
+              have g : n ∈ Finset.image encodeVar Y := by aesop
+              simp only [h, g, ↓reduceDIte]
+            case neg h =>
+              by_cases n ∈ Finset.image encodeVar Y
+              case pos h => simp only [h, ↓reduceDIte]
+              case neg h =>
+                have g : ¬ ∃ a, (a ∈ Y ∧ ¬a = leaf) ∧ encodeVar a = n := by
+                  simp
+                  intro x x_in x_not_leaf con
+                  rw [←con] at h
+                  simp at h
+                  have := h x x_in
+                  simp at this
+                simp [h, g, ↓reduceDIte, single]
+                intro con
+                exfalso
+                simp [con] at h
+                have := h leaf leaf_in
+                simp at this
+          case neg_atom n =>
+            simp only [partial_]
+            by_cases n ∈ Finset.image encodeVar (Y \ {leaf})
+            case pos h =>
+              have g : n ∈ Finset.image encodeVar Y := by aesop
+              simp only [h, g, ↓reduceDIte]
+              apply single_neg
+            case neg g =>
+              by_cases n ∈ Finset.image encodeVar Y
+              case pos h =>
+                have e : n == encodeVar leaf := by sorry
+                simp only [h, ↓reduceDIte, g, single, e, ↓reduceIte]
+              case neg h =>
+                have g : ¬ ∃ a, (a ∈ Y ∧ ¬a = leaf) ∧ encodeVar a = n := by
+                  simp
+                  intro x x_in x_not_leaf con
+                  rw [←con] at h
+                  simp at h
+                  have := h x x_in
+                  simp at this
+                simp [h, g, ↓reduceDIte, single]
+                intro con
+                exfalso
+                simp [con] at h
+                have := h leaf leaf_in
+                simp at this
+          case or A B ih1 ih2 => simp [partial_, single, ih1, ih2]
+          case and A B ih1 ih2 => simp [partial_, single, ih1, ih2]
+          case box A ih => simp [partial_, single, ih]
+          case diamond A ih => simp [partial_, single, ih]
+
+        ·
+
+          refine ⟨Or.inr ?_, by simp⟩ -- recover the other goal here later
 
 
-
-        · refine ⟨Or.inr ?_, by simp⟩ -- recover the other goal here later
+          -- substitution preserves equivelance
           sorry
 
 termination_by Finset.card Y
@@ -239,25 +337,25 @@ decreasing_by
 --       simp [Y_ne, h]
 
 
-noncomputable def Interpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : 𝕏.X → Formula
-  := fun x ↦ (Solution_strong fin_X.elems (by simp)).choose ⟨x, by sorry⟩
-      -- ∀ x : 𝕏.X, (σ x ≅ extend σ (equation x))
-  --  ∧ ∀ x y : 𝕏.X, P y ∉ σ (P x)  -- how far can we get without this condition?
+-- noncomputable def Interpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : 𝕏.X → Formula
+--   := fun x ↦ (Solution_strong fin_X.elems (by simp)).choose ⟨x, by sorry⟩
+--       -- ∀ x : 𝕏.X, (σ x ≅ extend σ (equation x))
+--   --  ∧ ∀ x y : 𝕏.X, P y ∉ σ (P x)  -- how far can we get without this condition?
 
 
-theorem Interpolant_prop (𝕏 : Proof) [fin_X : Fintype 𝕏.X] :
-    ∀ x : 𝕏.X, Interpolant x = extend (@Finset.Subset.rfl _ fin_X.elems) (fun x ↦ Interpolant x.val) (equation x) ∨ (Interpolant x ≅ extend (@Finset.Subset.rfl _ fin_X.elems) (fun x ↦ Interpolant x.val) (equation x))
-  --  ∧ ∀ x y : 𝕏.X, P y ∉ σ (P x)  -- how far can we get without this condition?
-  := by
-  unfold Interpolant
-  have σ_pf := Exists.choose_spec $ Solution_strong fin_X.elems (by simp)
-  intro x
-  have := σ_pf ⟨x, by sorry⟩
-  rcases this with left | right
-  · left
-    exact left
-  · right
-    exact right -- funny thing: exact this doesn't work, but this does :)
+-- theorem Interpolant_prop (𝕏 : Proof) [fin_X : Fintype 𝕏.X] :
+--     ∀ x : 𝕏.X, Interpolant x = extend (@Finset.Subset.rfl _ fin_X.elems) (fun x ↦ Interpolant x.val) (equation x) ∨ (Interpolant x ≅ extend (@Finset.Subset.rfl _ fin_X.elems) (fun x ↦ Interpolant x.val) (equation x))
+--   --  ∧ ∀ x y : 𝕏.X, P y ∉ σ (P x)  -- how far can we get without this condition?
+--   := by
+--   unfold Interpolant
+--   have σ_pf := Exists.choose_spec $ Solution_strong fin_X.elems (by simp)
+--   intro x
+--   have := σ_pf ⟨x, by sorry⟩
+--   rcases this with left | right
+--   · left
+--     exact left
+--   · right
+--     exact right -- funny thing: exact this doesn't work, but this does :)
 
 
 /- Defining Interpolants -/
@@ -331,60 +429,60 @@ end CutPre
 namespace split
 
 
-noncomputable def leftInterpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Sequent
-  := {Interpolant x} ∪ Finset.filterMap Sum.getLeft? (f (r 𝕏.α x)) (by aesop) -- why is Finset.preimage noncomputable?
+-- noncomputable def leftInterpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Sequent
+--   := {Interpolant x} ∪ Finset.filterMap Sum.getLeft? (f (r 𝕏.α x)) (by aesop) -- why is Finset.preimage noncomputable?
 
-noncomputable def rightInterpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Sequent
-  := {~(Interpolant x)} ∪ Finset.preimage (f (r 𝕏.α x)) Sum.inr (by aesop)
-
-
-noncomputable def InterpolantProofFromPremisesLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : CutPre.CutProofFromPremises ((p 𝕏.α x).map leftInterpolant) := by
-  cases rule : (r 𝕏.α x)  -- look at the interpolant form and proceed
-  case topₗ Δ in_Δ =>
-    exact {
-      X := Unit
-      α u := ⟨CutPre.RuleApp.top (leftInterpolant x) (by simp [leftInterpolant, rule, f, in_Δ]), {}⟩ -- : RuleApp × Finset Formula × Multiset X
-      h := by aesop}
-  case topᵣ Δ in_Δ =>
-    exact {
-      X := Unit
-      α u := ⟨CutPre.RuleApp.top (leftInterpolant x) (by
-        simp [leftInterpolant, Interpolant]
-        left
-        sorry
-        ), {}⟩
-      h := by aesop}
-  all_goals
-    sorry
-
-noncomputable def InterpolantProofFromPremisesLeft_node {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : (InterpolantProofFromPremisesLeft x).X := by sorry
+-- noncomputable def rightInterpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Sequent
+--   := {~(Interpolant x)} ∪ Finset.preimage (f (r 𝕏.α x)) Sum.inr (by aesop)
 
 
-theorem InterpolantProofFromPremisesLeft_node_proves {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
-  @CutPre.f ((p 𝕏.α x).map leftInterpolant) (CutPre.r (InterpolantProofFromPremisesLeft x).α (InterpolantProofFromPremisesLeft_node x)) = (leftInterpolant x) := by sorry
+-- noncomputable def InterpolantProofFromPremisesLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : CutPre.CutProofFromPremises ((p 𝕏.α x).map leftInterpolant) := by
+--   cases rule : (r 𝕏.α x)  -- look at the interpolant form and proceed
+--   case topₗ Δ in_Δ =>
+--     exact {
+--       X := Unit
+--       α u := ⟨CutPre.RuleApp.top (leftInterpolant x) (by simp [leftInterpolant, rule, f, in_Δ]), {}⟩ -- : RuleApp × Finset Formula × Multiset X
+--       h := by aesop}
+--   case topᵣ Δ in_Δ =>
+--     exact {
+--       X := Unit
+--       α u := ⟨CutPre.RuleApp.top (leftInterpolant x) (by
+--         simp [leftInterpolant, Interpolant]
+--         left
+--         sorry
+--         ), {}⟩
+--       h := by aesop}
+--   all_goals
+--     sorry
 
-noncomputable def InterpolantProofLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : CutPre.CutProofFromPremises [] :=
-  -- construction of ∏ Cₓ from notes
-  {
-    X := (y : 𝕏.X) × (InterpolantProofFromPremisesLeft y).X
-    α := by  -- change to match?
-      intro ⟨y, z_y⟩
-      -- have := r (InterpolantProofFromPremisesLeft y).α
-      cases (@CutPre.r _ _ (InterpolantProofFromPremisesLeft y).α z_y)
-      case pre Δ in_Δ => -- only interesting case
-        exact ⟨CutPre.RuleApp.skp Δ, (p 𝕏.α y).map (fun x ↦ ⟨x, InterpolantProofFromPremisesLeft_node x⟩)⟩
-      case cut Δ => exact ⟨CutPre.RuleApp.cut Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case wk Δ A in_Δ => exact ⟨CutPre.RuleApp.wk Δ A in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case skp Δ => exact ⟨CutPre.RuleApp.skp Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case top Δ in_Δ => exact ⟨CutPre.RuleApp.top Δ in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case ax Δ n in_Δ => exact ⟨CutPre.RuleApp.ax Δ n in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case and Δ A B in_Δ => exact ⟨CutPre.RuleApp.and Δ A B in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case or Δ A B in_Δ => exact ⟨CutPre.RuleApp.or Δ A B in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case box Δ A in_Δ => exact ⟨CutPre.RuleApp.box Δ A in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+-- noncomputable def InterpolantProofFromPremisesLeft_node {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : (InterpolantProofFromPremisesLeft x).X := by sorry
 
-    h := by sorry}
 
-theorem InterpolantProofLeft_provesInterpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : @InterpolantProofLeft 𝕏 _ ⊢ (leftInterpolant x) := by
-  use ⟨x, InterpolantProofFromPremisesLeft_node x⟩
-  rw [←InterpolantProofFromPremisesLeft_node_proves x]
-  sorry
+-- theorem InterpolantProofFromPremisesLeft_node_proves {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
+--   @CutPre.f ((p 𝕏.α x).map leftInterpolant) (CutPre.r (InterpolantProofFromPremisesLeft x).α (InterpolantProofFromPremisesLeft_node x)) = (leftInterpolant x) := by sorry
+
+-- noncomputable def InterpolantProofLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : CutPre.CutProofFromPremises [] :=
+--   -- construction of ∏ Cₓ from notes
+--   {
+--     X := (y : 𝕏.X) × (InterpolantProofFromPremisesLeft y).X
+--     α := by  -- change to match?
+--       intro ⟨y, z_y⟩
+--       -- have := r (InterpolantProofFromPremisesLeft y).α
+--       cases (@CutPre.r _ _ (InterpolantProofFromPremisesLeft y).α z_y)
+--       case pre Δ in_Δ => -- only interesting case
+--         exact ⟨CutPre.RuleApp.skp Δ, (p 𝕏.α y).map (fun x ↦ ⟨x, InterpolantProofFromPremisesLeft_node x⟩)⟩
+--       case cut Δ => exact ⟨CutPre.RuleApp.cut Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case wk Δ A in_Δ => exact ⟨CutPre.RuleApp.wk Δ A in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case skp Δ => exact ⟨CutPre.RuleApp.skp Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case top Δ in_Δ => exact ⟨CutPre.RuleApp.top Δ in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case ax Δ n in_Δ => exact ⟨CutPre.RuleApp.ax Δ n in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case and Δ A B in_Δ => exact ⟨CutPre.RuleApp.and Δ A B in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case or Δ A B in_Δ => exact ⟨CutPre.RuleApp.or Δ A B in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case box Δ A in_Δ => exact ⟨CutPre.RuleApp.box Δ A in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+
+--     h := by sorry}
+
+-- theorem InterpolantProofLeft_provesInterpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : @InterpolantProofLeft 𝕏 _ ⊢ (leftInterpolant x) := by
+--   use ⟨x, InterpolantProofFromPremisesLeft_node x⟩
+--   rw [←InterpolantProofFromPremisesLeft_node_proves x]
+--   sorry

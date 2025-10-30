@@ -587,17 +587,13 @@ noncomputable def InterpolantProofFromPremisesLeft {𝕏 : Proof} [fin_X : Finty
         α u :=
           match u with
           | 0 => ⟨CutPre.RuleApp.or (leftInterpolant x) A B (by simp [leftInterpolant, rule, f, in_Δ]), [1]⟩
-          | 1 => ⟨CutPre.RuleApp.pre (leftInterpolant y) (by aesop), {}⟩
+          | 1 => ⟨CutPre.RuleApp.pre (({Interpolant 𝕏 (at encodeVar x)} ∪ (f (RuleApp.orₗ Δ A B in_Δ)).left) \ {A v B} ∪ {A, B}) (by sorry), {}⟩
         h := by
           intro n
           match n with
             | 0 => simp only [CutPre.r, CutPre.p, List.map_singleton, CutPre.f, CutPre.fₙ, List.cons.injEq,
-                   and_true, CutPre.fₚ, leftInterpolant, step, eq, equation] --List.getElem_map, leftInterpolant, and_true]
+                   and_true, CutPre.fₚ, leftInterpolant, eq, equation] --List.getElem_map, leftInterpolant, and_true]
                    split <;> simp_all only [reduceCtorEq]
-                   split <;> simp_all only [List.cons.injEq, and_true, List.ne_cons_self, List.cons_ne_nil, and_false]
-                   ext
-                   simp
-                   sorry -- this isnt so simple as tauto, have to show that A, B, A ∨ B are not the interpolant
             | 1 => simp [CutPre.r, CutPre.p]
         }
     | .orᵣ Δ A B in_Δ => by
@@ -605,7 +601,7 @@ noncomputable def InterpolantProofFromPremisesLeft {𝕏 : Proof} [fin_X : Finty
       simp only [rule, List.map_eq_singleton_iff] at this
       exact {
         X := Unit
-        α u := ⟨CutPre.RuleApp.pre (leftInterpolant y) (by aesop), {}⟩
+        α u := ⟨CutPre.RuleApp.pre (leftInterpolant x) (by sorry), {}⟩
         h := by simp [CutPre.r, CutPre.p]
         }
     | _ => sorry -- another Interpolant x = ... thing

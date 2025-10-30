@@ -1,7 +1,7 @@
 name = "MasterThesis"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["MasterThesis"]
+defaultTargets = ["GL"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`

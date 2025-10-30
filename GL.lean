@@ -1,6 +1,6 @@
-import GL.CoalgebraProof
-import GL.Graphviz
 import GL.Logic
+import GL.CoalgebraProof
+import GL.Interpolation
 import GL.SplitCoalgebraProof
 
 -- This module serves as the root of the `MasterThesis` library.

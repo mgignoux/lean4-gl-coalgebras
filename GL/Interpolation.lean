@@ -546,34 +546,34 @@ theorem InterpolantProofFromPremisesLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
       sorry
   case inr => sorry -- same thing but with cut used first
 
-noncomputable def InterpolantProofFromPremisesLeft_node {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : (InterpolantProofFromPremisesLeft x).X := by sorry
+-- noncomputable def InterpolantProofFromPremisesLeft_node {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : (InterpolantProofFromPremisesLeft x).X := by sorry
 
 
-theorem InterpolantProofFromPremisesLeft_node_proves {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
-  @CutPre.f ((p 𝕏.α x).map leftInterpolant) (CutPre.r (InterpolantProofFromPremisesLeft x).α (InterpolantProofFromPremisesLeft_node x)) = (leftInterpolant x) := by sorry
+-- theorem InterpolantProofFromPremisesLeft_node_proves {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
+--   @CutPre.f ((p 𝕏.α x).map leftInterpolant) (CutPre.r (InterpolantProofFromPremisesLeft x).α (InterpolantProofFromPremisesLeft_node x)) = (leftInterpolant x) := by sorry
 
-noncomputable def InterpolantProofLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : CutPre.CutProofFromPremises [] :=
-  -- construction of ∏ Cₓ from notes
-  {
-    X := (y : 𝕏.X) × (InterpolantProofFromPremisesLeft y).X
-    α := by  -- change to match?
-      intro ⟨y, z_y⟩
-      -- have := r (InterpolantProofFromPremisesLeft y).α
-      cases (@CutPre.r _ _ (InterpolantProofFromPremisesLeft y).α z_y)
-      case pre Δ in_Δ => -- only interesting case
-        exact ⟨CutPre.RuleApp.skp Δ, (p 𝕏.α y).map (fun x ↦ ⟨x, InterpolantProofFromPremisesLeft_node x⟩)⟩
-      case cut Δ => exact ⟨CutPre.RuleApp.cut Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case wk Δ A in_Δ => exact ⟨CutPre.RuleApp.wk Δ A in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case skp Δ => exact ⟨CutPre.RuleApp.skp Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case top Δ in_Δ => exact ⟨CutPre.RuleApp.top Δ in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case ax Δ n in_Δ => exact ⟨CutPre.RuleApp.ax Δ n in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case and Δ A B in_Δ => exact ⟨CutPre.RuleApp.and Δ A B in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case or Δ A B in_Δ => exact ⟨CutPre.RuleApp.or Δ A B in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-      case box Δ A in_Δ => exact ⟨CutPre.RuleApp.box Δ A in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+-- noncomputable def InterpolantProofLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : CutPre.CutProofFromPremises [] :=
+--   -- construction of ∏ Cₓ from notes
+--   {
+--     X := (y : 𝕏.X) × (InterpolantProofFromPremisesLeft y).X
+--     α := by  -- change to match?
+--       intro ⟨y, z_y⟩
+--       -- have := r (InterpolantProofFromPremisesLeft y).α
+--       cases (@CutPre.r _ _ (InterpolantProofFromPremisesLeft y).α z_y)
+--       case pre Δ in_Δ => -- only interesting case
+--         exact ⟨CutPre.RuleApp.skp Δ, (p 𝕏.α y).map (fun x ↦ ⟨x, InterpolantProofFromPremisesLeft_node x⟩)⟩
+--       case cut Δ => exact ⟨CutPre.RuleApp.cut Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case wk Δ A in_Δ => exact ⟨CutPre.RuleApp.wk Δ A in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case skp Δ => exact ⟨CutPre.RuleApp.skp Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case top Δ in_Δ => exact ⟨CutPre.RuleApp.top Δ in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case ax Δ n in_Δ => exact ⟨CutPre.RuleApp.ax Δ n in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case and Δ A B in_Δ => exact ⟨CutPre.RuleApp.and Δ A B in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case or Δ A B in_Δ => exact ⟨CutPre.RuleApp.or Δ A B in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+--       case box Δ A in_Δ => exact ⟨CutPre.RuleApp.box Δ A in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
 
-    h := by sorry}
+--     h := by sorry}
 
-theorem InterpolantProofLeft_provesInterpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : @InterpolantProofLeft 𝕏 _ ⊢ (leftInterpolant x) := by
-  use ⟨x, InterpolantProofFromPremisesLeft_node x⟩
-  rw [←InterpolantProofFromPremisesLeft_node_proves x]
-  sorry
+-- theorem InterpolantProofLeft_provesInterpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : @InterpolantProofLeft 𝕏 _ ⊢ (leftInterpolant x) := by
+--   use ⟨x, InterpolantProofFromPremisesLeft_node x⟩
+--   rw [←InterpolantProofFromPremisesLeft_node_proves x]
+--   sorry

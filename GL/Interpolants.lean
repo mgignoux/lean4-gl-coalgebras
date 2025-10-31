@@ -227,6 +227,45 @@ theorem Solution_strong_helper {p : Nat → Prop} [DecidablePred p] (σ : Subtyp
   case box A ih => simp [partial_, single, ih]
   case diamond A ih => simp [partial_, single, ih]
 
+noncomputable section
+theorem finite_and_no_loop_implies_exists_leaf {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (h : 𝕏.X → Prop) (x : 𝕏.X) (x_sat : h x):
+(¬ ∃ y, Relation.TransGen (edge_restr h) y y)
+    → ∃ y : 𝕏.X, h y ∧ ∀ z ∈ (p 𝕏.α y), ¬ h z := by
+  intro mp
+  by_contra con
+  simp_all
+  let chain : Nat → {x : 𝕏.X // h x} := Nat.rec ⟨x, x_sat⟩ (fun n ih => ⟨(con ih.1 ih.2).choose, (con ih.1 ih.2).choose_spec.2⟩)
+  have chain_prop : ∀ n, (edge_restr h) (chain n).1 (chain (n + 1)).1 := by
+    intro n
+    induction n <;> simp [edge_restr, chain]
+    case zero =>
+      exact ⟨(Exists.choose_spec (con x x_sat)).1 , x_sat, (Exists.choose_spec (con x x_sat)).2⟩
+    case succ n ih =>
+      exact ⟨(Exists.choose_spec (con (chain (n + 1)).1 (chain (n + 1)).2)).1, ih.2.2, (Exists.choose_spec (con (chain (n + 1)) ih.2.2)).2⟩
+  -- we now have an infinite chain, so we just so it is injective
+  have ci_cj : ∀ k n, Relation.TransGen (edge_restr h) (chain k).1 (chain (k + n + 1)).1 := by
+    intro m n
+    induction n
+    case zero => exact Relation.TransGen.single (chain_prop _)
+    case succ k ih => exact Relation.TransGen.tail ih (chain_prop (m + k + 1))
+  have chain_inj : Function.Injective chain := by
+    intro i j con
+    rcases Nat.lt_trichotomy i j with lt | eq | gt
+    · exfalso
+      apply mp (chain i).1
+      have ⟨k, diff⟩ := Nat.exists_eq_add_of_lt lt
+      convert ci_cj i k
+      simp [con, diff]
+    · exact eq
+    · exfalso
+      apply mp (chain i).1
+      have ⟨k, diff⟩ := Nat.exists_eq_add_of_lt gt
+      convert ci_cj j k
+      simp [diff]
+  have inf_X := Infinite.of_injective chain chain_inj
+  apply inf_X.not_finite
+  apply Subtype.finite
+
 set_option maxHeartbeats 900000
 theorem Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
   (Y : Finset 𝕏.X) (Y_sub : Y ⊆ fin_X.elems) :
@@ -254,9 +293,10 @@ theorem Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
 
       sorry
 
-    case neg => -- if there is no loop then find a leaf in ↑y
-
-      have ⟨leaf, leaf_in, leaf_prop⟩ : ∃ l ∈ Y, (p 𝕏.α l).toFinset ∩ Y = ∅ := by sorry
+    case neg h => -- if there is no loop then find a leaf in ↑y
+      simp at Y_ne
+      have ⟨y, in_Y⟩ : ∃ y, y ∈ Y := by by_contra h; apply Y_ne; apply Finset.eq_empty_of_forall_notMem; simp_all
+      have ⟨leaf, leaf_in, leaf_prop⟩ := finite_and_no_loop_implies_exists_leaf (fun x ↦ x ∈ Y) y in_Y h
       have ⟨τ, τ_prop⟩ := Solution_strong (Y \ {leaf}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
       use fun n ↦ (single (encodeVar leaf) (equation leaf)) (partial_ τ (at n))
 
@@ -265,7 +305,11 @@ theorem Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
       case pos y_eq_leaf =>
         subst y_eq_leaf
         refine ⟨Or.inl ?_, by simp⟩
-        have  h : ¬ encodeVar leaf ∈ Finset.image encodeVar (Y \ {leaf}) := by sorry
+        have  h : ¬ encodeVar leaf ∈ Finset.image encodeVar (Y \ {leaf}) := by
+          simp
+          intro x x_in hyp con
+          apply hyp
+          exact encodeVar_inj 𝕏  con
         simp [partial_, h, single, encodeVar_inv]
         apply partial_const
         intro n n_in
@@ -275,9 +319,7 @@ theorem Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
         rw [←z_prop.2] at n_in
         have y_z := encodeVar_in_equation_imp_pred n_in
         -- this is a contradiction, z is in p α y, and z ∈ Y, so leaf_prop cannot hold
-        apply Finset.eq_empty_iff_forall_notMem.1 leaf_prop z
-        simp only [Finset.mem_inter, List.mem_toFinset]
-        exact ⟨y_z, z_prop.1⟩
+        exact leaf_prop z y_z z_prop.1
 
       case neg y_ne_leaf =>
         have y_in : y ∈ Finset.image encodeVar (Y \ {leaf}) := by
@@ -294,12 +336,26 @@ theorem Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
         · refine ⟨Or.inl ?_, by simp⟩ -- recover the other goal here later
           simp only [eq] -- for some reason you can comment this and it still works??
           convert @Solution_strong_helper (fun n ↦ n ∈ Finset.image encodeVar (Y \ {leaf})) _ τ (encodeVar leaf) (equation leaf) (equation (unencodeVar y (helper_1 y_in)))
-          · sorry
+          · simp [Finset.image_sdiff _ _ (encodeVar_inj 𝕏)]
+            clear *- leaf_in
+            rename_i x
+            refine ⟨?_, by tauto⟩
+            intro ⟨a, a_prop⟩
+            by_cases a = leaf <;> try simp_all
+            left
+            refine ⟨⟨a, a_prop⟩, by rw [←a_prop.2]; apply Function.Injective.ne (encodeVar_inj 𝕏) (by assumption)⟩
         · refine ⟨Or.inr ?_, by simp⟩ -- recover the other goal here later
           have := single_preserves_equiv (encodeVar leaf) (equation leaf) _ _ equiv
           apply equiv_help this
           convert @Solution_strong_helper (fun n ↦ n ∈ Finset.image encodeVar (Y \ {leaf})) _ τ (encodeVar leaf) (equation leaf) (equation (unencodeVar y (helper_1 y_in)))
-          · sorry
+          · simp [Finset.image_sdiff _ _ (encodeVar_inj 𝕏)]
+            clear *- leaf_in
+            rename_i x
+            refine ⟨?_, by tauto⟩
+            intro ⟨a, a_prop⟩
+            by_cases a = leaf <;> try simp_all
+            left
+            refine ⟨⟨a, a_prop⟩, by rw [←a_prop.2]; apply Function.Injective.ne (encodeVar_inj 𝕏) (by assumption)⟩
 
 termination_by Finset.card Y
 decreasing_by
@@ -349,5 +405,3 @@ theorem Interpolant_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
     · have h : encodeVar x ∈ Finset.image encodeVar fin_X.elems := by simp [Fintype.complete]
       simp [partial_, h]
     · simp only [and_true, Subtype.forall, Finset.mem_image, forall_exists_index]
-
-end split

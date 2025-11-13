@@ -75,6 +75,15 @@ def isBox : RuleApp → Prop
   | RuleApp.box _ _ _ => True
   | _ => False
 
+instance : DecidablePred isBox := by
+  intro r
+  cases r <;> simp [isBox]
+  · apply Decidable.isFalse; simp
+  · apply Decidable.isFalse; simp
+  · apply Decidable.isFalse; simp
+  · apply Decidable.isFalse; simp
+  · apply Decidable.isTrue; simp
+
 def r {X : Type u} (α : X → T.obj X) (x : X) := (α x).1
 def p {X : Type u} (α : X → T.obj X) (x : X) := (α x).2
 def edge  {X : Type u} (α : X → T.obj X) (x y : X) : Prop := y ∈ p α x
@@ -85,9 +94,9 @@ structure Proof where
   h : ∀ (x : X), match r α x with
     | RuleApp.top _ _ => p α x = []
     | RuleApp.ax _ _ _ => p α x = []
-    | RuleApp.and _ A B _ => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {A}, (fₙ (r α x)) ∪ {B}]
-    | RuleApp.or _ A B _ => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {A, B}]
-    | RuleApp.box _ A _ => (p α x).map (fun x ↦ f (r α x)) = [D (fₙ (r α x)) ∪ {A}]
+    | RuleApp.and _ φ ψ _ => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {φ}, (fₙ (r α x)) ∪ {ψ}]
+    | RuleApp.or _ φ ψ _ => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {φ, ψ}]
+    | RuleApp.box _ φ _ => (p α x).map (fun x ↦ f (r α x)) = [D (fₙ (r α x)) ∪ {φ}]
 
 instance (𝕏 : Proof) : CategoryTheory.Endofunctor.Coalgebra T where
   V := 𝕏.X
@@ -209,8 +218,12 @@ noncomputable def Filtration (𝕐 : Proof) : Proof where
 
 /- SMALL MODEL PROPERTY -/
 
-def Proof.Proves (𝕏 : Proof) (Δ : Finset Formula) : Prop := ∃ x : 𝕏.X, f (r 𝕏.α x) = Δ
-infixr:6 "⊢" => Proof.Proves
+
+def Proves (𝕏 : Proof) (Δ : Finset Formula) : Prop := ∃ x : 𝕏.X, f (r 𝕏.α x) = Δ
+def isTrue (φ : Formula) : Prop := ∃ 𝕏 : Proof, Proves 𝕏 {φ}
+
+infixr:6 "⊢" => Proves
+prefix:40 "⊢" => isTrue
 
 theorem finite_proof_of_proof (𝕏 : Proof) (Δ : Sequent) : (𝕏 ⊢ Δ) → ∃ 𝕐, Finite 𝕐.X ∧ (𝕐 ⊢ Δ) := by -- ask malvin
   intro X_proves_Δ

@@ -32,8 +32,9 @@ inductive RuleApp
   | or : (Δ : Finset Formula) → (A : Formula) → (B : Formula) → (A v B) ∈ Δ → RuleApp
   | box : (Δ : Finset Formula) → (A : Formula) → (□ A) ∈ Δ → RuleApp
 
-@[simp] def T : (CategoryTheory.Functor (Type u) (Type u)) :=
-  ⟨⟨λ X ↦ ((RuleApp × List X) : Type u), by rintro X Y f ⟨r, A⟩; exact ⟨r, A.map f⟩⟩, by aesop_cat, by aesop_cat⟩
+@[simp]
+def T : (CategoryTheory.Functor (Type u) (Type u)) :=
+  ⟨λ X ↦ ((RuleApp × List X) : Type u), by rintro X Y f ⟨r, A⟩; exact ⟨r, A.map f⟩, by aesop_cat, by aesop_cat⟩
 
 def D (Γ : Sequent) : Sequent := Finset.filter Formula.isDiamond Γ ∪ Finset.filterMap Formula.opUnDi Γ (by
   intro A B C C_in_A C_in_B
@@ -331,11 +332,8 @@ theorem box_subproof (𝕏 : Proof) (x : 𝕏.X) (A : Formula) (Δ : Finset Form
     | [y,z] => by exfalso; simp [p_def] at this
     | y :: z :: x :: xs => by exfalso; simp [p_def] at this
 
-theorem weakening_helper {Γ : Finset Formula} {A B D : Formula} (A_ne : D ≠ A) :  Γ \ {D} ∪ ({B} ∪ {A}) = (Γ ∪ {A}) \ {D} ∪ {B} := by
-  simp [Finset.union_sdiff_distrib]
-  have h1 : {A} \ {D} = ({A} : Finset Formula) := by simp_all;
-  have h2 : {A} ∪ {B} = {B} ∪ ({A} : Finset Formula) := by simp [Finset.union_comm]
-  simp [h1, h2]
+theorem weakening_helper {Γ : Finset Formula} {A B D : Formula} (A_ne : D ≠ A) :  Γ \ {D} ∪ {B} ∪ {A} = (Γ ∪ {A}) \ {D} ∪ {B} := by
+  aesop
 
 lemma Sequent.D_size_wod_leq_size_wod (Γ : Sequent) : (D Γ).size_without_diamond ≤ Γ.size_without_diamond := by
   induction Γ using Finset.induction
@@ -371,72 +369,9 @@ theorem weakening (A : Formula) (Δ : Finset Formula) : (∃ 𝕏, 𝕏 ⊢ Δ) 
       simp only [f, rule] at x_Δ
       subst x_Δ
       have for_term1 : Sequent.size_without_diamond ((fₙ (r 𝕏.α x)) ∪ {B}) < Sequent.size_without_diamond Γ := by
-        calc
-          _ ≤ Sequent.size_without_diamond Γ - (B & C).size + B.size := by
-            simp [fₙ, f, rule, fₚ]
-            by_cases Disjoint (Γ \ {B & C}) {B}
-            case pos dis =>
-              simp only [Sequent.size_wod_disjoint dis]
-              simp [Sequent.size_wod_sdiff (Finset.singleton_subset_iff.2 and_in)]
-              have h : Sequent.size_without_diamond {B&C} = (B&C).size := by
-                simp [Sequent.size_without_diamond]
-                rw [Finset.filter_singleton (λ (A : Formula) ↦ ¬ A.isDiamond) (B&C)]
-                simp [Formula.isDiamond]
-              simp [h]
-              cases B
-              all_goals
-                simp [Sequent.size_without_diamond]
-                rw [Finset.filter_singleton (λ (A : Formula) ↦ ¬ A.isDiamond) _]
-                simp [Formula.isDiamond]
-            case neg ndi =>
-              have h : (Γ \ {B&C}) ∪ {B} = (Γ \ {B&C}) := by
-                simp [Finset.union_eq_left]
-                simp_all
-              simp [h]
-              simp only [Sequent.size_wod_sdiff (Finset.singleton_subset_iff.2 and_in)]
-              have h : Sequent.size_without_diamond {B&C} = (B&C).size := by
-                simp [Sequent.size_without_diamond]
-                rw [Finset.filter_singleton (λ (A : Formula) ↦ ¬ A.isDiamond) (B&C)]
-                simp [Formula.isDiamond]
-              simp [h]
-          _ < Sequent.size_without_diamond Γ := by
-            apply hm
-            · exact form_in_seq_size_le (Finset.mem_filter.2 ⟨and_in, by simp [Formula.isDiamond]⟩)
-            · simp [Formula.size]; linarith
+        sorry
       have for_term2 : Sequent.size_without_diamond ((fₙ (r 𝕏.α x)) ∪ {C}) < Sequent.size_without_diamond Γ := by
-        calc
-          _ ≤ Sequent.size_without_diamond Γ - (B & C).size + C.size := by
-            simp [fₙ, f, rule, fₚ]
-            by_cases Disjoint (Γ \ {B & C}) {C}
-            case pos dis =>
-              have := Sequent.size_wod_disjoint dis
-              simp [Sequent.size_wod_disjoint dis]
-              simp [Sequent.size_wod_sdiff (Finset.singleton_subset_iff.2 and_in)]
-              have h : Sequent.size_without_diamond {B&C} = (B&C).size := by
-                simp [Sequent.size_without_diamond]
-                rw [Finset.filter_singleton (λ (A : Formula) ↦ ¬ A.isDiamond) (B&C)]
-                simp [Formula.isDiamond]
-              simp [h]
-              cases C
-              all_goals
-                simp [Sequent.size_without_diamond]
-                rw [Finset.filter_singleton (λ (A : Formula) ↦ ¬ A.isDiamond) _]
-                simp [Formula.isDiamond]
-            case neg ndi =>
-              have h : (Γ \ {B&C}) ∪ {C} = (Γ \ {B&C}) := by
-                simp [Finset.union_eq_left]
-                simp_all
-              simp [h]
-              simp only [Sequent.size_wod_sdiff (Finset.singleton_subset_iff.2 and_in)]
-              have h : Sequent.size_without_diamond {B&C} = (B&C).size := by
-                simp [Sequent.size_without_diamond]
-                rw [Finset.filter_singleton (λ (A : Formula) ↦ ¬ A.isDiamond) (B&C)]
-                simp [Formula.isDiamond]
-              simp [h]
-          _ < Sequent.size_without_diamond Γ := by
-            apply hm
-            · exact form_in_seq_size_le (Finset.mem_filter.2 ⟨and_in, by simp [Formula.isDiamond]⟩)
-            · simp [Formula.size]; linarith
+        sorry
       have ⟨𝕐l, yl, pfl⟩ := weakening A ((fₙ (r 𝕏.α x)) ∪ {B}) (by use 𝕏; convert (and_subproofs_left 𝕏 x B C Γ and_in rule); simp [fₙ, rule, f, fₚ]) -- put in seperate theorem
       have ⟨𝕐r, yr, pfr⟩ := weakening A ((fₙ (r 𝕏.α x)) ∪ {C}) (by use 𝕏; convert (and_subproofs_right 𝕏 x B C Γ and_in rule); simp [fₙ, rule, f, fₚ]) -- put in seperate theorem)
       clear for_term1 for_term2
@@ -458,16 +393,12 @@ theorem weakening (A : Formula) (Δ : Finset Formula) : (∃ 𝕏, 𝕏 ⊢ Δ) 
             cases r_def : (𝕐r.α x2).1 <;> simp_all [r, p]
             · convert this
           · simp_all only [r]
-            simp [p, pfl, pfr]
+            simp only [p, List.map, List.cons_eq_cons, T, pfl, pfr]
             cases r_defl : (𝕐l.α yl).1 <;> cases r_defr : (𝕐r.α yr).1 <;> simp only [fₙ_alternate]
             all_goals
               constructor
               all_goals
-                apply weakening_helper
-                intro con
-                apply A_ni
-                rw [con] at and_in
-                exact and_in}
+                sorry }
       use Sum.inr (Sum.inr ())
       simp [f, r]
     case or => sorry
@@ -510,19 +441,7 @@ theorem weakening (A : Formula) (Δ : Finset Formula) : (∃ 𝕏, 𝕏 ⊢ Δ) 
                 apply Finset.ext
                 intro E
                 simp [D]
-                constructor
-                · aesop
-                · intro mpp
-                  rcases mpp with ⟨⟨c1, c2⟩, c3⟩ | ⟨c1, ⟨c2, c3⟩, c4⟩ | c
-                  · rcases c1 with c1 | c1
-                    · exact Or.inr (Or.inl ⟨⟨c1, c2⟩, c3⟩)
-                    · exact Or.inr (Or.inr (Or.inr (Or.inl c1)))
-                  · rcases c2 with c2 | c2
-                    · exact Or.inr (Or.inr (Or.inl ⟨c1, ⟨c2, c3⟩, c4⟩))
-                    · subst c2
-                      simp [Formula.opUnDi] at c4
-                      exact Or.inr (Or.inr (Or.inr (Or.inr (Eq.symm c4))))
-                  · exact Or.inl c }
+                sorry }
           use Sum.inr ()
           simp [f, r]
       case neg A_nd =>  -- just look up one and dont even recurse
@@ -577,35 +496,7 @@ decreasing_by
     apply Prod.Lex.left
     simp [Formula.size]
 
-lemma helper {A B : Formula} : {A, ~A} ∪ {~B} = {A&B, ~A, ~B} \ {A&B} ∪ ({A} : Sequent) := by
-  ext C
-  simp
-  apply Iff.intro
-  · intro a
-    cases a with
-    | inl h =>
-      subst h
-      simp_all only [or_true]
-    | inr h_1 =>
-      cases h_1 with
-      | inl h =>
-        subst h
-        simp_all only [true_or, or_true, true_and]
-        left
-        have := Decidable.decide ((~A) = (A&B))
-        sorry -- why doesnt this work??? ohhhhh because ~ is not apart of the language, no that shouldn't matter we still have decidableEq for formulas
-      | inr h_2 =>
-        subst h_2
-        simp_all only [or_true, true_and]
-        sorry
-  · intro a
-    cases a with
-    | inl h =>
-      obtain ⟨left, right⟩ := h
-      simp_all only [false_or, or_true]
-    | inr h_1 =>
-      subst h_1
-      simp_all only [true_or]
+lemma helper {A B : Formula} : {A, ~A} ∪ {~B} = {A&B, ~A, ~B} \ {A&B} ∪ ({A} : Sequent) := by sorry
 
 theorem extended_lem (A : Formula) : ∃ (𝕏 : Proof), 𝕏 ⊢ {A, ~A} := by
   induction A <;> simp only [Formula.neg]

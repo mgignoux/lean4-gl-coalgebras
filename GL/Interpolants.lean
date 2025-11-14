@@ -399,9 +399,16 @@ theorem Interpolant_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
     refine eq_chain l ?_ ?_
     · have h : encodeVar x ∈ Finset.image encodeVar fin_X.elems := by simp [Fintype.complete]
       simp [partial_, h]
-    · simp only [and_true, Subtype.forall, Finset.mem_image, forall_exists_index]
+    · apply congrArg₂
+      · simp only [and_true, Subtype.forall, Finset.mem_image, forall_exists_index,
+        forall_and_index]
+      · rfl
+
   · right
     refine eq_chain r ?_ ?_
     · have h : encodeVar x ∈ Finset.image encodeVar fin_X.elems := by simp [Fintype.complete]
       simp [partial_, h]
-    · simp only [and_true, Subtype.forall, Finset.mem_image, forall_exists_index]
+    · apply congrArg₂
+      · simp only [and_true, Subtype.forall, Finset.mem_image, forall_exists_index,
+        forall_and_index]
+      · rfl

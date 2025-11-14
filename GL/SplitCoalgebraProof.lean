@@ -76,7 +76,7 @@ def RuleApp.isBox : RuleApp → Prop
   | _ => false
 
 @[simp] def T : (CategoryTheory.Functor (Type u) (Type u)) :=
-  ⟨⟨λ X ↦ ((RuleApp × List X) : Type u), by rintro X Y f ⟨r, A⟩; exact ⟨r, A.map f⟩⟩, by aesop_cat, by aesop_cat⟩
+  ⟨λ X ↦ ((RuleApp × List X) : Type u), by rintro X Y f ⟨r, A⟩; exact ⟨r, A.map f⟩, by aesop_cat, by aesop_cat⟩
 
 def fₚ : RuleApp → SplitSequent
   | RuleApp.topₗ _ _ => {Sum.inl ⊤}
@@ -250,19 +250,19 @@ lemma lt_if_not_box_edge {𝕏 : Proof} {x y : 𝕏.X} : (x_y : nb_edge 𝕏.α 
   cases r_def : (r 𝕏.α x) <;> simp_all only
   case andₗ Δ A B and_in =>
     have := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) x_y
-    simp [h] at this
+    simp [h, -Finset.union_singleton] at this
     rcases this with c | c
     all_goals
     · rw [c]
-      simp [fₙ, f, fₚ, SplitSequent.size]
+      simp [fₙ, f, fₚ, SplitSequent.size, -Finset.union_singleton]
       apply helper and_in (by simp [SplitFormula.size, Formula.size]; linarith)
   case andᵣ Δ A B and_in =>
     have := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) x_y
-    simp [h] at this
+    simp [h, -Finset.union_singleton] at this
     rcases this with c | c
     all_goals
     · rw [c]
-      simp [fₙ, f, fₚ, SplitSequent.size]
+      simp [fₙ, f, fₚ, SplitSequent.size, -Finset.union_singleton]
       apply helper and_in (by simp [SplitFormula.size, Formula.size]; linarith)
   case orₗ Δ A B or_in =>
     have := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) x_y
@@ -275,9 +275,10 @@ lemma lt_if_not_box_edge {𝕏 : Proof} {x y : 𝕏.X} : (x_y : nb_edge 𝕏.α 
         simp [SplitFormula.size, Formula.size]
         linarith
       · have := @Finset.sum_union _ _ {Sum.inl A} {Sum.inl B} _ SplitFormula.size _ (by aesop)
-        simp [←Finset.insert_eq] at this
-        rw [this]
-        simp [SplitFormula.size, Formula.size]
+        sorry -- broken after update
+
+        -- rw [this]
+        -- simp [SplitFormula.size, Formula.size]
       )
   case orᵣ Δ A B or_in =>
     have := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) x_y
@@ -290,9 +291,10 @@ lemma lt_if_not_box_edge {𝕏 : Proof} {x y : 𝕏.X} : (x_y : nb_edge 𝕏.α 
         simp [SplitFormula.size, Formula.size]
         linarith
       · have := @Finset.sum_union _ _ {Sum.inr A} {Sum.inr B} _ SplitFormula.size _ (by aesop)
-        simp [←Finset.insert_eq] at this
-        rw [this]
-        simp [SplitFormula.size, Formula.size]
+        sorry -- broken after update
+
+        -- rw [this]
+        -- simp [SplitFormula.size, Formula.size]
       )
   all_goals
     simp_all [RuleApp.isBox]

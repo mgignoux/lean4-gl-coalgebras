@@ -43,7 +43,7 @@ def fₙ {P : List Sequent} : RuleApp P → Finset Formula := fun r ↦ f r \ f�
 
 universe u
 @[simp] def T (P : List Sequent) : (CategoryTheory.Functor (Type u) (Type u)) :=
-  ⟨⟨λ X ↦ ((RuleApp P × List X) : Type u), by rintro X Y f ⟨r, A⟩; exact ⟨r, A.map f⟩⟩, by aesop_cat, by aesop_cat⟩
+  ⟨λ X ↦ ((RuleApp P × List X) : Type u), by rintro X Y f ⟨r, A⟩; exact ⟨r, A.map f⟩, by aesop_cat, by aesop_cat⟩
 
 def r {X : Type u} {P : List Sequent} (α : X → (T P).obj X) (x : X) := (α x).1
 def p {X : Type u} {P : List Sequent} (α : X → (T P).obj X) (x : X) := (α x).2

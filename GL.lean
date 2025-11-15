@@ -1,3 +1,4 @@
+import GL.AxiomBlame
 import GL.Logic
 import GL.CoalgebraProof
 import GL.SplitCoalgebraProof

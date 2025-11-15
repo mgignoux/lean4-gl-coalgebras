@@ -17,13 +17,12 @@ lemma hm {a b c : ℕ} : b ≤ a → (c < b) → (a - b) + c < a := by grind onl
 
 lemma helper {α : Type} [DecidableEq α] {A C : Finset α} {b : α} {f : α → Nat}
   : b ∈ A → C.sum f < f b → Finset.sum ((A \ {b}) ∪ C) f < Finset.sum A f := by
-
   intro b_in_A C_lt_B
   calc
-    _ ≤ Finset.sum (A \ {b}) f + Finset.sum C f := by sorry -- another lemma for this?
+    _ ≤ Finset.sum (A \ {b}) f + Finset.sum C f := by
+     simp [Sequent.jfef $ @Finset.sum_union_inter _ _ (A \ {b}) C _ f _]
     _ = Finset.sum A f - Finset.sum {b} f + Finset.sum C f := by
       simp [Sequent.jfef $ @Finset.sum_sdiff α Nat {b} A _ f _ (Finset.singleton_subset_iff.2 b_in_A)]
-
     _ < Finset.sum A f := by
       apply hm
       · exact (Finset.sum_le_sum_of_subset_of_nonneg (Finset.singleton_subset_iff.2 b_in_A) (by simp))
@@ -236,10 +235,10 @@ noncomputable def Filtration (𝕐 : Proof) : Proof where
 
 
 def Proves (𝕏 : Proof) (Δ : Finset Formula) : Prop := ∃ x : 𝕏.X, f (r 𝕏.α x) = Δ
-def isTrue (φ : Formula) : Prop := ∃ 𝕏 : Proof, Proves 𝕏 {φ}
+def Formula.isTrue (φ : Formula) : Prop := ∃ 𝕏 : Proof, Proves 𝕏 {φ}
 
 infixr:6 "⊢" => Proves
-prefix:40 "⊢" => isTrue
+prefix:40 "⊢" => Formula.isTrue
 
 theorem finite_proof_of_proof (𝕏 : Proof) (Δ : Sequent) : (𝕏 ⊢ Δ) → ∃ 𝕐, Finite 𝕐.X ∧ (𝕐 ⊢ Δ) := by -- ask malvin
   intro X_proves_Δ

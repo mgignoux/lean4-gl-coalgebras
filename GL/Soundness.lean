@@ -7,6 +7,7 @@ import GL.Semantics
 import GL.CoalgebraProof
 import GL.AxiomBlame
 
+open Classical
 noncomputable def chain
   {𝕏 : Proof}
   {x : 𝕏.X}
@@ -38,7 +39,6 @@ noncomputable def chain
         | .and Δ φ₁ φ₂ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y,z] =>
             have := not_and_or.1 $ fun x ↦ (not_exists.1 w_ih_prop) (φ₁ & φ₂) ⟨(r_def ▸ in_Δ), x⟩
-            have h : Decidable ¬Evaluate (M, w_ih) φ₁ := by sorry -- last remaining sorry?
             if w_ih_nφ₁ : ¬Evaluate (M, w_ih) φ₁
             then
               ⟨y, w_ih, by

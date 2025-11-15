@@ -5,6 +5,7 @@ import Mathlib.Data.Set.Lattice
 import GL.Logic
 import GL.Semantics
 import GL.CoalgebraProof
+import GL.AxiomBlame
 
 noncomputable def chain
   {𝕏 : Proof}
@@ -89,14 +90,20 @@ noncomputable def chain
                 constructor
                 · exact w_next_prop.2
                 · simp [D]
-                  intro χ χ_in
-                  sorry
-
+                  simp [Evaluate_seq, r_def, f] at w_ih_prop
+                  intro χ χ_in con
+                  rcases χ_in with ⟨⟨χ_in, χ_not_box_φ⟩, χ_di⟩ | diχ_Δ
+                  · apply w_ih_prop _ χ_in
+                    cases χ <;> simp [Formula.isDiamond] at χ_di
+                    case diamond χ' =>
+                      have ⟨u, w_next_u, u_χ'⟩ := con
+                      exact ⟨u, M.trans w_next_prop.1 w_next_u, u_χ'⟩
+                  · exact w_ih_prop _ diχ_Δ ⟨w_next, w_next_prop.1, con⟩
               ⟨y, w_next, h⟩
           | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
           | x::y::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
 
-lemma chain_prop   {𝕏 : Proof}
+lemma chain_proof_prop   {𝕏 : Proof}
   {x : 𝕏.X}
   {φ : Formula}
   (prop : f (r 𝕏.α x) = {φ})
@@ -106,18 +113,113 @@ lemma chain_prop   {𝕏 : Proof}
   (w_prop : ¬Evaluate (M, w) φ)
   : ∀ n, edge 𝕏.α (chain prop w_prop n).1 (chain prop w_prop (n + 1)).1 := by
     intro n
-    -- rcases n with _ | k
     conv =>
       congr
       · skip
       · skip
       · unfold chain
-    simp only [Evaluate_seq, dite_not, Classical.not_imp]
     rcases chain prop w_prop n with ⟨x_ih, w_ih, w_ih_prop⟩
-    simp only
     cases r 𝕏.α (chain prop w_prop n).fst
     all_goals
       grind [edge]
+
+lemma chain_model_prop {𝕏 : Proof}
+  {x : 𝕏.X}
+  {φ : Formula}
+  (prop : f (r 𝕏.α x) = {φ})
+  {W : Type}
+  {M : Model W}
+  {w : W}
+  (w_prop : ¬Evaluate (M, w) φ)
+  : ∀ n, (¬ (r 𝕏.α (chain prop w_prop n).1).isBox → (chain prop w_prop n).2.1 = (chain prop w_prop (n + 1)).2.1)
+       ∧ (  (r 𝕏.α (chain prop w_prop n).1).isBox → M.R (chain prop w_prop n).2.1 (chain prop w_prop (n + 1)).2.1)
+  := by
+  intro n
+  constructor
+  · intro not_box
+    conv =>
+      congr
+      · skip
+      · rw [chain]
+    simp only [Evaluate_seq]
+    rcases chain prop w_prop n with ⟨x_ih, w_ih, w_ih_prop⟩
+    simp only
+    cases r 𝕏.α (chain prop w_prop n).fst -- <;> try grind
+    -- grind doesn't seem to do anything
+    all_goals
+      sorry
+  · sorry -- might be harder because theres some choice stuff going on...
+
+
+theorem has_children_of_chain_model {𝕏 : Proof}
+  {x : 𝕏.X}
+  {φ : Formula}
+  (prop : f (r 𝕏.α x) = {φ})
+  {W : Type}
+  {M : Model W}
+  {w : W}
+  (w_prop : ¬Evaluate (M, w) φ) :
+  ∀ n, ∃ m, M.R (chain prop w_prop n).2.1 (chain prop w_prop (n + m)).2.1 := by
+  intro n
+  by_contra h
+  simp at h
+  have g1 : ∀ m, (chain prop w_prop n).2.1 = (chain prop w_prop (n + m)).2.1 := by
+    intro m
+    induction m
+    · rfl
+    case succ k ih =>
+      simp only [ih] at *
+      have h := h (k + 1)
+      have chain_model_prop := chain_model_prop prop w_prop (n + k)
+      by_cases (r 𝕏.α (chain prop w_prop (n + k)).fst).isBox
+      case pos box =>
+        simp [box] at chain_model_prop
+        exfalso
+        exact h chain_model_prop
+      case neg nbox =>
+        simp [nbox] at chain_model_prop
+        exact chain_model_prop
+  have g2 : ∀ m, ¬ (r 𝕏.α (chain prop w_prop (n + m)).fst).isBox := by
+    intro m con
+    have eq1 := g1 m
+    have eq2 := g1 (m + 1)
+    rw [eq1] at eq2
+    have chain_model_prop := chain_model_prop prop w_prop (n + m)
+    simp [con] at chain_model_prop
+    rw [eq2] at chain_model_prop
+    apply Model.Irreflexive M _ _ _ chain_model_prop
+    grind
+  have ⟨k, k_prop⟩ := inf_path_has_inf_boxes (fun n ↦ (chain prop w_prop n).1) (chain_proof_prop prop w_prop) n
+  apply g2 k k_prop
+
+noncomputable
+def inc_chain_eventual_inc_chain {β}
+  {Q : β → β → Prop}
+  {g : ℕ → β}
+  (Q_prop : ∀ n, ∃ m, Q (g n) (g m))
+  (n : ℕ) : {b : β // ∃ n, b = g n} :=
+  match n with
+   | 0 => ⟨g (Q_prop 0).choose, by simp⟩
+   | n + 1 =>
+      match inc_chain_eventual_inc_chain Q_prop n with
+        | ⟨ih, ih_prop⟩ => ⟨g (Q_prop ih_prop.choose).choose, by simp⟩
+
+theorem inc_chain_eventual_inc_chain_prop {β}
+  {Q : β → β → Prop} {g : ℕ → β}
+  (Q_prop : ∀ n, ∃ m, Q (g n) (g m)) :
+  ∀ n, Q (inc_chain_eventual_inc_chain Q_prop n).1
+         (inc_chain_eventual_inc_chain Q_prop (n + 1)).1
+   := by
+    intro n
+    conv =>
+      congr
+      · skip
+      · unfold inc_chain_eventual_inc_chain
+    rcases inc_chain_eventual_inc_chain Q_prop n with ⟨ih, ih_prop⟩
+    simp
+    have := (Q_prop ih_prop.choose).choose_spec
+    convert this
+    · exact ih_prop.choose_spec
 
 theorem Soundness (φ : Formula) : ⊢ φ → ⊨ φ := by
   intro mp
@@ -125,4 +227,16 @@ theorem Soundness (φ : Formula) : ⊢ φ → ⊨ φ := by
   by_contra h
   simp [isValid] at h
   have ⟨W, M, w, w_prop⟩ := h
-  sorry
+  apply (wellFounded_iff_isEmpty_descending_chain.1 M.con_wf).false
+  use fun k ↦ (@inc_chain_eventual_inc_chain _ M.R (fun n ↦ (chain prop w_prop n).2.1)
+    (by
+      intro n
+      have ⟨m, m_prop⟩ := has_children_of_chain_model prop w_prop n
+      use n + m) k).1
+  exact fun k ↦ @inc_chain_eventual_inc_chain_prop _ M.R (fun n ↦ (chain prop w_prop n).2.1)
+    (by
+      intro n
+      have ⟨m, m_prop⟩ := has_children_of_chain_model prop w_prop n
+      use n + m) k
+
+#axiom_blame Soundness

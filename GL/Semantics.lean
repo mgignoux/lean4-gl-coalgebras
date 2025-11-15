@@ -12,6 +12,8 @@ structure Model (α : Type) : Type where
   trans : Transitive R
   con_wf : WellFounded (fun x y ↦ R y x)
 
+lemma Model.Irreflexive {α : Type} (M : Model α) : ∀ a b, a = b → ¬ M.R a b := by sorry
+
 @[simp]
 def Evaluate {α : Type} : Model α × α → Formula → Prop
   | (_, _), ⊥ => False

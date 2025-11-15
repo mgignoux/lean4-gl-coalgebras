@@ -38,6 +38,7 @@ noncomputable def chain
         | .and Δ φ₁ φ₂ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y,z] =>
             have := not_and_or.1 $ fun x ↦ (not_exists.1 w_ih_prop) (φ₁ & φ₂) ⟨(r_def ▸ in_Δ), x⟩
+            have h : Decidable ¬Evaluate (M, w_ih) φ₁ := by sorry -- last remaining sorry?
             if w_ih_nφ₁ : ¬Evaluate (M, w_ih) φ₁
             then
               ⟨y, w_ih, by
@@ -136,20 +137,35 @@ lemma chain_model_prop {𝕏 : Proof}
   := by
   intro n
   constructor
-  · intro not_box
-    conv =>
+  · conv =>
       congr
       · skip
-      · rw [chain]
-    simp only [Evaluate_seq]
-    rcases chain prop w_prop n with ⟨x_ih, w_ih, w_ih_prop⟩
-    simp only
-    cases r 𝕏.α (chain prop w_prop n).fst -- <;> try grind
-    -- grind doesn't seem to do anything
-    all_goals
-      sorry
-  · sorry -- might be harder because theres some choice stuff going on...
-
+      · conv =>
+          congr
+          · skip
+          · rw [chain] -- I think Subtype.val might be preventing from unfolding chain
+    rcases chain prop w_prop n with ⟨x_ih, w_ih, w_ih_prop⟩ -- when you do split directly after this it 'redoes' this
+    simp
+    split <;> grind [RuleApp.isBox]
+  · conv =>
+      congr
+      · skip
+      · conv =>
+          congr
+          · skip
+          · skip
+          · rw [chain] -- I think Subtype.val might be preventing from unfolding chain
+    rcases chain prop w_prop n with ⟨x_ih, w_ih, w_ih_prop⟩ -- when you do split directly after this it 'redoes' this
+    simp
+    split <;> try grind [RuleApp.isBox]
+    intro mp
+    simp
+    split <;> try grind
+    simp
+    rename_i Δ φ ih_Δ r_def y p_def
+    have := (funext fun x ↦ Classical.not_imp._simp_1) ▸
+    chain._proof_14 x_ih w_ih w_ih_prop Δ φ ih_Δ (Eq.trans r_def (Eq.refl (RuleApp.box Δ φ ih_Δ)))
+    exact this.choose_spec.1
 
 theorem has_children_of_chain_model {𝕏 : Proof}
   {x : 𝕏.X}
@@ -186,9 +202,8 @@ theorem has_children_of_chain_model {𝕏 : Proof}
     rw [eq1] at eq2
     have chain_model_prop := chain_model_prop prop w_prop (n + m)
     simp [con] at chain_model_prop
-    rw [eq2] at chain_model_prop
-    apply Model.Irreflexive M _ _ _ chain_model_prop
-    grind
+    rw [eq2, add_assoc] at chain_model_prop
+    apply (instModelIsIrref M).irrefl _ chain_model_prop
   have ⟨k, k_prop⟩ := inf_path_has_inf_boxes (fun n ↦ (chain prop w_prop n).1) (chain_proof_prop prop w_prop) n
   apply g2 k k_prop
 

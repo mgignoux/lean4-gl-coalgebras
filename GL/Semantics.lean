@@ -12,7 +12,8 @@ structure Model (α : Type) : Type where
   trans : Transitive R
   con_wf : WellFounded (fun x y ↦ R y x)
 
-lemma Model.Irreflexive {α : Type} (M : Model α) : ∀ a b, a = b → ¬ M.R a b := by sorry
+instance instModelIsIrref {α : Type} (M : Model α) : IsIrrefl α M.R where
+  irrefl := fun a con ↦ (WellFounded.isIrrefl M.con_wf).irrefl a con
 
 @[simp]
 def Evaluate {α : Type} : Model α × α → Formula → Prop
@@ -24,8 +25,6 @@ def Evaluate {α : Type} : Model α × α → Formula → Prop
   | (M, w), φ v ψ => Evaluate (M, w) φ ∨ Evaluate (M, w) ψ
   | (M, w), □ φ => ∀ (u : α), M.R w u → Evaluate (M, u) φ
   | (M, w), ◇ φ => ∃ (u : α), M.R w u ∧ Evaluate (M, u) φ
-
-instance decEval {α : Type} {M : Model α} {u : α} {φ : Formula} : Decidable (Evaluate ⟨M, u⟩ φ) := by sorry
 
 @[simp]
 def Evaluate_seq {α : Type} : Model α × α → Sequent → Prop :=

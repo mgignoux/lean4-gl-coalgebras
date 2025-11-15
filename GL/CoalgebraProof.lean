@@ -13,6 +13,22 @@ import Mathlib.Data.Setoid.Partition
 import Mathlib.Data.Finset.Lattice.Basic
 
 
+lemma hm {a b c : ℕ} : b ≤ a → (c < b) → (a - b) + c < a := by grind only [cases Or]
+
+lemma helper {α : Type} [DecidableEq α] {A C : Finset α} {b : α} {f : α → Nat}
+  : b ∈ A → C.sum f < f b → Finset.sum ((A \ {b}) ∪ C) f < Finset.sum A f := by
+
+  intro b_in_A C_lt_B
+  calc
+    _ ≤ Finset.sum (A \ {b}) f + Finset.sum C f := by sorry -- another lemma for this?
+    _ = Finset.sum A f - Finset.sum {b} f + Finset.sum C f := by
+      simp [Sequent.jfef $ @Finset.sum_sdiff α Nat {b} A _ f _ (Finset.singleton_subset_iff.2 b_in_A)]
+
+    _ < Finset.sum A f := by
+      apply hm
+      · exact (Finset.sum_le_sum_of_subset_of_nonneg (Finset.singleton_subset_iff.2 b_in_A) (by simp))
+      · exact C_lt_B
+
 instance {α} [DecidableEq α] (Γ : Finset α) : Union {x // x ∈ Γ.powerset} where -- mathlib ????
   union A B := ⟨A ∪ B, by
     apply Finset.mem_powerset.2
@@ -41,6 +57,7 @@ def D (Γ : Sequent) : Sequent := Finset.filter Formula.isDiamond Γ ∪ Finset.
   cases A <;> cases B
   all_goals
   simp_all [Formula.opUnDi])
+
 
 def fₚ : RuleApp → Finset Formula
   | RuleApp.top _ _ => {⊤}
@@ -72,13 +89,13 @@ theorem fₚ_sub_f {r : RuleApp} : fₚ r ⊆ f r := by
 theorem fₙ_sub_f {r : RuleApp} : fₙ r ⊆ f r := by
   cases r <;> simp_all [fₙ, f]
 
-def isBox : RuleApp → Prop
+def RuleApp.isBox : RuleApp → Prop
   | RuleApp.box _ _ _ => True
   | _ => False
 
-instance : DecidablePred isBox := by
+instance : DecidablePred RuleApp.isBox := by
   intro r
-  cases r <;> simp [isBox]
+  cases r <;> simp [RuleApp.isBox]
   · apply Decidable.isFalse; simp
   · apply Decidable.isFalse; simp
   · apply Decidable.isFalse; simp
@@ -145,12 +162,10 @@ theorem edge_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : (edge 𝕏.α) x y) : f 
     intro χ χ_cases
     rcases χ_cases with h|_ <;> subst_eqs
     · simp [D] at h
-      rcases h with ⟨h,_⟩|⟨θ,h1,h2⟩
+      rcases h with ⟨h,_⟩|h
       · refine ⟨χ, fₙ_sub_f h, by simp [Formula.FL_refl]⟩
       · refine ⟨◇χ, ?_, by simp [Formula.FL, Formula.FL_refl]⟩
-        cases θ <;> simp [Formula.opUnDi] at h2
-        subst h2
-        exact fₙ_sub_f h1
+        exact fₙ_sub_f h
     · exact ⟨□ φ, by simp [f, in_Δ], by simp [Formula.FL, Formula.FL_refl]⟩
 
 theorem path_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y) : f (r 𝕏.α y) ⊆ Sequent.FL (f (r 𝕏.α x)) := by
@@ -254,16 +269,42 @@ theorem finite_proof_of_proof (𝕏 : Proof) (Δ : Sequent) : (𝕏 ⊢ Δ) → 
 
 /- THEOREMS ABOUT LOOPS -/
 
-theorem loop_has_box_app (𝕏 : Proof) (x : 𝕏.X) :
-  (Relation.TransGen (edge 𝕏.α)) x x →
-    ∃ (y : 𝕏.X), (Relation.ReflTransGen (edge 𝕏.α)) x y
-      ∧ (Relation.ReflTransGen (edge 𝕏.α)) y x
-      ∧ isBox (r 𝕏.α y) := by
-  intro x_x
-  cases x_x
-  case single xex => sorry
-  case tail => sorry
+def nb_edge {X : Type u} (α : X → T.obj X) (x y : X) := y ∈ p α x ∧ ¬ (r α x).isBox
 
+lemma lt_if_not_box_edge {𝕏 : Proof} {x y : 𝕏.X} :
+  (x_y : nb_edge 𝕏.α x y) → Sequent.size (f (r 𝕏.α y)) < Sequent.size (f (r 𝕏.α x)) := by
+  intro ⟨x_y, not_box⟩
+  have h := 𝕏.h x
+  cases r_def : (r 𝕏.α x) <;> simp_all only [RuleApp.isBox]
+  case and Δ A B and_in =>
+    have := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) x_y
+    simp [h, -Finset.union_singleton] at this
+    rcases this with l | l
+    · rw [l, fₙ_alternate, f]
+      simp only [Sequent.size]
+      exact @helper _ _ Δ {A} (A & B) _ and_in (by grind [Formula.size])
+    · rw [l, fₙ_alternate, f]
+      simp only [Sequent.size]
+      exact @helper _ _ Δ {B} (A & B) _ and_in (by grind [Formula.size])
+
+  case or Δ A B or_in =>
+    have l := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) x_y
+    simp [h, -Finset.union_insert] at l
+    · rw [l, fₙ_alternate, f]
+      simp only [Sequent.size]
+      apply @helper _ _ Δ {A, B} (A v B) _ or_in (by grind [Formula.size])
+  all_goals
+    simp_all
+
+theorem inf_path_has_inf_boxes {𝕏 : Proof} (g : ℕ → 𝕏.X) (h : ∀ n, edge 𝕏.α (g n) (g (n + 1))) :
+  ∀ n, ∃ m, (r 𝕏.α (g (n + m))).isBox := by
+    intro n
+    by_contra h2
+    simp at h2
+    apply (wellFounded_iff_isEmpty_descending_chain.1 (@wellFounded_lt ℕ _ _)).false
+    use fun m ↦ Sequent.size (f (r 𝕏.α (g (n + m))))
+    intro m
+    apply lt_if_not_box_edge ⟨h (n + m), h2 m⟩
 
 /- ADMISSIBILITY -/
 
@@ -276,14 +317,9 @@ theorem not_prove_empty : ¬ ∃ 𝕏, 𝕏 ⊢ {} := by
   have ⟨𝕏, x, x_em⟩ := con
   cases rule : r 𝕏.α x <;> simp_all [f, r] <;> aesop
 
-lemma hm {a b c : ℕ} : b ≤ a → (c < b) → (a - b) + c < a := by grind only [cases Or]
-
 lemma form_in_seq_size_le {A : Formula} {Δ : Sequent} : A ∈ Δ → A.size ≤ Δ.size := by
   intro A_in
   exact (Finset.sum_le_sum_of_subset_of_nonneg (Finset.singleton_subset_iff.2 A_in) (by simp) : A.size ≤ Δ.size)
-  -- have h : Δ = Δ \ {A} ∪ {A} := by sorry
-  -- rw [h]
-  -- simp [Sequent.size, Finset]
 
 theorem and_subproofs_left (𝕏 : Proof) (x : 𝕏.X) (A B : Formula) (Δ : Finset Formula) (AB_in : (A & B) ∈ Δ)(h : r 𝕏.α x = RuleApp.and Δ A B AB_in) : 𝕏 ⊢ Δ \ {A & B} ∪ {A} := by
   have := 𝕏.h x
@@ -496,7 +532,7 @@ decreasing_by
     apply Prod.Lex.left
     simp [Formula.size]
 
-lemma helper {A B : Formula} : {A, ~A} ∪ {~B} = {A&B, ~A, ~B} \ {A&B} ∪ ({A} : Sequent) := by sorry
+lemma helper2 {A B : Formula} : {A, ~A} ∪ {~B} = {A&B, ~A, ~B} \ {A&B} ∪ ({A} : Sequent) := by sorry
 
 theorem extended_lem (A : Formula) : ∃ (𝕏 : Proof), 𝕏 ⊢ {A, ~A} := by
   induction A <;> simp only [Formula.neg]

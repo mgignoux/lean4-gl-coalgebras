@@ -50,6 +50,10 @@ def opUnDi (A : Formula) : Option Formula := match A with
   | ◇ B => Option.some B
   | _ => none
 
+@[simp]
+theorem opUnDi_eq {φ ψ : Formula} : φ.opUnDi = some ψ ↔ φ = ◇ ψ := by
+  cases φ <;> simp [Formula.opUnDi]
+
 def unDi (A : Formula) (h : A.isDiamond) : Formula := match A with
   | ◇ B => B
 

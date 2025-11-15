@@ -227,20 +227,7 @@ noncomputable def Filtration (𝕐 : Proof) : Proof where
 
 
 /- WIP : PARTIAL INTERPOLATION PROOFS -/
-
-lemma helper {α : Type} [DecidableEq α] {A C : Finset α} {b : α} {f : α → Nat}
-  : b ∈ A → C.sum f < f b → Finset.sum ((A \ {b}) ∪ C) f < Finset.sum A f := by
-  intro b_in_A C_lt_B
-  calc
-    _ ≤ Finset.sum (A \ {b}) f + Finset.sum C f := by sorry -- another lemma for this?
-    _ = Finset.sum A f - Finset.sum {b} f + Finset.sum C f := by
-      simp [Sequent.jfef $ @Finset.sum_sdiff α Nat {b} A _ f _ (Finset.singleton_subset_iff.2 b_in_A)]
-
-    _ < Finset.sum A f := by
-      apply hm
-      · exact (Finset.sum_le_sum_of_subset_of_nonneg (Finset.singleton_subset_iff.2 b_in_A) (by simp))
-      · exact C_lt_B
-
+#check hm
 
 def nb_edge {X : Type u} (α : X → T.obj X) (x y : X) := y ∈ p α x ∧ ¬ (r α x).isBox
 

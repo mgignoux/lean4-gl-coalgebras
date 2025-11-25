@@ -1,8 +1,8 @@
+import Pdl.AxiomBlame
+import Pdl.Game
 import GL.Logic
 import GL.Semantics
 import GL.CoalgebraProof
-import GL.AxiomBlame
-import GL.Game
 import GL.CoalgebraGame
 /-
 abbrev Builder := Player.A

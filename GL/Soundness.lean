@@ -90,7 +90,7 @@ noncomputable def chain
                 simp [Evaluate_seq, 𝕏h_x_ih, fₙ_alternate]
                 constructor
                 · exact w_next_prop.2
-                · simp [D]
+                · simp [Sequent.D]
                   simp [Evaluate_seq, r_def, f] at w_ih_prop
                   intro χ χ_in con
                   rcases χ_in with ⟨⟨χ_in, χ_not_box_φ⟩, χ_di⟩ | diχ_Δ
@@ -240,7 +240,7 @@ theorem Soundness (φ : Formula) : ⊢ φ → ⊨ φ := by
   intro mp
   have ⟨𝕏, x, prop⟩ := mp
   by_contra h
-  simp [isValid] at h
+  simp [Formula.isValid] at h
   have ⟨W, M, w, w_prop⟩ := h
   apply (wellFounded_iff_isEmpty_descending_chain.1 M.con_wf).false
   use fun k ↦ (@inc_chain_eventual_inc_chain _ M.R (fun n ↦ (chain prop w_prop n).2.1)
@@ -253,5 +253,3 @@ theorem Soundness (φ : Formula) : ⊢ φ → ⊨ φ := by
       intro n
       have ⟨m, m_prop⟩ := has_children_of_chain_model prop w_prop n
       use n + m) k
-
-#axiom_blame Soundness

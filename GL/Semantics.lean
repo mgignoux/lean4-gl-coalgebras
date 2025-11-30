@@ -30,7 +30,7 @@ def Evaluate {α : Type} : Model α × α → Formula → Prop
 def Evaluate_seq {α : Type} : Model α × α → Sequent → Prop :=
   λ M_u Γ ↦ ∃ φ ∈ Γ, Evaluate M_u φ
 
-def isValid (φ : Formula) : Prop
+def Formula.isValid (φ : Formula) : Prop
   := ∀ (α : Type), ∀ M : Model α, ∀ u : α, Evaluate ⟨M, u⟩ φ
 
 def Sequent.isValid (Δ : Sequent) : Prop

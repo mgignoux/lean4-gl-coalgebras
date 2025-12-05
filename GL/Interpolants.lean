@@ -98,8 +98,8 @@ noncomputable def equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) 
   | RuleApp.axₗᵣ _ k _ => na k
   | RuleApp.axᵣₗ _ k _ => at k
   | RuleApp.axᵣᵣ _ _ _ => ⊤
-  | RuleApp.orₗ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))
-  | RuleApp.orᵣ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))
+  | RuleApp.orₗ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop))) & at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))
+  | RuleApp.orᵣ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop))) v at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))
   | RuleApp.andₗ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map]))) v at (encodeVar ((p 𝕏.α x)[1]'(by have := 𝕏.h x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map])))
   | RuleApp.andᵣ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map]))) & at (encodeVar ((p 𝕏.α x)[1]'(by have := 𝕏.h x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map])))
   | RuleApp.boxₗ _ _ _ => ◇ at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))

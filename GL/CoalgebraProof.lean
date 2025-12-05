@@ -236,9 +236,11 @@ noncomputable def Filtration (𝕐 : Proof) : Proof where
 
 def Proves (𝕏 : Proof) (Δ : Sequent) : Prop := ∃ x : 𝕏.X, f (r 𝕏.α x) = Δ
 def Formula.isTrue (φ : Formula) : Prop := ∃ 𝕏 : Proof, Proves 𝕏 {φ}
+def Sequent.isTrue (Δ : Sequent) : Prop := ∃ 𝕏 : Proof, Proves 𝕏 Δ
 
 infixr:6 "⊢" => Proves
 prefix:40 "⊢" => Formula.isTrue
+prefix:40 "⊢" => Sequent.isTrue
 
 theorem finite_proof_of_proof (𝕏 : Proof) (Δ : Sequent) : (𝕏 ⊢ Δ) → ∃ 𝕐, Finite 𝕐.X ∧ (𝕐 ⊢ Δ) := by -- ask malvin
   intro X_proves_Δ

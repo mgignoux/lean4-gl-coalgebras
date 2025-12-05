@@ -10,7 +10,7 @@ structure Model (α : Type) : Type where
   V : α → Nat → Prop
   R : α → α → Prop
   trans : Transitive R
-  con_wf : WellFounded (fun x y ↦ R y x)
+  con_wf : WellFounded (Function.swap R)
 
 instance instModelIsIrref {α : Type} (M : Model α) : IsIrrefl α M.R where
   irrefl := fun a con ↦ (WellFounded.isIrrefl M.con_wf).irrefl a con

@@ -4,268 +4,105 @@ import GL.CoalgebraProof
 import GL.AxiomBlame
 import GL.Game
 import GL.CoalgebraGame
-/-
-abbrev Builder := Player.A
-abbrev Prover := Player.B
 
-def Sequent.RuleApps (Γ : Sequent) : Finset RuleApp :=
-  let f : Formula → Option RuleApp := fun φ ↦
-    if φ_in : φ ∈ Γ then match φ with
-    | ⊤ => RuleApp.top Γ φ_in
-    | at n => if nφ_in : na n ∈ Γ then RuleApp.ax Γ n ⟨φ_in, nφ_in⟩ else none
-    | ψ & χ => RuleApp.and Γ ψ χ φ_in
-    | ψ v χ => RuleApp.or Γ ψ χ φ_in
-    | □ ψ => RuleApp.box Γ ψ φ_in
-    | _ => none
-    else none
-  Finset.filterMap f Γ (by
-  intro φ ψ r φ_f ψ_f
-  cases φ <;> cases ψ <;> grind [f])
+def rewind_history_one_step
+  (g : coalgebraGame.Pos) (h : coalgebraGame.turn g = Prover ∧ g.2.2 ≠ ∅ ∨ coalgebraGame.turn g = Builder ∧ g.2.1 ≠ ∅) -- (h : winning strat ⟨Sum.inl Γ, [], []⟩)  (in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g)
+  : coalgebraGame.Pos :=
+  match g with
+  | ⟨Sum.inl Γ, Γs, Rs⟩ => ⟨Sum.inr (Rs.head (by simp_all [coalgebraGame])), Γs, Rs.tail⟩
+  | ⟨Sum.inr R, Γs, Rs⟩ => ⟨Sum.inl (Γs.head (by simp_all [coalgebraGame])), Γs.tail, Rs⟩
 
-def RuleApp.Sequents (R : RuleApp) : Finset Sequent := match R with
-  | RuleApp.top _ _ => ∅
-  | RuleApp.ax _ _ _ => ∅
-  | RuleApp.and Δ φ ψ _ => {(Δ \ {φ & ψ}) ∪ {φ}, (Δ \ {φ & ψ}) ∪ {ψ}}
-  | RuleApp.or Δ φ ψ _ => {(Δ \ {φ v ψ}) ∪ {φ, ψ}}
-  | RuleApp.box Δ φ _ => {(Δ \ {□ φ}).D ∪ {φ}}
+theorem rewind_history_one_step_in_cone {Γ} (g : coalgebraGame.Pos) (h : coalgebraGame.turn g = Prover ∧ g.2.2 ≠ ∅ ∨ coalgebraGame.turn g = Builder ∧ g.2.1 ≠ ∅) -- (h : winning strat ⟨Sum.inl Γ, [], []⟩)  (in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g)
+  (strat : Strategy coalgebraGame Prover) (in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g)
+  : inMyCone strat ⟨Sum.inl Γ, [], []⟩ (rewind_history_one_step g h) := by
+  cases in_cone <;> simp at h
+  case myStep q q_in_cone q_has_moves P_turn_q =>
+    convert q_in_cone
+    have := (strat q P_turn_q q_has_moves).2
+    rcases q with ⟨Γ | R, Γs, Rs⟩ <;> simp [coalgebraGame] at P_turn_q
+    unfold Game.Pos.moves Game.moves at this
+    simp [coalgebraGame, -SetLike.coe_mem] at this
+    have ⟨R, R_Γ, strat_def⟩ := this
+    simp [←strat_def]
+    simp [rewind_history_one_step]
+  case oStep q q_in_cone B_turn_q g_in_moves_q =>
+    convert q_in_cone
+    rcases q with ⟨Γ | R, Γs, Rs⟩ <;> simp [coalgebraGame] at B_turn_q
+    unfold Game.moves at g_in_moves_q
+    simp [coalgebraGame, -SetLike.coe_mem] at g_in_moves_q
+    have ⟨R, R_Γ, _, g_def⟩ := g_in_moves_q
+    simp [←g_def]
+    simp [rewind_history_one_step]
 
-abbrev gamePos := (Sequent ⊕ RuleApp) × List Sequent × List RuleApp
-
-inductive move : gamePos → gamePos → Prop
-  | prover  {R Rs Γ Γs} : R ∈ Γ.RuleApps → move ⟨Sum.inl Γ, Γs, Rs⟩ ⟨Sum.inr R, Γ :: Γs, Rs⟩
-  | builder {R Rs Γ Γs} : Γ ∈ R.Sequents → Γ ∉ Γs → move ⟨Sum.inr R, Γs, Rs⟩ ⟨Sum.inl Γ, Γs, R :: Rs⟩
-
-theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLeft))
-(g1_g2 : Relation.ReflTransGen (Relation.Comp move move) g1 g2): g2.1.getLeft h3 ∈ (g1.1.getLeft h1).FL.powerset := by
-  simp
-  induction g1_g2
-  case refl => exact Sequent.FL_refl
-  case tail g2 g3 g1_g2 g2_g3 ih =>
-    simp [Relation.Comp] at g2_g3
-    rcases g2_g3 with ⟨Γ', Γs', Rs', g2_g, g_g3⟩ | ⟨R', Γs', Rs', g2_g, g_g3⟩
-    · rcases g3 with ⟨Γ'' | R'', Γs'', Rs''⟩ <;> simp at h3
-      cases g_g3
-    · rcases g3 with ⟨Γ'' | R'', Γs'', Rs''⟩ <;> simp at h3
-      cases g_g3
-      rcases g2 with ⟨Γ | R, Γs, Rs⟩ <;> cases g2_g
+def rewind_history
+  (g : coalgebraGame.Pos)
+  (n : Fin ((if coalgebraGame.turn g = Prover then min (2 * g.2.1.length + 1) (2 * g.2.2.length) else min (2 * g.2.1.length) (2 * g.2.2.length + 1)) + 1) )
+  : coalgebraGame.Pos :=
+  match n_def : n.1 with
+    | 0 => g
+    | m + 1 => rewind_history (rewind_history_one_step g (by
+      have ⟨n_val, n_prop⟩ := n
       simp_all
-      rename_i Γ''_R' R'_Γ _
-      have ih := Sequent.FL_subset ih
-      simp [Sequent.FL_idem] at ih
-      apply trans ?_ ih
-      rcases R' <;> simp only [RuleApp.Sequents, Finset.mem_singleton, Finset.notMem_empty, Finset.mem_insert] at Γ''_R'
-      case or Δ φ ψ in_Δ =>
-        subst Γ''_R'
-        simp [Sequent.RuleApps] at R'_Γ
-        have ⟨φ, φ_in, h⟩ := R'_Γ
-        rcases φ <;> simp at h
-        simp only [h.1, Sequent.FL, Finset.subset_iff,
-          Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion, Finset.mem_sdiff, Finset.mem_singleton, Finset.mem_insert]
-        intro χ χ_cases
-        rcases χ_cases with h|h|h <;> subst_eqs
-        · exact ⟨χ, h.1, Formula.FL_refl⟩
-        · exact ⟨φ v ψ, in_Δ, by simp [Formula.FL, Formula.FL_refl]⟩
-        · exact ⟨φ v ψ, in_Δ, by simp [Formula.FL, Formula.FL_refl]⟩
-      case and Δ φ ψ in_Δ=>
-        rcases Γ''_R' with l | l <;> subst l
-        all_goals
-          simp [Sequent.RuleApps] at R'_Γ
-          have ⟨φ, φ_in, h⟩ := R'_Γ
-          rcases φ <;> simp at h
-          simp only [h.1, Sequent.FL, Finset.subset_iff,
-            Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion, Finset.mem_sdiff, Finset.mem_singleton, Finset.mem_insert]
-          intro χ χ_cases
-          rcases χ_cases with h|h <;> subst_eqs
-          · exact ⟨χ, h.1, Formula.FL_refl⟩
-          · exact ⟨φ & ψ, in_Δ, by simp [Formula.FL, Formula.FL_refl]⟩
-      case box Δ φ in_Δ =>
-        subst Γ''_R'
-        simp [Sequent.RuleApps] at R'_Γ
-        have ⟨φ, φ_in, h⟩ := R'_Γ
-        rcases φ <;> simp at h
-        simp [Sequent.D, Finset.subset_iff, Sequent.FL, h.1]
-        refine ⟨⟨_, h.1 ▸ φ_in, by simp [Formula.FL, h.2, Formula.FL_refl]⟩, ?_⟩
-        intro χ χ_cases
-        rcases χ_cases with h|h <;> subst_eqs
-        · exact ⟨χ, h.1.1, Formula.FL_refl⟩
-        · exact ⟨◇ χ, h, by simp [Formula.FL, Formula.FL_refl]⟩
+      rcases g with ⟨Γ | R, Γs, Rs⟩ <;> simp_all [coalgebraGame] <;> grind)) ⟨m, by
+      have ⟨n_val, n_prop⟩ := n
+      simp_all
+      rcases g with ⟨Γ | R, Γs, Rs⟩ <;> simp_all [coalgebraGame, rewind_history_one_step]
+      · simp [coalgebraGame] at n_prop
+        grind
+      · simp [coalgebraGame] at n_prop
+        grind⟩
 
-/- This is the main helper for showing there is no infinite chain, we do it 'from prover'
-because that is where the FL properties are more readily available, but in fact it could
-be from prover or builder. -/
-lemma no_inf_chain_from_prover (g : ℕ → gamePos)
-  (g_rel : ∀ (n : ℕ), Function.swap move (g (n + 1)) (g n)) (h : (g 0).1.isLeft) : False := by
-  rcases g0_def : g 0 with ⟨Γ | R, Γs, Rs⟩ <;> simp [g0_def] at h
-  have f_helper : ∀ n, (g (2 * n)).1.isLeft = true := by
-    intro n
-    induction n
-    case zero => simp [g0_def]
-    case succ k ih =>
-      rcases g2k_def : g (2 * k) with ⟨Γ | R, Γs, Rs⟩ <;> simp_all
-      rcases g2k1_def : g (2 * k + 1) with ⟨Γ | R, Γs, Rs⟩
-      · exfalso
-        have := g_rel (2 * k)
-        rw [g2k_def, g2k1_def] at this
-        cases this
-      · have := g_rel (2 * k)
-        rw [g2k_def, g2k1_def] at this
-        cases this
-        rcases g2k2_def : g (2 * (k + 1)) with ⟨Γ | R, Γs, Rs⟩ <;> simp
-        have := g_rel (2 * k + 1)
-        have h : 2 * k + 1 + 1 = 2 * (k + 1) := by omega
-        rw [g2k1_def, h, g2k2_def] at this
-        cases this
+theorem rewind_history_in_cone {Γ} (g : coalgebraGame.Pos) (n : Fin ((if coalgebraGame.turn g = Prover then min (2 * g.2.1.length + 1) (2 * g.2.2.length) else min (2 * g.2.1.length) (2 * g.2.2.length + 1)) + 1) )
+  (strat : Strategy coalgebraGame Prover) (in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g)
+  : inMyCone strat ⟨Sum.inl Γ, [], []⟩ (rewind_history g n) := by
+  unfold rewind_history
+  split
+  · exact in_cone
+  · apply rewind_history_in_cone
+    apply rewind_history_one_step_in_cone
+    exact in_cone
 
-  let f : ℕ → Sequent := fun n ↦ (g (2 * n)).1.getLeft (f_helper n)
+@[simp]
+lemma rewind_history_zero (g : coalgebraGame.Pos) : rewind_history g 0 = g := by
+  simp [rewind_history]
 
-  have g0_gn : ∀ n, Relation.ReflTransGen move (g 0) (g n) := by
-    intro n
-    induction n
-    case zero => exact Relation.ReflTransGen.refl
-    case succ n ih => apply Relation.ReflTransGen.tail ih (g_rel n)
+-- def rewind_in_cone (Γ : Sequent) (g : coalgebraGame.Pos)
+--   (strat : Strategy coalgebraGame Prover)
+--   : Prop :=
+--   let in_cone := @inMyCone Prover coalgebraGame strat ⟨Sum.inl Γ, [], []⟩
+--   ∀ n, in_cone (rewind_history g n)
 
-  have f_prop : ∀ n, f n ∈ Γ.FL.powerset := by
-    intro n
-    have := @move_move_in_FL (g 0) (g (2 * n)) (f_helper 0) (f_helper n) (by
-      induction n
-      case zero => simp; exact Relation.ReflTransGen.refl
-      case succ n ih =>
-        apply Relation.ReflTransGen.tail ih
-        refine  ⟨g (2 * n + 1), g_rel (2 * n), ?_⟩
-        have := g_rel (2 * n + 1)
-        simp [Function.swap] at this
-        grind)
-    unfold f
-    simp only [g0_def] at this
-    exact this
+-- theorem rewind_in_cone_of_step (Γ : Sequent) (g : coalgebraGame.Pos)
+--   (strat : Strategy coalgebraGame Prover) (rw_g : rewind_in_cone Γ g strat)
+--   (g' : coalgebraGame.Pos) (g_g' : move g g') (g'_in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g') :
+--   rewind_in_cone Γ g' strat := by
+--   rcases g_g'
+--   case prover R Rs Γ Γs R_Γ =>
+--     intro ⟨n, n_prop⟩
+--     cases n
+--     case zero => simp [g'_in_cone]
+--     case succ k =>
+--       unfold rewind_history
+--       simp [rewind_history_one_step]
+--       refine rw_g ⟨k, ?_⟩ -- what??????????????
+--   case builder R Rs Γ Γs R_Γ =>
+--     intro ⟨n, n_prop⟩
+--     cases n
+--     case zero => simp [g'_in_cone]
+--     case succ k =>
+--       unfold rewind_history
+--       simp [rewind_history_one_step]
+--       refine rw_g ⟨k, ?_⟩
 
-  let sequents : (n : ℕ) → List Sequent := Nat.rec [] (fun n ih => f n :: ih)
+-- theorem in_cone_of_rewind_in_cone (Γ : Sequent) (g : coalgebraGame.Pos)
+--   (strat : Strategy coalgebraGame Prover) --(h : winning strat ⟨Sum.inl Γ, [], []⟩)
+--   : rewind_in_cone Γ g strat → inMyCone strat ⟨Sum.inl Γ, [], []⟩ g := by
+--   simp [rewind_in_cone]
+--   intro hyp
+--   have := hyp ⟨0, by simp⟩
+--   convert this
+--   simp
 
-  have seq_prop : ∀ n, sequents n ++ Γs = (g (2 * n)).2.1 := by
-    intro n
-    induction n
-    case zero => simp [sequents, g0_def]
-    case succ k ih =>
-      unfold sequents f at *
-      have := f_helper k
-      rcases g2k_def : g (2 * k) with ⟨Γ | R, Γs, Rs⟩ <;> simp_all
-      · rcases g2k1_def : g (2 * k + 1) with ⟨Γ | R, Γs, Rs⟩
-        · exfalso
-          have := g_rel (2 * k)
-          rw [g2k_def, g2k1_def] at this
-          cases this
-        · have := g_rel (2 * k)
-          rw [g2k_def, g2k1_def] at this
-          cases this
-          rcases g2k2_def : g (2 * (k + 1)) with ⟨Γ | R, Γs, Rs⟩
-          · have := g_rel (2 * k + 1)
-            have h : 2 * k + 1 + 1 = 2 * (k + 1) := by omega
-            rw [g2k1_def, h, g2k2_def] at this
-            cases this
-            simp
-          · have := g_rel (2 * k + 1)
-            have h : 2 * k + 1 + 1 = 2 * (k + 1) := by omega
-            rw [g2k1_def, h, g2k2_def] at this
-            cases this
-
-  have seq_prop2 : ∀ n m, n < m → f n ∈ sequents m := by
-    intro n m n_m
-    induction m
-    case zero => simp at n_m
-    case succ m ih =>
-      rcases Nat.lt_succ_iff_lt_or_eq.1 n_m with lt | eq
-      · simp_all [sequents]
-      · subst eq
-        simp [sequents]
-
-  have inf : Infinite {Δ // Δ ∈ Γ.FL.powerset} := by
-    apply Infinite.of_injective (fun n ↦ ⟨f n, f_prop n⟩)
-    intro n1 n2 hyp
-    rcases Nat.lt_trichotomy n1 n2 with lt | eq | gt
-    · exfalso
-      have in_seq := seq_prop2 _ _ lt
-      have := g_rel (2 * n2 - 1)
-      rcases g2k2_def : g (2 * n2) with ⟨Γ | R, Γs, Rs⟩ <;> try grind
-      have h : 2 * n2 - 1 + 1 = 2 * n2 := by grind
-      rw [h, g2k2_def] at this
-      rcases g2k21_def : g (2 * n2 - 1) with ⟨Γ | R, Γs, Rs⟩
-      · rw [g2k21_def] at this
-        cases this
-      · rw [g2k21_def] at this
-        cases this
-        case builder not_in =>
-          apply not_in
-          have h : f n2 = Γ := by unfold f; simp [g2k2_def]
-          have := seq_prop n2
-          simp at hyp
-          simp [g2k2_def] at this
-          simp [← this, ← h, ← hyp, in_seq]
-    · exact eq
-    · exfalso
-      have in_seq := seq_prop2 _ _ gt
-      have := g_rel (2 * n1 - 1)
-      rcases g2k2_def : g (2 * n1) with ⟨Γ | R, Γs, Rs⟩ <;> try grind
-      have h : 2 * n1 - 1 + 1 = 2 * n1 := by grind
-      rw [h, g2k2_def] at this
-      rcases g2k21_def : g (2 * n1 - 1) with ⟨Γ | R, Γs, Rs⟩
-      · rw [g2k21_def] at this
-        cases this
-      · rw [g2k21_def] at this
-        cases this
-        case builder not_in =>
-          apply not_in
-          have h : f n1 = Γ := by unfold f; simp [g2k2_def]
-          have := seq_prop n1
-          simp at hyp
-          simp [g2k2_def] at this
-          simp [← this, ← h, hyp, in_seq]
-  apply inf.not_finite
-  apply Set.finite_coe_iff.1
-  apply Finset.finite_toSet
-
-lemma matchesFinite : WellFounded (Function.swap move) := by
-  rw [wellFounded_iff_isEmpty_descending_chain]
-  by_contra hyp
-  simp at hyp
-  rcases hyp with ⟨g, g_rel⟩
-  simp only [Function.swap] at g_rel
-  rcases g0_def : g 0 with ⟨Γ | R, Γs, Rs⟩
-  · apply no_inf_chain_from_prover g g_rel (by simp_all)
-  · have := g_rel 0
-    rcases g1_def : g 1 with ⟨Γ | R, Γs, Rs⟩
-    · simp [g0_def, g1_def] at this
-      cases this
-      apply no_inf_chain_from_prover (fun n ↦ g (n + 1)) (fun n ↦ g_rel (n + 1)) (by simp_all)
-    · simp [g0_def, g1_def] at this
-      cases this
-
-def coalgebraGame : Game where
-  Pos := gamePos
-  turn
-    | ⟨Sum.inl _, _, _⟩ => Prover
-    | ⟨Sum.inr _, _, _⟩ => Builder
-  moves
-    | ⟨Sum.inl Γ, Γs, Rs⟩ => Finset.map ⟨fun R ↦ ⟨Sum.inr R, Γ :: Γs, Rs⟩, by intro r1 r2; simp⟩ Γ.RuleApps
-    | ⟨Sum.inr R, Γs, Rs⟩ => Finset.filterMap (fun Γ ↦ if Γ ∈ Γs then none else some ⟨Sum.inl Γ, Γs, R :: Rs⟩) R.Sequents (by grind)
-  wf := ⟨fun x y ↦ move y x, matchesFinite⟩
-  move_rel := by
-    intro ⟨info, Γs, Rs⟩ ⟨info', Γs', Rs'⟩ hyp
-    rcases info with Γ | R
-    · simp at hyp
-      have ⟨R, R_prop, eq1, eq2, eq3⟩ := hyp
-      subst_eqs
-      simp
-      apply move.prover R_prop
-    · simp at hyp
-      have ⟨Γ, Γ_prop, nin, eq1, eq2, eq3⟩ := hyp
-      subst_eqs
-      simp
-      apply move.builder Γ_prop nin
-
-#eval List.get [1,2,3,4,5,6] ⟨4, by simp⟩
-#eval List.drop 4 [1,2,3,4,5,6]
-
--/
 def btype (Γ : Sequent) (strat : Strategy coalgebraGame Prover) :=
  {g // inMyCone strat ⟨Sum.inl Γ, [], []⟩ g ∧ coalgebraGame.turn g = Builder}
 
@@ -273,7 +110,6 @@ def builder_RuleApp (g : coalgebraGame.Pos) (h : coalgebraGame.turn g = Builder)
   | ⟨Sum.inr R, _, _⟩ => R
   | ⟨Sum.inl _, _, _⟩ => False.elim (by simp_all [coalgebraGame])
 
--- maybe helpful?
 theorem in_cone_winning {G : Game} {i : Player} {g g' : G.Pos} {strat : Strategy G i}
   (in_cone : inMyCone strat g g') (h : winning strat g) : winning strat g' := by
   induction in_cone
@@ -284,6 +120,7 @@ theorem in_cone_winning {G : Game} {i : Player} {g g' : G.Pos} {strat : Strategy
   case oStep q q' q_in_cone o_turn in_moves ih =>
     exact @winning_of_whatever_other_move G i strat q o_turn ih ⟨q', in_moves⟩
 
+/- Defining next move without a repeat -/
 def next_next {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (g : btype Γ strat)
   (h : winning strat ⟨Sum.inl Γ, [], []⟩) (nrep : Δ ∉ g.1.2.1) (pos : Δ ∈ (builder_RuleApp g.1 g.2.2).Sequents) : btype Γ strat :=
   let next : gamePos := ⟨Sum.inl $ Δ, g.1.2.1, builder_RuleApp g.1 g.2.2 :: g.1.2.2⟩
@@ -311,11 +148,15 @@ def next_next {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (g : bty
   have next_next_in_cone : inMyCone strat (Sum.inl Γ, [], []) next_next := by
     have := @inMyCone.oStep _ _ strat _ _ _ g.2.1 g.2.2 next_in_moves
     exact inMyCone.myStep this P_has_moves_next P_next
+  -- have rewind_next_next_in_cone : rewind_in_cone Γ next_next strat := by
+  --   have := rewind_in_cone_of_step Γ g.1 strat g.2.1 next (move_iff_in_moves.2 next_in_moves) (@inMyCone.oStep _ _ strat _ _ _ g_in_cone g.2.2 next_in_moves)
+  --   exact rewind_in_cone_of_step Γ next strat this next_next (move_iff_in_moves.2 next_next.2) next_next_in_cone
   ⟨next_next, next_next_in_cone, B_next_next⟩
 
 theorem next_next_cor {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (g : btype Γ strat)
   (h : winning strat ⟨Sum.inl Γ, [], []⟩) (nrep : Δ ∉ g.1.2.1) (pos : Δ ∈ (builder_RuleApp g.1 g.2.2).Sequents) :
   f (builder_RuleApp (next_next g h nrep pos).1 (next_next g h nrep pos).2.2) = Δ := by
+  -- have g_in_cone := in_cone_of_rewind_in_cone Γ g.1 strat g.2.1
   let next : gamePos := ⟨Sum.inl $ Δ, g.1.2.1, builder_RuleApp g.1 g.2.2 :: g.1.2.2⟩
   have P_next : coalgebraGame.turn next = Prover := by unfold Game.turn next; simp [coalgebraGame]
   have next_in_moves : next ∈ coalgebraGame.moves g.1 := by
@@ -361,7 +202,7 @@ theorem next_next_cor {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} 
     subst φ_prop
     simp [f] -- most stupid proof ever!!!!!
 
-theorem history_length_in_cone {Γ : Sequent} {strat : Strategy coalgebraGame Prover} (g : coalgebraGame.Pos)
+theorem history_length_in_cone {Γ : Sequent} (strat : Strategy coalgebraGame Prover) (g : coalgebraGame.Pos)
 (in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g) :
   (coalgebraGame.turn g = Prover → g.2.1.length = g.2.2.length) ∧ (coalgebraGame.turn g = Builder → g.2.1.length = g.2.2.length + 1) := by
   induction in_cone
@@ -385,194 +226,198 @@ theorem history_length_in_cone {Γ : Sequent} {strat : Strategy coalgebraGame Pr
     · unfold Game.moves at in_moves
       simp [coalgebraGame, q_def, r_def] at in_moves
 
-def reconstruct_history {Γ : Sequent} {strat : Strategy coalgebraGame Prover}
-  (h : winning strat ⟨Sum.inl Γ, [], []⟩) (g : coalgebraGame.Pos) (in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g) (n : Nat) (lt : n < 2 * g.2.1.length + 1)
-  : coalgebraGame.Pos :=
-  if Even n then match g with
-  | ⟨Sum.inl Γ, Γs, Rs⟩ => ⟨Sum.inl $ (Γ :: Γs).get ⟨Γs.length - n/2, by sorry⟩, Γs.drop (Γs.length - n/2), Rs.drop (Rs.length - n/2)⟩
-  | ⟨Sum.inr R, Γs, Rs⟩ => ⟨Sum.inr $ (R :: Rs).get ⟨Rs.length - n/2, by sorry⟩, Γs.drop (Γs.length - 1 - n/2), Rs.drop (Rs.length - n/2)⟩
-  else match g with
-  | ⟨Sum.inl Γ, Γs, Rs⟩ => ⟨Sum.inr $ Rs.get ⟨Rs.length - 1 - n/2, by sorry⟩, Γs.drop (Γs.length - n/2), Rs.drop (Rs.length - n/2)⟩
-  | ⟨Sum.inr R, Γs, Rs⟩ => ⟨Sum.inl $ Γs.get ⟨Γs.length - 1 - n/2, by sorry⟩, Γs.drop (Γs.length - 1 - n/2), Rs.drop (Rs.length - n/2)⟩
-
-
-/-
-r, 5, 5 =>
------
-l, 0, 0 --- step 0 => (5r[4], 5l.drop [4], 5r.drop [4])
-r, 1, 0 --- step 1 => (5r[4], 5l.drop [3], 5r.drop [4])
-l, 1, 1 --- step 2
-r, 2, 1 --- step 3
--/
-
--- theorem reconstruct_history_in_cone {Γ : Sequent} {strat : Strategy coalgebraGame Prover}
---   (h : winning strat ⟨Sum.inl Γ, [], []⟩) (g : coalgebraGame.Pos) (in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g) (n : Nat) (lt : n + 1 < 2 * g.2.1.length + 1)
---     : inMyCone strat ⟨Sum.inl Γ, [], []⟩ (reconstruct_history h g in_cone n (by omega)) := by
---   by_cases Even n
---   case pos even =>
---     have odd : ¬ Even (n + 1) := by grind
---     induction in_cone
---     case nil =>
---       simp [reconstruct_history, even]
---       apply inMyCone.nil
---     case myStep q q_in_cone q_has_moves p_turn_q ih =>
---       have in_moves := Subtype.prop (strat q p_turn_q q_has_moves)
---       rcases q with ⟨Γ | R, Γs, Rs⟩ <;> simp [coalgebraGame] at p_turn_q
---       unfold Game.Pos.moves Game.moves at in_moves
---       simp only [coalgebraGame, Finset.mem_map] at in_moves
---       have ⟨R, R_Γ, R_prop⟩ := in_moves
---       simp at R_prop
---       simp [←R_prop]
---       have ih := ih (by sorry)
---       simp_all [reconstruct_history]
---       have := inMyCone.myStep ih (by sorry) (by simp [coalgebraGame])
---       convert this
-
---       have ⟨⟨info, Γs, Rs⟩, in_moves⟩ := (strat ⟨Sum.inl Γ, Γs, Rs⟩ p_turn_q q_has_moves)
-
-
-theorem reconstruct_history_moves {Γ : Sequent} {strat : Strategy coalgebraGame Prover}
-  (h : winning strat ⟨Sum.inl Γ, [], []⟩) (g : coalgebraGame.Pos) (in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g) (n : Nat) (lt : n + 1 < 2 * g.2.1.length + 1)
-    : move (reconstruct_history h g in_cone n (by omega)) (reconstruct_history h g in_cone (n + 1) lt) := by
-  by_cases Even n
-  case pos even =>
-    have odd : ¬ Even (n + 1) := by grind
-    rcases g with ⟨Γ | R, Γs, Rs⟩
-    · simp [even, odd, reconstruct_history]
-      have := @move.prover (Rs[Rs.length - 1 - (n + 1) / 2]'(by sorry)) (List.drop (Rs.length - n / 2) Rs) Γs[Γs.length - 1 - n / 2] (List.drop (Γs.length - n / 2) Γs) (by sorry)
-
-      have h1 : Γs[Γs.length - 1 - n / 2]'(by sorry) :: List.drop (Γs.length - n / 2) Γs = List.drop (Γs.length - (n + 1) / 2) Γs := by
-        induction Γs
-        case nil => simp at lt
-        case cons Γ Γs ih =>
-          -- simp
-          -- have ih := ih (by sorry) (by sorry) (by sorry)
-          -- have h1 := @List.drop_cons _ (Γs.length + 1 - (n + 1) / 2) Γ Γs (by sorry)
-          -- have h2 := @List.drop_cons _ (Γs.length + 1 - n / 2) Γ Γs (by sorry)
-          -- -- have h : (Γ :: Γs)[Γs.length - n / 2] :: List.drop (Γs.length + 1 - n / 2) (Γ :: Γs) = Γs[Γs.length - 1 - n / 2]'(by sorry) :: List.drop (Γs.length - n / 2) Γs :=  by sorry
-          -- rw [h1, h2]
-          sorry
-      have h2 : List.drop (Rs.length - n / 2) Rs = List.drop (Rs.length - (n + 1) / 2) Rs := by
-        apply congrArg₂ <;> try rfl
-        apply congrArg₂ <;> try rfl
-        sorry -- very doable
-      rw [←h1, ←h2]
-
-      -- exact this
-      sorry
-    · sorry
-  case neg odd => sorry
-
-    --rcases (strat ⟨Sum.inl Γ, Γs, Rs⟩ p_turn_q q_has_moves) with ⟨⟨Γ | R, Γs, Rs⟩, in_moves⟩
-
-
-
--- theorem reconstruct_history_is_valid_moves {Γ : Sequent} {strat : Strategy coalgebraGame Prover}
---   (h : winning strat ⟨Sum.inl Γ, [], []⟩) (g : coalgebraGame.Pos) (n : Nat)
---   : reconstruct_history.Pos :=
-
-
+/- Defining next move with a repeat-/
 noncomputable
 def rep_pos {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (g : btype Γ strat)
  (rep : Δ ∈ g.1.2.1) : coalgebraGame.Pos :=
-  let ⟨n, n_prop⟩ := (List.mem_iff_get.1 rep).choose
-  ⟨Sum.inr ((builder_RuleApp g.1 g.2.2 :: g.1.2.2).get ⟨n, by sorry⟩), g.1.2.1.drop n, g.1.2.2.drop n⟩
+  let n := (List.mem_iff_get.1 rep).choose
+  rewind_history g.1 ⟨2 * n.1, by
+    have := (history_length_in_cone strat g.1 g.2.1).2 g.2.2
+    unfold instMinNat min minOfLe
+    simp [g.2.2]
+    split <;> try grind⟩
 
--- theorem rewind_history_in_cone {Γ : Sequent} {strat : Strategy coalgebraGame Prover}
---   (h : winning strat ⟨Sum.inl Γ, [], []⟩) (g : coalgebraGame.Pos) (in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g) (n : Fin (2 * g.2.2.length + 1))
---     : inMyCone strat ⟨Sum.inl Γ, [], []⟩ (rewind_history h g n) := by
---     unfold rewind_history
---     induction n using Fin.reverseInduction
---     case last =>
---       simp
---       rcases g with ⟨Γ' | R, Γs, Rs⟩
---       · have h : Rs.length = Γs.length := by sorry
---         simp_all
---         convert @inMyCone.nil _ _ strat ⟨Sum.inl Γ, [], []⟩
---         · sorry
---         · simp [h]
---       · have h : Rs.length + 1 = Γs.length := by sorry
---         simp_all
---         have := @inMyCone.myStep _ _ strat _ _ (@inMyCone.nil _ _ strat ⟨Sum.inl Γ, [], []⟩) (by sorry) (by simp [coalgebraGame])
---         convert this
---         · sorry
---     case cast n ih =>
---       simp_all
---       by_cases h : Even n.1
---       · rcases g with ⟨Γ' | R, Γs, Rs⟩
---         · simp [h]
---           have h : ¬ Even (n.1 + 1) := by grind
---           simp [h] at ih
---           have := fun r ↦ @inMyCone.oStep _ _ strat _ _ r ih (by simp [coalgebraGame])
---           apply this
---           simp [coalgebraGame]
---           refine ⟨?_, ?_, ?_⟩
---           · sorry
---           · sorry
---           · sorry
---         · sorry
---       · sorry
+lemma rewind_turn_one_step  {g n h1 h2} : coalgebraGame.turn (rewind_history g ⟨n + 1, h1⟩) = other (coalgebraGame.turn (rewind_history g ⟨n, h2⟩)) := by
+  cases n
+  case zero =>
+    rcases g with ⟨Γ | R, Γs, Rs⟩ <;> simp [rewind_history, rewind_history_one_step, coalgebraGame]
+  case succ n =>
+    unfold rewind_history
+    exact @rewind_turn_one_step (rewind_history_one_step g _) n _ _
 
-theorem rep_in_cone {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (g : btype Γ strat)
-  (h : winning strat ⟨Sum.inl Γ, [], []⟩) (rep : Δ ∈ g.1.2.1) :
-    inMyCone strat (Sum.inl Γ, [], []) (rep_pos g rep) := by
-    cases g_len : g.1.2.1.length
+-- Ask Malvin why this keeps happening?????
+
+theorem rewind_turn {g n} : if Even n.1 then coalgebraGame.turn (rewind_history g n) = coalgebraGame.turn g
+   else coalgebraGame.turn (rewind_history g n) = other (coalgebraGame.turn g) := by
+  induction n using Fin.induction
+  case zero => simp
+  case succ k ih =>
+    have ⟨k_val, k_prop⟩ := k
+    simp_all
+    by_cases Even k_val
+    · have h : ¬ Even (k_val + 1) := by grind
+      simp_all only [↓reduceIte]
+      simp only [←ih]
+      exact rewind_turn_one_step
+    · have h : Even (k_val + 1) := by grind
+      simp_all only [↓reduceIte]
+      have ih := congrArg other ih
+      simp at ih
+      simp only [←ih]
+      exact rewind_turn_one_step
+
+theorem rewind_history_one_step_correspondence {Γ g} (strat : Strategy coalgebraGame Prover)
+  {h0 h1 h2}  (in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g)
+  : f (builder_RuleApp (rewind_history_one_step g h0) h1) = g.2.1[0]'h2 := by
+  cases in_cone <;> try simp at h2
+  case myStep q q_in_cone q_has_moves P_turn_q =>
+    have := (strat q P_turn_q q_has_moves).2
+    rcases q with ⟨Γ | R, Γs, Rs⟩ <;> simp [coalgebraGame] at P_turn_q
+    unfold Game.Pos.moves Game.moves at this
+    simp [coalgebraGame, -SetLike.coe_mem] at this
+    have ⟨R, R_Γ, strat_def⟩ := this
+    simp [←strat_def] at *
+    simp [rewind_history_one_step]
+    grind
+  case oStep q q_in_cone B_turn_q g_in_moves_q =>
+    cases q_in_cone <;> simp [coalgebraGame] at B_turn_q
+    case myStep q' q_in_cone' q_has_moves' P_turn_q' =>
+      have := (strat q' P_turn_q' q_has_moves').2
+      simp [coalgebraGame, -SetLike.coe_mem] at this
+      rcases q' with ⟨Γ | R, Γs, Rs⟩ <;> simp [coalgebraGame] at P_turn_q'
+      unfold Game.Pos.moves Game.moves at this
+      simp [-SetLike.coe_mem] at this
+      have ⟨R, R_Γ, strat_def⟩ := this
+      simp [←strat_def] at *
+      simp [coalgebraGame, -SetLike.coe_mem] at g_in_moves_q
+      simp_all
+      have ⟨Δ, Δ_R, _, g_def⟩ := g_in_moves_q
+      subst g_def
+      simp [rewind_history_one_step, builder_RuleApp]
+      simp [Sequent.RuleApps] at this
+      have ⟨φ, φ_in, φ_prop⟩ := this
+      rcases φ <;> simp at φ_prop
+      case atom =>
+        have ⟨_, φ_prop⟩ := φ_prop
+        subst φ_prop
+        simp [RuleApp.Sequents] at Δ_R
+      all_goals
+        subst φ_prop
+        simp [RuleApp.Sequents] at Δ_R
+        try simp [f]
+    case oStep q' q_in_cone' B_turn_q' g_in_moves_q' =>
+      rcases q with ⟨Γ | R, Γs, Rs⟩ <;> simp at B_turn_q
+      rcases q' with ⟨Γ | R, Γs, Rs⟩ <;> simp [coalgebraGame] at B_turn_q'
+      simp [coalgebraGame] at g_in_moves_q'
+
+theorem rewind_history_correspondence (Γ g) (strat : Strategy coalgebraGame Prover)
+  (n) (h2 h3 h4 h6)  (in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g)
+  : (∀ b_turn_g : coalgebraGame.turn g = Builder, f (builder_RuleApp (rewind_history g ⟨2 * n, h3⟩) (by sorry)) = g.2.1[n]'h6)
+  ∧ (∀ p_turn_q : coalgebraGame.turn g = Prover,  f (builder_RuleApp (rewind_history g ⟨2 * n + 1, h4⟩) (by sorry)) = g.2.1[n]'h2)
+  := by
+  have rewind_one_step_in_cone := fun h ↦ rewind_history_one_step_in_cone g h strat in_cone
+  have length := history_length_in_cone strat g in_cone
+  · cases n
     case zero =>
-      unfold rep_pos
-      have ⟨n, n_prop⟩ := (List.mem_iff_get.1 rep).choose
-      simp [g_len] at n_prop
-    case succ k =>
-    unfold rep_pos
-    have n := (List.mem_iff_get.1 rep).choose
-    simp [g_len] at n
-    induction n using Fin.reverseInduction
-    case last =>
-      -- have h : g.1.2.1.length = n := by omega
-      -- subst h
-      simp
-      rcases g with ⟨⟨Γ | R, Γs, Rs⟩, in_cone, b_move⟩
-      · simp [coalgebraGame] at b_move
-      · have h : @Fin.val Γs.length (List.mem_iff_get.1 rep).choose = Rs.length := by sorry
-        simp_all [builder_RuleApp]
-        have h : Rs.length + 1 = Γs.length := by sorry
-        have h1 : List.drop Rs.length Γs = [Γs.getLast (by sorry)] := by sorry
-        have h2 : (R :: Rs)[Rs.length] = Rs.getLast (by sorry) := by sorry
-        simp [h1, h2]
-        convert @inMyCone.myStep _ _ strat _ _ (@inMyCone.nil _ _ strat ⟨Sum.inl Γ, [], []⟩) (by sorry) (by simp [coalgebraGame])
-        sorry
-    case cast n ih =>
-      simp_all -- suspicious
+      by_cases coalgebraGame.turn g = Prover
+      case pos h =>
+        simp [rewind_history, h]
+        apply rewind_history_one_step_correspondence strat in_cone
+      case neg h =>
+        simp at h
+        simp [h]
+        cases in_cone <;> simp [coalgebraGame] at h
+        case myStep q q_in_cone q_has_moves p_move_q =>
+          have := (strat q p_move_q q_has_moves).2
+          rcases q with ⟨Γ' | R, Γs, Rs⟩ <;> simp [coalgebraGame] at p_move_q
+          simp [Game.Pos.moves, coalgebraGame, -SetLike.coe_mem, Sequent.RuleApps] at this
+          have ⟨R, ⟨φ, φ_in, φ_prop⟩, R_prop⟩ := this
+          simp [←R_prop] at *
+          simp [builder_RuleApp]
+          cases φ <;> simp at φ_prop
+          case atom =>
+            have ⟨_, φ_prop⟩ := φ_prop
+            subst φ_prop
+            simp [f]
+          all_goals
+            subst φ_prop
+            simp [f]
+        case oStep q q_in_cone b_move_q g_in_moves_q =>
+        rcases q with ⟨Γ' | R, Γs, Rs⟩ <;> simp [coalgebraGame] at b_move_q
+        simp [coalgebraGame, -SetLike.coe_mem, Sequent.RuleApps] at g_in_moves_q
+        have ⟨R, _, _, R_prop⟩ := g_in_moves_q
+        subst R_prop
+        simp at h
+    case succ n =>
+    rcases g with ⟨Γ' | R, Γs, Rs⟩ <;> simp [coalgebraGame]
+    · have := @rewind_turn ⟨Sum.inl Γ', Γs, Rs⟩ ⟨2 * (n + 1) + 1, h4⟩
+      unfold rewind_history
+      simp [rewind_history_one_step]
+      have for_termination_1 : Γs.length + Rs.tail.length < Γs.length + Rs.length := by
+        cases Rs <;> simp
+        grind
+      convert (rewind_history_correspondence Γ ⟨Sum.inr (Rs.head _) , Γs, Rs.tail⟩ strat (n + 1) _ _ _ _ _).1 _ using 1 <;> try grind
+      · simp [coalgebraGame]
+        simp [coalgebraGame] at h4
+        simp [coalgebraGame] at length
+        refine ⟨length ▸ h4.2, by grind⟩
+      · simp [coalgebraGame] at rewind_one_step_in_cone
+        apply rewind_one_step_in_cone
+        grind
+      · simp [coalgebraGame]
+    · have h : 2 * (n + 1) = 2 * n + 1 + 1 := by omega
+      simp [h]
+      unfold rewind_history
+      simp [rewind_history_one_step]
+      have for_termination_2 : Γs.tail.length + Rs.length < Γs.length + Rs.length := by
+        cases Γs <;> simp
+        grind
+      convert (rewind_history_correspondence Γ ⟨Sum.inl (Γs.head _) , Γs.tail, Rs⟩ strat n _ _ _ _ _).2 _ using 1 <;> try grind
+      · simp [coalgebraGame] at rewind_one_step_in_cone
+        apply rewind_one_step_in_cone
+        grind
+      · simp [coalgebraGame]
+termination_by g.2.1.length + g.2.2.length
+decreasing_by
+  · convert for_termination_1
+    · sorry
+    · sorry
+  · convert for_termination_2
+    · sorry
+    · sorry
+
 
 noncomputable -- this should be computable if we use Fin.find instead, but Fin.find is confusing me atm
 def rep_next {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (g : btype Γ strat)
     (h : winning strat ⟨Sum.inl Γ, [], []⟩) (rep : Δ ∈ g.1.2.1) : (btype Γ strat) :=
-  ⟨rep_pos g rep, rep_in_cone g h rep, by sorry⟩ -- last sorry is easy just needs a helper
-  -- choose rep_next with strat?
-  -- let rep_next : gamePos := ⟨Sum.inr (g.1.2.2.get ⟨n, by sorry⟩), g.1.2.1.drop n, g.1.2.2.drop n⟩
-  -- have B_rep_next : coalgebraGame.turn rep_next = Builder := by unfold Game.turn rep_next; simp [coalgebraGame]
-  -- have rep_next_in_cone : inMyCone strat (Sum.inl Γ, [], []) rep_next := by sorry
-  -- ⟨rep_next, rep_next_in_cone, B_rep_next⟩
+  ⟨rep_pos g rep,
+   rewind_history_in_cone g.1 ⟨(2 * (List.mem_iff_get.1 rep).choose.1), _⟩ strat g.2.1,
+    by
+      have := @rewind_turn g.1 ⟨(2 * (List.mem_iff_get.1 rep).choose.1), by
+        have length := history_length_in_cone strat g.1 g.2.1
+        simp [g.2.2] at *
+        have := (List.mem_iff_get.1 rep).choose.2
+        grind⟩
+      simp [g.2.2] at this
+      convert this⟩
+
 
 theorem rep_next_cor {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (g : btype Γ strat)
-  (h : winning strat ⟨Sum.inl Γ, [], []⟩) (rep : Δ ∈ g.1.2.1) (pos : Δ ∈ (builder_RuleApp g.1 g.2.2).Sequents) :
+  (h : winning strat ⟨Sum.inl Γ, [], []⟩) (rep : Δ ∈ g.1.2.1) :
   f (builder_RuleApp (rep_next g h rep).1 (rep_next g h rep).2.2) = Δ := by
-  let ⟨n, n_lt⟩ := (List.mem_iff_get.1 rep).choose
-  have n_prop := (List.mem_iff_get.1 rep).choose_spec
-  simp [rep_next, rep_pos, builder_RuleApp]
-  sorry
-  -- rcases g with ⟨⟨Γ | R, Γs, Rs⟩, in_cone, b_move⟩ <;> simp [coalgebraGame] at b_move
-  -- simp_all
-  -- cases (List.mem_iff_get.1 rep).choose.1 -- using Fin.reverseInduction
-  -- simp
-
-
-
-  -- rw [←n_prop]
-  -- sorry
-  --⟨Sum.inr ((builder_RuleApp g.1 g.2.2 :: g.1.2.2).get ⟨n, by sorry⟩), g.1.2.1.drop n, g.1.2.2.drop n⟩
-
-
---- dont do this! define a function which gets the sequents starting from the beginning sequen to g, then show that each of those sequents is (1) in the cone, and (2) moves from one to the next, then you have what you want a lot easier!
+  have Δ_eq := (List.mem_iff_get.1 rep).choose_spec
+  conv =>
+  · congr
+    · skip
+    · rw [←Δ_eq]
+  let n := (List.mem_iff_get.1 rep).choose
+  simp [rep_next, rep_pos]
+  convert (rewind_history_correspondence Γ g.1 strat (List.mem_iff_get.1 rep).choose.1 _ _ _ _ g.2.1).1 _  <;> try grind
+  · have length := history_length_in_cone strat g.1 g.2.1
+    simp [g.2.2] at *
+    have := (List.mem_iff_get.1 rep).choose.2
+    grind
+  · exact g.2.2
 
 noncomputable
 def builder_children {Γ : Sequent} {strat : Strategy coalgebraGame Prover} (g : btype Γ strat)
@@ -624,15 +469,15 @@ theorem gameP_general {Γ : Sequent} (strat : Strategy coalgebraGame Prover)
             case pos rep2 =>
               simp only [rep1, rep2, ↓reduceDIte, List.cons.injEq, and_true, ↓existsAndEq, true_and, rep_next, fₙ_alternate]
               constructor
-              · exact rep_next_cor ⟨⟨Sum.inr (RuleApp.and Δ φ1 φ2 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h rep1
-                  (by simp [RuleApp.Sequents, builder_RuleApp])
-              · exact rep_next_cor ⟨⟨Sum.inr (RuleApp.and Δ φ1 φ2 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h rep2
-                  (by simp [RuleApp.Sequents, builder_RuleApp])
+              · exact rep_next_cor ⟨⟨Sum.inr (RuleApp.and Δ φ1 φ2 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h
+                  (by simp only [rep1])
+              · exact rep_next_cor ⟨⟨Sum.inr (RuleApp.and Δ φ1 φ2 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h
+                  (by simp only [rep2])
             case neg nrep2 =>
               simp only [rep1, nrep2, ↓reduceDIte, List.cons.injEq, and_true, ↓existsAndEq, true_and, rep_next, fₙ_alternate]
               constructor
-              · exact rep_next_cor ⟨⟨Sum.inr (RuleApp.and Δ φ1 φ2 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h rep1
-                  (by simp [RuleApp.Sequents, builder_RuleApp])
+              · exact rep_next_cor ⟨⟨Sum.inr (RuleApp.and Δ φ1 φ2 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h
+                  (by simp only [rep1])
               · exact next_next_cor ⟨⟨Sum.inr (RuleApp.and Δ φ1 φ2 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h nrep2
                   (by simp [RuleApp.Sequents, builder_RuleApp])
           case neg nrep1 =>
@@ -642,10 +487,10 @@ theorem gameP_general {Γ : Sequent} (strat : Strategy coalgebraGame Prover)
               constructor
               · exact next_next_cor ⟨⟨Sum.inr (RuleApp.and Δ φ1 φ2 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h nrep1
                   (by simp [RuleApp.Sequents, builder_RuleApp])
-              · exact rep_next_cor ⟨⟨Sum.inr (RuleApp.and Δ φ1 φ2 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h rep2
-                  (by simp [RuleApp.Sequents, builder_RuleApp])
+              · exact rep_next_cor ⟨⟨Sum.inr (RuleApp.and Δ φ1 φ2 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h
+                  (by simp only [rep2])
             case neg nrep2 =>
-              simp only [nrep1, nrep2, ↓reduceDIte, List.cons.injEq, and_true, ↓existsAndEq, true_and, rep_next, fₙ_alternate]
+              simp only [nrep1, nrep2, ↓reduceDIte, List.cons.injEq, and_true, ↓existsAndEq, true_and, fₙ_alternate]
               constructor
               · exact next_next_cor ⟨⟨Sum.inr (RuleApp.and Δ φ1 φ2 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h nrep1
                   (by simp [RuleApp.Sequents, builder_RuleApp])
@@ -657,8 +502,8 @@ theorem gameP_general {Γ : Sequent} (strat : Strategy coalgebraGame Prover)
           case pos rep =>
             simp only [rep, ↓reduceDIte, List.cons.injEq, and_true, exists_eq_left']
             simp only [rep_next]
-            exact rep_next_cor ⟨⟨Sum.inr (RuleApp.or Δ φ1 φ2 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h rep
-              (by simp [RuleApp.Sequents, builder_RuleApp])
+            exact rep_next_cor ⟨⟨Sum.inr (RuleApp.or Δ φ1 φ2 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h
+              (by simp only [rep])
           case neg nrep =>
             simp only [nrep, ↓reduceDIte, List.cons.injEq, and_true, exists_eq_left']
             simp only [next_next, fₙ_alternate]
@@ -670,8 +515,8 @@ theorem gameP_general {Γ : Sequent} (strat : Strategy coalgebraGame Prover)
           case pos rep =>
             simp only [rep, ↓reduceDIte, List.cons.injEq, and_true, exists_eq_left']
             simp only [rep_next]
-            exact rep_next_cor ⟨⟨Sum.inr (RuleApp.box Δ φ1 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h rep
-              (by simp [RuleApp.Sequents, builder_RuleApp])
+            exact rep_next_cor ⟨⟨Sum.inr (RuleApp.box Δ φ1 φ_in), Γs, Rs⟩, in_cone, b_move⟩ h
+              (by simp only [rep])
           case neg nrep =>
             simp only [nrep, ↓reduceDIte, List.cons.injEq, and_true, exists_eq_left']
             simp only [next_next, fₙ_alternate]
@@ -715,7 +560,7 @@ theorem gameP_general' {Γ : Sequent} {Γs : List Sequent} {Rs : List RuleApp} (
   let next_move := strat ⟨Sum.inl Γ, Γs, Rs⟩ P_turn
     (by by_contra hyp; exfalso; unfold winning winner at h; simp_all)
   have still_winning_next : winning strat next_move := winning_of_winning_move P_turn h
-  have still_winning_next_next := @winning_of_whatever_other_move coalgebraGame Prover strat next_move (by sorry) still_winning_next
+  have still_winning_next_next := @winning_of_whatever_other_move coalgebraGame Prover strat next_move (by ) still_winning_next
   rcases next_move_def : next_move with ⟨⟨info, Γs', Rs'⟩, in_moves⟩
   simp [coalgebraGame, Game.Pos.moves, Game.moves, Sequent.RuleApps] at in_moves
   -- by_cases Γ ∈ Γs
@@ -825,264 +670,3 @@ decreasing_by
     · apply coalgebraGame.move_rel
       simp [WellFounded.wrap]
 -/
-
-def after_box (g : coalgebraGame.Pos) : Prop := match g with
-  | ⟨Sum.inl _, _, R :: _⟩ => R.isBox
-  | _ => false
-
-def prover_sequent (g : coalgebraGame.Pos) (h : coalgebraGame.turn g = Prover) : Sequent := match g_def : g with
-  | ⟨Sum.inl Δ, _, _⟩ => Δ
-  | ⟨Sum.inr _, _, _⟩ => False.elim (by simp_all [coalgebraGame])
-
-def gameB_model_type {Γ : Sequent} {Γs : List Sequent} {Rs : List RuleApp}
-  (strat : Strategy coalgebraGame Builder) (h : winning strat ⟨Sum.inl Γ, Γs, Rs⟩)
-  : Type :=
-  let in_cone := @inMyCone Builder coalgebraGame strat ⟨Sum.inl Γ, Γs, Rs⟩
-  {g : coalgebraGame.Pos // (after_box g ∧ in_cone g) ∨ g = ⟨Sum.inl Γ, Γs, Rs⟩}
-
-theorem Relation.TransGen.swap_eq_swap_rel {α : Type} (r : α → α → Prop) :
-  Function.swap (Relation.TransGen r) = Relation.TransGen (Function.swap r) := by
-  ext x y
-  constructor
-  · intro mp
-    simp [Function.swap] at mp
-    induction mp
-    case single x y_x => exact Relation.TransGen.single y_x
-    case tail x z y_x x_z ih => exact Relation.TransGen.head x_z ih
-  · intro mpp
-    sorry
-
-def gameB_model {Γ : Sequent} {Γs : List Sequent} {Rs : List RuleApp}
-  (strat : Strategy coalgebraGame Builder) (h : winning strat ⟨Sum.inl Γ, Γs, Rs⟩)
-  : Model (gameB_model_type strat h) where
-  V g n := ¬ ∃ g', coalgebraGame.turn g' = Prover ∧ Relation.ReflTransGen move g.1 g' ∧ at n ∈ prover_sequent g' (by sorry) -- not quite right
-  R := Relation.TransGen (fun g1 g2 ↦ move g1.1 g2.1)
-  trans := by intro g1 g2 g3 g1_g2 g2_g3; exact Relation.TransGen.trans g1_g2 g2_g3
-  con_wf := by
-    simp [Relation.TransGen.swap_eq_swap_rel]
-    apply WellFounded.transGen
-    let in_cone := @inMyCone Builder coalgebraGame strat ⟨Sum.inl Γ, Γs, Rs⟩
-    apply @RelEmbedding.wellFounded (gameB_model_type strat h) coalgebraGame.Pos
-        (fun g1 g2 ↦ move g2.1 g1.1) (Function.swap move)
-    · exact {
-      toFun := fun g ↦ g.1
-      inj' := fun ⟨g1, g1_pf⟩ ⟨g2, g2_pf⟩ eq ↦ by simp_all
-      map_rel_iff' := by simp}
-    · exact coalgebraGame.wf.wf
-
-
-theorem gameB_model_sat {Γ : Sequent} {Γs : List Sequent} {Rs : List RuleApp}
-  (strat : Strategy coalgebraGame Builder) (h : winning strat ⟨Sum.inl Γ, Γs, Rs⟩) :
-  ∀ φ, (∃ g', coalgebraGame.turn g' = Prover ∧ Relation.ReflTransGen move ⟨Sum.inl Γ, Γs, Rs⟩ g' ∧ (@inMyCone Builder coalgebraGame strat ⟨Sum.inl Γ, Γs, Rs⟩ g') ∧ φ ∈ prover_sequent g' (by sorry)) →
-    ¬ Evaluate ⟨gameB_model strat h, ⟨⟨Sum.inl Γ, Γs, Rs⟩, by simp⟩⟩ φ := by
-    have P_turn : coalgebraGame.turn ⟨Sum.inl Γ, Γs, Rs⟩ = Prover := by unfold Game.turn; simp [coalgebraGame]
-    intro φ
-    induction φ
-    case bottom => simp_all
-    case top => -- if its top then builder cannot have a winning strategy
-      intro ⟨g', P_turn_g', g_g', g'_cone, φ_in⟩ -- make this into a stronger claim saying for
-      rcases g' with ⟨Γ' | R', Γs', Rs'⟩ <;> simp [coalgebraGame] at P_turn_g'
-      let next_move : gamePos := ⟨Sum.inr (RuleApp.top Γ' φ_in), Γ' :: Γs', Rs'⟩
-      have B_turn_next : coalgebraGame.turn next_move = Builder := by unfold Game.turn next_move; simp [coalgebraGame]
-      have next_in_moves : next_move ∈ coalgebraGame.moves ⟨Sum.inl Γ', Γs', Rs'⟩ := by
-        unfold next_move
-        simp [coalgebraGame, Sequent.RuleApps]
-        refine ⟨⊤, φ_in, by simp⟩
-      have still_winning_next : winning strat next_move := by sorry -- easy with the still winning lemma
-      have has_moves := winning_has_moves B_turn_next still_winning_next
-      unfold Game.moves next_move at has_moves
-      simp [coalgebraGame, RuleApp.Sequents] at has_moves
-    case atom n =>
-      intro ⟨g', P_turn_g', g_g', g'_cone, φ_in⟩ -- make this into a stronger claim saying for
-      simp_all [prover_sequent, gameB_model]
-      refine ⟨g', P_turn_g', g_g', by simp [φ_in]⟩
-      -- by_cases na n ∈ Γ  --- Suspicious that we do not need this...
-      -- case pos nφ_in => sorry -- easy
-      -- case neg nφ_nin =>
-    case neg_atom n =>
-      intro ⟨g', P_turn_g', g_g', g'_cone, φ_in⟩ -- make this into a stronger claim saying for
-      rcases g' with ⟨Γ' | R', Γs', Rs'⟩ <;> simp [coalgebraGame] at P_turn_g'
-      by_cases at n ∈ Γ  --- Suspicious that we do not need this...
-      case pos nφ_in =>  -- easy
-        have nφ_in' : at n ∈ Γ' := by sorry
-        let next_move : gamePos := ⟨Sum.inr (RuleApp.ax Γ' n ⟨nφ_in', φ_in⟩), Γ' :: Γs', Rs'⟩
-        have B_turn_next : coalgebraGame.turn next_move = Builder := by unfold Game.turn next_move; simp [coalgebraGame]
-        have next_in_moves : next_move ∈ coalgebraGame.moves ⟨Sum.inl Γ', Γs', Rs'⟩ := by
-          unfold next_move
-          simp [coalgebraGame, Sequent.RuleApps]
-          refine ⟨at n, nφ_in', by simp; exact φ_in⟩
-        have still_winning_next : winning strat next_move := by sorry
-          -- exact winning_of_whatever_other_move P_turn h ⟨next_move, next_in_moves⟩ -- removing by exact doesn't work ?
-        have has_moves := winning_has_moves B_turn_next still_winning_next
-        unfold Game.moves next_move at has_moves
-        simp [coalgebraGame, RuleApp.Sequents] at has_moves
-      case neg nφ_in =>
-        simp [prover_sequent, gameB_model]
-        intro g'' P_turn_g'' g_g'' g''_prop
-        apply nφ_in
-        rcases g'' with ⟨Γ'' | R'', Γs'', Rs''⟩ <;> simp [coalgebraGame] at P_turn_g''
-        simp at g''_prop
-        have φ_in : at n ∈ Γ := by sorry
-        exact φ_in
-
-       --- exact nφ_in con
-    case or φ1 φ2 ih1 ih2 => -- then we will make a move
-      intro ⟨g', P_turn_g', g_g', g'_cone, φ_in⟩
-      rcases g' with ⟨Γ' | R', Γs', Rs'⟩ <;> simp [coalgebraGame] at P_turn_g'
-      let next_move : gamePos := ⟨Sum.inr (RuleApp.or Γ' φ1 φ2 φ_in), Γ' :: Γs', Rs'⟩
-      have B_turn_next : coalgebraGame.turn next_move = Builder := by unfold Game.turn next_move; simp [coalgebraGame]
-      have next_in_moves : next_move ∈ coalgebraGame.moves ⟨Sum.inl Γ', Γs', Rs'⟩ := by
-        unfold next_move
-        simp [coalgebraGame, Sequent.RuleApps]
-        refine ⟨φ1 v φ2, φ_in, by simp⟩
-      have still_winning_next : winning strat next_move := by sorry
-        -- exact winning_of_whatever_other_move P_turn h ⟨next_move, next_in_moves⟩ -- removing by exact doesn't work ?
-      have has_moves := winning_has_moves B_turn_next still_winning_next
-      unfold Game.moves next_move at has_moves
-      let next_next_move := strat next_move B_turn_next
-        (by unfold next_move Game.Pos.moves Game.moves; exact has_moves)
-      have P_turn_next_next : coalgebraGame.turn next_next_move.1 = Prover := by sorry
-      have still_winning_next_next : winning strat next_next_move := winning_of_winning_move B_turn_next still_winning_next
-      have g'_next_next : Relation.ReflTransGen move (Sum.inl Γ, Γs, Rs) next_next_move.1 := by sorry
-      have next_next_in_cone : inMyCone strat (Sum.inl Γ, Γs, Rs) next_next_move.1 := by sorry
-      have next_next_prop : prover_sequent _ P_turn_next_next = Γ' \ {φ1 v φ2} ∪ {φ1, φ2} := by
-        rcases next_next_move with ⟨⟨Γ | R, Γs, Rs⟩, in_moves⟩
-        · unfold Game.Pos.moves Game.moves at in_moves
-          simp [coalgebraGame, next_move, RuleApp.Sequents, -Finset.union_insert] at in_moves
-          simp only [prover_sequent, in_moves]
-        · unfold Game.Pos.moves Game.moves at in_moves
-          simp [coalgebraGame, next_move] at in_moves
-      simp
-      constructor
-      · apply ih1
-        refine ⟨next_next_move, P_turn_next_next, g'_next_next, next_next_in_cone, by simp [next_next_prop]⟩
-      · apply ih2
-        refine ⟨next_next_move, P_turn_next_next, g'_next_next, next_next_in_cone, by simp [next_next_prop]⟩
-
-    case and φ1 φ2 ih1 ih2 => -- then we will make a move
-      intro ⟨g', P_turn_g', g_g', g'_cone, φ_in⟩
-      rcases g' with ⟨Γ' | R', Γs', Rs'⟩ <;> simp [coalgebraGame] at P_turn_g'
-      let next_move : gamePos := ⟨Sum.inr (RuleApp.and Γ' φ1 φ2 φ_in), Γ' :: Γs', Rs'⟩
-      have B_turn_next : coalgebraGame.turn next_move = Builder := by unfold Game.turn next_move; simp [coalgebraGame]
-      have next_in_moves : next_move ∈ coalgebraGame.moves ⟨Sum.inl Γ', Γs', Rs'⟩ := by
-        unfold next_move
-        simp [coalgebraGame, Sequent.RuleApps]
-        refine ⟨φ1 & φ2, φ_in, by simp⟩
-      have still_winning_next : winning strat next_move := by sorry
-        -- exact winning_of_whatever_other_move P_turn h ⟨next_move, next_in_moves⟩ -- removing by exact doesn't work ?
-      have has_moves := winning_has_moves B_turn_next still_winning_next
-      unfold Game.moves next_move at has_moves
-      let next_next_move := strat next_move B_turn_next
-        (by unfold next_move Game.Pos.moves Game.moves; exact has_moves)
-      have P_turn_next_next : coalgebraGame.turn next_next_move.1 = Prover := by sorry
-      have still_winning_next_next : winning strat next_next_move := winning_of_winning_move B_turn_next still_winning_next
-      have g'_next_next : Relation.ReflTransGen move (Sum.inl Γ, Γs, Rs) next_next_move.1 := by sorry
-      have next_next_in_cone : inMyCone strat (Sum.inl Γ, Γs, Rs) next_next_move.1 := by sorry
-      have next_next_prop : prover_sequent _ P_turn_next_next = Γ' \ {φ1 & φ2} ∪ {φ1} ∨ prover_sequent _ P_turn_next_next = Γ' \ {φ1 & φ2} ∪ {φ2} := by
-        rcases next_next_move with ⟨⟨Γ | R, Γs, Rs⟩, in_moves⟩
-        · unfold Game.Pos.moves Game.moves at in_moves
-          simp? [coalgebraGame, next_move, RuleApp.Sequents, -Finset.union_insert, -Finset.union_singleton] at in_moves
-          simp only [prover_sequent]
-          aesop
-        · unfold Game.Pos.moves Game.moves at in_moves
-          simp [coalgebraGame, next_move] at in_moves
-      simp only [Evaluate, not_and_or]
-      rcases next_next_prop with case1 | case2
-      · left
-        apply ih1
-        refine ⟨next_next_move, P_turn_next_next, g'_next_next, next_next_in_cone, by simp [case1]⟩
-      · right
-        apply ih2
-        refine ⟨next_next_move, P_turn_next_next, g'_next_next, next_next_in_cone, by simp [case2]⟩
-    -- and will work very similar except you must choose which child you will be!
-    case diamond φ ih =>
-      intro g
-      simp
-      sorry
-    case box φ ih =>
-      intro ⟨g', P_turn_g', g_g', g'_cone, φ_in⟩
-      rcases g' with ⟨Γ' | R', Γs', Rs'⟩ <;> simp [coalgebraGame] at P_turn_g'
-      let next_move : gamePos := ⟨Sum.inr (RuleApp.box Γ' φ φ_in), Γ' :: Γs', Rs'⟩
-      have B_turn_next : coalgebraGame.turn next_move = Builder := by unfold Game.turn next_move; simp [coalgebraGame]
-      have next_in_moves : next_move ∈ coalgebraGame.moves ⟨Sum.inl Γ', Γs', Rs'⟩ := by
-        unfold next_move
-        simp [coalgebraGame, Sequent.RuleApps]
-        refine ⟨□ φ, φ_in, by simp⟩
-      have still_winning_next : winning strat next_move := by sorry
-        -- exact winning_of_whatever_other_move P_turn h ⟨next_move, next_in_moves⟩ -- removing by exact doesn't work ?
-      have has_moves := winning_has_moves B_turn_next still_winning_next
-      unfold Game.moves next_move at has_moves
-      let next_next_move := strat next_move B_turn_next
-        (by unfold next_move Game.Pos.moves Game.moves; exact has_moves)
-      have P_turn_next_next : coalgebraGame.turn next_next_move.1 = Prover := by sorry
-      have still_winning_next_next : winning strat next_next_move := winning_of_winning_move B_turn_next still_winning_next
-      have g'_next_next : Relation.ReflTransGen move (Sum.inl Γ, Γs, Rs) next_next_move.1 := by sorry
-      have next_next_in_cone : inMyCone strat (Sum.inl Γ, Γs, Rs) next_next_move.1 := by sorry
-      have next_next_prop : prover_sequent _ P_turn_next_next = (Γ' \ {□ φ}).D ∪ {φ} := by
-        rcases next_next_move with ⟨⟨Γ | R, Γs, Rs⟩, in_moves⟩
-        · unfold Game.Pos.moves Game.moves at in_moves
-          simp [coalgebraGame, next_move, RuleApp.Sequents, -Finset.union_insert] at in_moves
-          simp only [prover_sequent, in_moves]
-          sorry
-        · unfold Game.Pos.moves Game.moves at in_moves
-          simp [coalgebraGame, next_move] at in_moves
-      simp
-      refine ⟨⟨next_next_move.1, by sorry⟩, ?_, ?_⟩
-      · sorry
-      · sorry -- well foundedness?
-
-
-
--- termination_by
---   (WellFounded.transGen $ coalgebraGame.wf.2).wrap ⟨Sum.inl Γ, Γs, Rs⟩
--- decreasing_by
---   all_goals
---     apply @Relation.TransGen.tail _ _ _ next_move
---     · apply Relation.TransGen.single
---       apply coalgebraGame.move_rel
---       simp only [WellFounded.wrap]
---       grind
---     · apply coalgebraGame.move_rel
---       simp [WellFounded.wrap]
---       grind
-
-theorem gameB_general {Γ : Sequent} {Γs : List Sequent} {Rs : List RuleApp}
-  (strat : Strategy coalgebraGame Builder) (h : winning strat ⟨Sum.inl Γ, Γs, Rs⟩)
-  : ¬ ⊨ Γ := by
-    simp [Sequent.isValid]
-    use gameB_model_type strat h
-    use gameB_model strat h
-    use ⟨⟨Sum.inl Γ, Γs, Rs⟩, by simp⟩
-    intro φ φ_in
-    refine gameB_model_sat strat h φ ⟨⟨Sum.inl Γ, Γs, Rs⟩, ?_, ?_, ?_, ?_⟩
-    · simp [coalgebraGame]
-    · exact Relation.ReflTransGen.refl
-    · exact inMyCone.nil
-    · exact φ_in
-
-instance instModelUnit : Model Unit where
-  V := fun _ _ ↦ True
-  R := fun _ _ ↦ False
-  trans := by intro _ _ _; simp
-  con_wf := by
-    apply WellFounded.intro
-    intro u
-    apply Acc.intro
-    simp
-
-def startPos (Γ : Sequent) : gamePos := ⟨Sum.inl Γ, [], []⟩
-
-theorem Soundness_seq (Γ : Sequent) : ⊨ Γ → ⊢ Γ := by
-  intro Γ_sat
-  rcases gamedet coalgebraGame (startPos Γ) with builder_wins | prover_wins
-  · have ⟨strat, h⟩ := builder_wins
-    have nΓ_sat := gameB_general strat h
-    exfalso
-    exact nΓ_sat Γ_sat
-  · have ⟨strat, h⟩ := prover_wins
-    exact gameP_general strat h
-
-theorem Soundness (φ : Formula) : ⊨ φ → ⊢ φ := by
-  intro φ_val
-  apply Soundness_seq {φ}
-  simp_all [Formula.isValid, Sequent.isValid]

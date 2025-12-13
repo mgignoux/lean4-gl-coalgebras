@@ -239,10 +239,10 @@ lemma matchesFinite : WellFounded (Function.swap move) := by
       cases this
 
 def coalgebraGame : Game where
-  Pos := gamePos
+  Pos := gamePos --  (Sequent ⊕ RuleApp) × List Sequent × List RuleApp
   turn
-    | ⟨Sum.inl _, _, _⟩ => Prover
-    | ⟨Sum.inr _, _, _⟩ => Builder
+    | ⟨Sum.inl _, _, _⟩ => Prover -- picks rule
+    | ⟨Sum.inr _, _, _⟩ => Builder -- picks sequent
   moves
     | ⟨Sum.inl Γ, Γs, Rs⟩ => Finset.map ⟨fun R ↦ ⟨Sum.inr R, Γ :: Γs, Rs⟩, by intro r1 r2; simp⟩ Γ.RuleApps
     | ⟨Sum.inr R, Γs, Rs⟩ => Finset.filterMap (fun Γ ↦ if Γ ∈ Γs then none else some ⟨Sum.inl Γ, Γs, R :: Rs⟩) R.Sequents (by grind)
@@ -260,3 +260,12 @@ def coalgebraGame : Game where
       subst_eqs
       simp
       apply move.builder Γ_prop nin
+
+theorem move_iff_in_moves {g g' : coalgebraGame.Pos} : move g g' ↔ g' ∈ coalgebraGame.moves g := by
+  constructor
+  · intro g_g'
+    unfold Game.moves
+    simp [coalgebraGame]
+    cases g_g' <;> simp_all
+  · intro in_moves
+    exact @coalgebraGame.move_rel g g' in_moves

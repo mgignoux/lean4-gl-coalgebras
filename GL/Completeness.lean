@@ -312,8 +312,8 @@ theorem rewind_history_one_step_correspondence {Γ g} (strat : Strategy coalgebr
 
 theorem rewind_history_correspondence (Γ g) (strat : Strategy coalgebraGame Prover)
   (n) (h2 h3 h4 h6)  (in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g)
-  : (∀ b_turn_g : coalgebraGame.turn g = Builder, f (builder_RuleApp (rewind_history g ⟨2 * n, h3⟩) (by sorry)) = g.2.1[n]'h6)
-  ∧ (∀ p_turn_q : coalgebraGame.turn g = Prover,  f (builder_RuleApp (rewind_history g ⟨2 * n + 1, h4⟩) (by sorry)) = g.2.1[n]'h2)
+  : (∀ b_turn_g : coalgebraGame.turn g = Builder, f (builder_RuleApp (rewind_history g ⟨2 * n, h3⟩) (by have := @rewind_turn g ⟨2 * n, h3⟩; grind)) = g.2.1[n]'h6)
+  ∧ (∀ p_turn_q : coalgebraGame.turn g = Prover,  f (builder_RuleApp (rewind_history g ⟨2 * n + 1, h4⟩) (by have := @rewind_turn g ⟨2 * n + 1, h4⟩; simp [p_turn_q] at this; grind)) = g.2.1[n]'h2)
   := by
   have rewind_one_step_in_cone := fun h ↦ rewind_history_one_step_in_cone g h strat in_cone
   have length := history_length_in_cone strat g in_cone
@@ -329,7 +329,7 @@ theorem rewind_history_correspondence (Γ g) (strat : Strategy coalgebraGame Pro
         cases in_cone <;> simp [coalgebraGame] at h
         case myStep q q_in_cone q_has_moves p_move_q =>
           have := (strat q p_move_q q_has_moves).2
-          rcases q with ⟨Γ' | R, Γs, Rs⟩ <;> simp [coalgebraGame] at p_move_q
+          obtain ⟨Γ' | R, Γs, Rs⟩ := q <;> simp [coalgebraGame] at p_move_q
           simp [Game.Pos.moves, coalgebraGame, -SetLike.coe_mem, Sequent.RuleApps] at this
           have ⟨R, ⟨φ, φ_in, φ_prop⟩, R_prop⟩ := this
           simp [←R_prop] at *
@@ -349,19 +349,30 @@ theorem rewind_history_correspondence (Γ g) (strat : Strategy coalgebraGame Pro
         subst R_prop
         simp at h
     case succ n =>
-    rcases g with ⟨Γ' | R, Γs, Rs⟩ <;> simp [coalgebraGame]
-    · have := @rewind_turn ⟨Sum.inl Γ', Γs, Rs⟩ ⟨2 * (n + 1) + 1, h4⟩
+    let info := g.1
+    let Γs := g.2.1
+    let Rs := g.2.2
+    have g_def : g = ⟨info, Γs, Rs⟩ := by
+      unfold info Γs Rs
+      rfl
+    rcases info with Γ' | R <;> simp [coalgebraGame]
+    · have := @rewind_turn ⟨Sum.inl Γ', Γs, Rs⟩ ⟨2 * (n + 1) + 1, g_def ▸ h4⟩
       unfold rewind_history
       simp [rewind_history_one_step]
       have for_termination_1 : Γs.length + Rs.tail.length < Γs.length + Rs.length := by
-        cases Rs <;> simp
-        grind
+        cases Rs_def : Rs <;> rw [g_def] at h4 <;> simp [coalgebraGame] at h4
+        · simp_all
+        · grind
       convert (rewind_history_correspondence Γ ⟨Sum.inr (Rs.head _) , Γs, Rs.tail⟩ strat (n + 1) _ _ _ _ _).1 _ using 1 <;> try grind
       · simp [coalgebraGame]
-        simp [coalgebraGame] at h4
-        simp [coalgebraGame] at length
-        refine ⟨length ▸ h4.2, by grind⟩
-      · simp [coalgebraGame] at rewind_one_step_in_cone
+        simp [g_def, coalgebraGame] at h4
+        simp [g_def, coalgebraGame] at length
+        grind
+      · simp [coalgebraGame]
+        simp [g_def, coalgebraGame] at h4
+        simp [g_def, coalgebraGame] at length
+        grind
+      · simp [g_def, coalgebraGame] at rewind_one_step_in_cone
         apply rewind_one_step_in_cone
         grind
       · simp [coalgebraGame]
@@ -370,22 +381,19 @@ theorem rewind_history_correspondence (Γ g) (strat : Strategy coalgebraGame Pro
       unfold rewind_history
       simp [rewind_history_one_step]
       have for_termination_2 : Γs.tail.length + Rs.length < Γs.length + Rs.length := by
-        cases Γs <;> simp
-        grind
+        cases Γs_def : Γs <;> rw [g_def] at h2
+        · simp_all
+          grind
+        · grind
       convert (rewind_history_correspondence Γ ⟨Sum.inl (Γs.head _) , Γs.tail, Rs⟩ strat n _ _ _ _ _).2 _ using 1 <;> try grind
-      · simp [coalgebraGame] at rewind_one_step_in_cone
+      · simp [g_def, coalgebraGame] at rewind_one_step_in_cone
         apply rewind_one_step_in_cone
         grind
       · simp [coalgebraGame]
 termination_by g.2.1.length + g.2.2.length
 decreasing_by
   · convert for_termination_1
-    · sorry
-    · sorry
   · convert for_termination_2
-    · sorry
-    · sorry
-
 
 noncomputable -- this should be computable if we use Fin.find instead, but Fin.find is confusing me atm
 def rep_next {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (g : btype Γ strat)
@@ -610,14 +618,14 @@ theorem gameP_general' {Γ : Sequent} {Γs : List Sequent} {Rs : List RuleApp} (
       | Sum.inl z => T.map (Sum.inl) (𝕐1.α z)
       | Sum.inr (Sum.inl z) => T.map (fun x ↦ Sum.inr (Sum.inl x)) (𝕐2.α z)
       | Sum.inr (Sum.inr u) => ⟨RuleApp.and Γ φ1 φ2 φ_in_Γ, [Sum.inl y1, Sum.inr (Sum.inl y2)]⟩
-    h := by sorry}
+    h := by }
     use Sum.inr (Sum.inr ())
     simp [f, r]
   case or φ1 φ2 =>
     by_cases (Γ \ {φ1 v φ2}) ∪ {φ1, φ2} ∈ Γs'
     case pos h => -- builder has instantly won the game
       -- have ⟨⟨n, n_lt⟩, n_prop⟩ := List.mem_iff_get.1 h
-      sorry -- we are done playing the game here! we have everything to build the proof!
+       -- we are done playing the game here! we have everything to build the proof!
     case neg nin =>
       subst φ_prop
       let next_next_move : gamePos := ⟨Sum.inl $ (Γ \ {φ1 v φ2}) ∪ {φ1, φ2}, Γs', RuleApp.or Γ φ1 φ2 φ_in_Γ :: Rs⟩
@@ -634,7 +642,7 @@ theorem gameP_general' {Γ : Sequent} {Γs : List Sequent} {Rs : List RuleApp} (
       α
         | Sum.inl z => T.map (Sum.inl) (𝕐.α z)
         | Sum.inr u => ⟨RuleApp.or Γ φ1 φ2 φ_in_Γ, [Sum.inl y]⟩
-      h := by sorry}
+      h := by }
       use Sum.inr ()
       simp [f, r]
   case box φ1 =>
@@ -653,7 +661,7 @@ theorem gameP_general' {Γ : Sequent} {Γs : List Sequent} {Rs : List RuleApp} (
     α
       | Sum.inl z => T.map (Sum.inl) (𝕐.α z)
       | Sum.inr u => ⟨RuleApp.box Γ φ1 φ_in_Γ, [Sum.inl y]⟩
-    h := by sorry}
+    h := by }
     use Sum.inr ()
     simp [f, r]
 termination_by

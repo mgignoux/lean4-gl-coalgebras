@@ -1,148 +1,203 @@
 import GL.Logic
-import GL.CoalgebraProof
 import GL.SplitCoalgebraProof
 import Mathlib.Data.Fintype.Defs
 import GL.Interpolants
+import GL.SplitCutCoalgebraProof
 
 namespace CutPre
 
-inductive RuleApp {𝕏 : split.Proof} (x : 𝕏.X) (τ : 𝕏.X → Sequent)
-  | pre : (y : 𝕏.X) → (y ∈ split.p 𝕏.α x) → RuleApp x τ
-  | cut : (Δ : Sequent) → (A : Formula) → RuleApp x τ
-  | wk : (Δ : Sequent) → (A : Formula) → A ∈ Δ → RuleApp x τ
-  | top : (Δ : Sequent) → (⊤ ∈ Δ) → RuleApp x τ
-  | ax : (Δ : Sequent) → (n : Nat) → (at n ∈ Δ ∧ na n ∈ Δ) → RuleApp x τ
-  | and : (Δ : Sequent) → (A : Formula) → (B : Formula) → (A & B) ∈ Δ → RuleApp x τ
-  | or : (Δ : Sequent) → (A : Formula) → (B : Formula) → (A v B) ∈ Δ → RuleApp x τ
-  | box : (Δ : Sequent) → (A : Formula) → (□ A ∈ Δ) → RuleApp x τ
+inductive RuleApp {𝕏 : Split.Proof} (x : 𝕏.X) (τ : 𝕏.X → SplitSequent)
+  | pre : (y : 𝕏.X) → (y ∈ Split.p 𝕏.α x) → RuleApp x τ
+  | cut : (Δ : SplitSequent) → (A : Formula) → RuleApp x τ -- might need a left and right later
+  | wkₗ : (Δ : SplitSequent) → (A : Formula) → (Sum.inl A) ∈ Δ → RuleApp x τ
+  | wkᵣ : (Δ : SplitSequent) → (A : Formula) → (Sum.inr A) ∈ Δ → RuleApp x τ
+  | topₗ : (Δ : SplitSequent) → (Sum.inl ⊤) ∈ Δ → RuleApp x τ
+  | topᵣ : (Δ : SplitSequent) → (Sum.inr ⊤) ∈ Δ → RuleApp x τ
+  | axₗₗ : (Δ : SplitSequent) → (n : Nat) → (Sum.inl (at n) ∈ Δ ∧ Sum.inl (na n) ∈ Δ) → RuleApp x τ
+  | axₗᵣ : (Δ : SplitSequent) → (n : Nat) → (Sum.inl (at n) ∈ Δ ∧ Sum.inr (na n) ∈ Δ) → RuleApp x τ
+  | axᵣₗ : (Δ : SplitSequent) → (n : Nat) → (Sum.inr (at n) ∈ Δ ∧ Sum.inl (na n) ∈ Δ) → RuleApp x τ
+  | axᵣᵣ : (Δ : SplitSequent) → (n : Nat) → (Sum.inr (at n) ∈ Δ ∧ Sum.inr (na n) ∈ Δ) → RuleApp x τ
+  | andₗ : (Δ : SplitSequent) → (A : Formula) → (B : Formula) → Sum.inl (A & B) ∈ Δ → RuleApp x τ
+  | andᵣ : (Δ : SplitSequent) → (A : Formula) → (B : Formula) → Sum.inr (A & B) ∈ Δ → RuleApp x τ
+  | orₗ : (Δ : SplitSequent) → (A : Formula) → (B : Formula) → Sum.inl (A v B) ∈ Δ → RuleApp x τ
+  | orᵣ : (Δ : SplitSequent) → (A : Formula) → (B : Formula) → Sum.inr (A v B) ∈ Δ → RuleApp x τ
+  | boxₗ : (Δ : SplitSequent) → (A : Formula) → Sum.inl (□ A) ∈ Δ → RuleApp x τ
+  | boxᵣ : (Δ : SplitSequent) → (A : Formula) → Sum.inr (□ A) ∈ Δ → RuleApp x τ
 
-
-def fₚ {𝕏 : split.Proof} {x : 𝕏.X} {τ : 𝕏.X → Sequent} : RuleApp x τ → Sequent
+def fₚ {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} : RuleApp x τ → SplitSequent
   | RuleApp.pre y _ => τ y
   | RuleApp.cut _ _ => ∅
-  | RuleApp.wk _ A _ => {A}
-  | RuleApp.top _ _ => {⊤}
-  | RuleApp.ax _ n _ => {at n, na n}
-  | RuleApp.and _ A B _ => {A & B}
-  | RuleApp.or _ A B _ => {A v B}
-  | RuleApp.box _ A _ => {□ A}
+  | RuleApp.wkₗ _ A _ => {Sum.inl A}
+  | RuleApp.wkᵣ _ A _ => {Sum.inr A}
+  | RuleApp.topₗ _ _ => {Sum.inl ⊤}
+  | RuleApp.topᵣ _ _ => {Sum.inr ⊤}
+  | RuleApp.axₗₗ _ n _ => {Sum.inl $ at n, Sum.inl $ na n}
+  | RuleApp.axₗᵣ _ n _ => {Sum.inl $ at n, Sum.inr $ na n}
+  | RuleApp.axᵣₗ _ n _ => {Sum.inr $ at n, Sum.inl $ na n}
+  | RuleApp.axᵣᵣ _ n _ => {Sum.inr $ at n, Sum.inr $ na n}
+  | RuleApp.andₗ _ A B _ => {Sum.inl (A & B)}
+  | RuleApp.andᵣ _ A B _ => {Sum.inr (A & B)}
+  | RuleApp.orₗ _ A B _ => {Sum.inl (A v B)}
+  | RuleApp.orᵣ _ A B _ => {Sum.inr (A v B)}
+  | RuleApp.boxₗ _ A _ => {Sum.inl (□ A)}
+  | RuleApp.boxᵣ _ A _ => {Sum.inr (□ A)}
 
-def f {𝕏 : split.Proof} {x : 𝕏.X} {τ : 𝕏.X → Sequent} : RuleApp x τ → Sequent
+def f {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} : RuleApp x τ → SplitSequent
   | RuleApp.pre y _ => τ y
   | RuleApp.cut Δ _ => Δ
-  | RuleApp.wk Δ _ _ => Δ
-  | RuleApp.top Δ _ => Δ
-  | RuleApp.ax Δ _ _ => Δ
-  | RuleApp.and Δ _ _ _ => Δ
-  | RuleApp.or Δ _ _ _ => Δ
-  | RuleApp.box Δ _ _ => Δ
+  | RuleApp.wkₗ Δ _ _ => Δ
+  | RuleApp.wkᵣ Δ _ _ => Δ
+  | RuleApp.topₗ Δ _ => Δ
+  | RuleApp.topᵣ Δ _ => Δ
+  | RuleApp.axₗₗ Δ _ _ => Δ
+  | RuleApp.axₗᵣ Δ _ _ => Δ
+  | RuleApp.axᵣₗ Δ _ _ => Δ
+  | RuleApp.axᵣᵣ Δ _ _ => Δ
+  | RuleApp.andₗ Δ _ _ _ => Δ
+  | RuleApp.andᵣ Δ _ _ _ => Δ
+  | RuleApp.orₗ Δ _ _ _ => Δ
+  | RuleApp.orᵣ Δ _ _ _ => Δ
+  | RuleApp.boxₗ Δ _ _ => Δ
+  | RuleApp.boxᵣ Δ _ _ => Δ
 
-def fₙ {𝕏 : split.Proof} {x : 𝕏.X} {τ : 𝕏.X → Sequent} : RuleApp x τ → Sequent := fun r ↦ f r \ fₚ r
+def fₙ {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} : RuleApp x τ → SplitSequent := fun r ↦ f r \ fₚ r
+
+theorem fₙ_alternate {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (r : RuleApp x τ) : fₙ r = match r with
+  | RuleApp.pre _ _ => ∅
+  | RuleApp.cut Δ _ => Δ
+  | RuleApp.wkₗ Δ A _ =>  Δ \ {Sum.inl A}
+  | RuleApp.wkᵣ Δ A _ =>  Δ \ {Sum.inr A}
+  | RuleApp.topₗ Δ _ => Δ \ {Sum.inl ⊤}
+  | RuleApp.topᵣ Δ _ => Δ \ {Sum.inr ⊤}
+  | RuleApp.axₗₗ Δ n _ => Δ \ {Sum.inl $ at n, Sum.inl $ na n}
+  | RuleApp.axₗᵣ Δ n _ => Δ \ {Sum.inl $ at n, Sum.inr $ na n}
+  | RuleApp.axᵣₗ Δ n _ => Δ \ {Sum.inr $ at n, Sum.inl $ na n}
+  | RuleApp.axᵣᵣ Δ n _ => Δ \ {Sum.inr $ at n, Sum.inr $ na n}
+  | RuleApp.andₗ Δ A B _ => Δ \ {Sum.inl (A & B)}
+  | RuleApp.andᵣ Δ A B _ => Δ \ {Sum.inr (A & B)}
+  | RuleApp.orₗ Δ A B _ => Δ \ {Sum.inl (A v B)}
+  | RuleApp.orᵣ Δ A B _ => Δ \ {Sum.inr (A v B)}
+  | RuleApp.boxₗ Δ A _ => Δ \ {Sum.inl (□ A)}
+  | RuleApp.boxᵣ Δ A _ => Δ \ {Sum.inr (□ A)} := by cases r <;> simp [fₙ, f, fₚ]
 
 universe u
-@[simp] def T {𝕏 : split.Proof} (x : 𝕏.X) (τ : 𝕏.X → Sequent) : (CategoryTheory.Functor (Type u) (Type u)) :=
+@[simp] def T {𝕏 : Split.Proof} (x : 𝕏.X) (τ : 𝕏.X → SplitSequent) : (CategoryTheory.Functor (Type u) (Type u)) :=
   ⟨λ X ↦ ((RuleApp x τ × List X) : Type u), by rintro X Y f ⟨r, A⟩; exact ⟨r, A.map f⟩, by aesop_cat, by aesop_cat⟩
 
-def r {X : Type u} {𝕏 : split.Proof} {x : 𝕏.X} {τ : 𝕏.X → Sequent} (α : X → (T x τ).obj X) (x : X) := (α x).1
-def p {X : Type u} {𝕏 : split.Proof} {x : 𝕏.X} {τ : 𝕏.X → Sequent} (α : X → (T x τ).obj X) (x : X) := (α x).2
-def edge  {X : Type u} {𝕏 : split.Proof} {x : 𝕏.X} {τ : 𝕏.X → Sequent} (α : X → (T x τ).obj X) (x y : X) : Prop := y ∈ p α x
+def r {X : Type u} {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (α : X → (T x τ).obj X) (x : X) := (α x).1
+def p {X : Type u} {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (α : X → (T x τ).obj X) (x : X) := (α x).2
+def edge  {X : Type u} {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (α : X → (T x τ).obj X) (x y : X) : Prop := y ∈ p α x
 
-structure CutProofFromPremises {𝕏 : split.Proof} (x : 𝕏.X) (τ : 𝕏.X → Sequent) where
+structure CutProofFromPremises {𝕏 : Split.Proof} (x : 𝕏.X) (τ : 𝕏.X → SplitSequent) where
   X : Type
   α : X → (T x τ).obj X
   h : ∀ (x : X), match r α x with
     | RuleApp.pre _ _ => p α x = []
-    | RuleApp.cut _ A => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {A}, (fₙ (r α x)) ∪ {~A}]
-    | RuleApp.wk _ _ _ => (p α x).map (fun x ↦ f (r α x)) = [fₙ (r α x)]
-    | RuleApp.top _ _ => p α x = []
-    | RuleApp.ax _ _ _ => p α x = []
-    | RuleApp.and _ A B _ => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {A}, (fₙ (r α x)) ∪ {B}]
-    | RuleApp.or _ A B _ => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {A, B}]
-    | RuleApp.box _ A _ => (p α x).map (fun x ↦ f (r α x)) = [Sequent.D (fₙ (r α x)) ∪ {A}]
+    | RuleApp.cut _ A => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A}, (fₙ (r α x)) ∪ {Sum.inl $ ~A}]
+    | RuleApp.wkₗ _ _ _ => (p α x).map (fun x ↦ f (r α x)) = [fₙ (r α x)]
+    | RuleApp.wkᵣ _ _ _ => (p α x).map (fun x ↦ f (r α x)) = [fₙ (r α x)]
+    | RuleApp.andₗ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A}, (fₙ (r α x)) ∪ {Sum.inl B}]
+    | RuleApp.andᵣ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inr A}, (fₙ (r α x)) ∪ {Sum.inr B}]
+    | RuleApp.orₗ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A, Sum.inl B}]
+    | RuleApp.orᵣ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inr A, Sum.inr B}]
+    | RuleApp.boxₗ _ A _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {Sum.inl A}]
+    | RuleApp.boxᵣ _ A _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {Sum.inr A}]
+    | _ => p α x = {}
 
 
-def CutProofFromPremises.Proves {𝕏 : split.Proof} {x : 𝕏.X} {τ : 𝕏.X → Sequent} (𝕐 : CutProofFromPremises x τ) (Δ : Sequent) : Prop := ∃ x : 𝕐.X, f (r 𝕐.α x) = Δ
+def CutProofFromPremises.Proves {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (𝕐 : CutProofFromPremises x τ) (Δ : SplitSequent) : Prop := ∃ x : 𝕐.X, f (r 𝕐.α x) = Δ
 infixr:6 "⊢" => CutProofFromPremises.Proves
 
 end CutPre
 
-namespace split
+namespace Split
 
 @[simp]
-noncomputable def SplitSequent.left (Δ : SplitSequent) : Sequent := Finset.filterMap Sum.getLeft? Δ (by aesop)
-noncomputable def SplitSequent.right (Δ : SplitSequent) : Sequent := Finset.filterMap Sum.getRight? Δ (by aesop)
+noncomputable def SplitSequent.left  : SplitSequent → SplitSequent := @Finset.filter _ (fun | Sum.inl _ => true | Sum.inr _ => false) (by sorry)
 
-noncomputable def leftInterpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Sequent
-  := {Interpolant 𝕏 (at (encodeVar x))} ∪ (f (r 𝕏.α x)).left -- why is Finset.preimage noncomputable?
+@[simp]
+noncomputable def SplitSequent.right : SplitSequent → SplitSequent := @Finset.filter _ (fun | Sum.inl _ => false | Sum.inr _ => true) (by sorry)
+
+noncomputable def leftInterpolantSequent {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : SplitSequent :=
+  {Sum.inr (Interpolant 𝕏 (at (encodeVar x)))} ∪ (SplitSequent.left (f (r 𝕏.α x)))
+
+noncomputable def rightInterpolantSequent {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : SplitSequent :=
+  {Sum.inl (~ (Interpolant 𝕏 (at (encodeVar x))))} ∪ (SplitSequent.right (f (r 𝕏.α x)))
 
 /- PARTIAL INTERPOLANT PROOFS. I SPLIT THESE APART BECAUSE THEY RUN SO SLOW OTHERWISE -/
 noncomputable def PartialLeft_topₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topₗ Δ in_Δ)
-  : CutPre.CutProofFromPremises x (@leftInterpolant 𝕏 _) :=
+  : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then {
     X := Unit
-    α u := ⟨CutPre.RuleApp.top (leftInterpolant x) (by simp [leftInterpolant, rule_def, f, in_Δ]), {}⟩
+    α u := ⟨CutPre.RuleApp.topₗ (leftInterpolantSequent x) (by simp [leftInterpolantSequent, rule_def, f, in_Δ]), {}⟩
     h := by intro u; simp [CutPre.r, CutPre.p]}
   else sorry
 
 noncomputable def PartialLeft_topᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topᵣ Δ in_Δ)
-  : CutPre.CutProofFromPremises x (@leftInterpolant 𝕏 _) :=
+  : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then {
     X := Unit
-    α u := ⟨CutPre.RuleApp.top (leftInterpolant x) (by
-      simp [leftInterpolant, eq, equation, rule_def] -- why not able to simpe with rule here
-      left
+    α u := ⟨CutPre.RuleApp.topᵣ (leftInterpolantSequent x) (by
+      simp [leftInterpolantSequent, eq, equation, rule_def] -- why not able to simpe with rule here
       split <;> simp_all [Interpolant, partial_] -- wow, do not forget about split!!!
       ), {}⟩
     h := by intro u; simp [CutPre.r, CutPre.p]}
   else sorry
 
 noncomputable def PartialLeft_axₗₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axₗₗ Δ n in_Δ)
-  : CutPre.CutProofFromPremises x (@leftInterpolant 𝕏 _) :=
+  : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then {
     X := Unit
-    α u := ⟨CutPre.RuleApp.ax (leftInterpolant x) n (by simp [leftInterpolant, rule_def, f, in_Δ]), {}⟩
+    α u := ⟨CutPre.RuleApp.axₗₗ (leftInterpolantSequent x) n (by simp [leftInterpolantSequent, rule_def, f, in_Δ]), {}⟩
     h := by intro u; simp [CutPre.r, CutPre.p]}
   else sorry
 
 noncomputable def PartialLeft_axₗᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axₗᵣ Δ n in_Δ)
-  : CutPre.CutProofFromPremises x (@leftInterpolant 𝕏 _) :=
+  : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then {
     X := Unit
-    α u := ⟨CutPre.RuleApp.ax (leftInterpolant x) n (by
-      simp [leftInterpolant, f, in_Δ, eq, equation, rule_def]
-      left
-      split <;> simp_all only [Interpolant, and_true, Subtype.forall, Finset.mem_image, forall_exists_index, reduceCtorEq, partial_]
-      split
-      · exfalso
-        sorry
-      · simp_all
+    α u := ⟨CutPre.RuleApp.axₗᵣ (leftInterpolantSequent x) n (by
+      simp [leftInterpolantSequent, rule_def, f, in_Δ, eq]
+      simp [Interpolant, equation]
+      split <;> simp_all
+      apply partial_const
+      simp [Formula.vocab]
+      intro _ _
+      apply at_in_not_encodeVar
+      simp [Proof.Sequent]
+      refine ⟨x, Fintype.complete x, Or.inl ?_⟩
+      convert in_Δ.1
+      simp_all [f]
       ), {}⟩
     h := by intro u; simp [CutPre.r, CutPre.p]}
   else sorry
 
 noncomputable def PartialLeft_axᵣₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axᵣₗ Δ n in_Δ)
-  : CutPre.CutProofFromPremises x (@leftInterpolant 𝕏 _) :=
+  : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then {
     X := Unit
-    α u := ⟨CutPre.RuleApp.ax (leftInterpolant x) n (by
-      simp [leftInterpolant, f, in_Δ, eq, equation, rule_def]
-      left
-      split <;> simp_all only [Interpolant, and_true, Subtype.forall, Finset.mem_image, forall_exists_index, reduceCtorEq, partial_]
-      split
-      · exfalso
-        sorry
-      · simp_all
+    α u := ⟨CutPre.RuleApp.axᵣₗ (leftInterpolantSequent x) n (by
+      simp [leftInterpolantSequent, rule_def, f, in_Δ, eq]
+      simp [Interpolant, equation]
+      split <;> simp_all
+      apply partial_const
+      simp [Formula.vocab]
+      intro _ _
+      apply at_in_not_encodeVar
+      simp [Proof.Sequent]
+      refine ⟨x, Fintype.complete x, Or.inr ?_⟩
+      convert in_Δ.1
+      simp_all [f]
       ), {}⟩
     h := by intro u; simp [CutPre.r, CutPre.p]}
   else sorry
 
 noncomputable def PartialLeft_axᵣᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axᵣᵣ Δ n in_Δ)
-  : CutPre.CutProofFromPremises x (@leftInterpolant 𝕏 _) :=
+  : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then {
     X := Unit
-    α u := ⟨CutPre.RuleApp.top (leftInterpolant x) (by
-      simp [leftInterpolant, rule_def, f, eq, equation]
-      left
+    α u := ⟨CutPre.RuleApp.topᵣ (leftInterpolantSequent x) (by
+      simp [leftInterpolantSequent, rule_def, f, eq, equation]
       split <;> simp_all [Interpolant, partial_]
       ), {}⟩
     h := by intro u; simp [CutPre.r, CutPre.p]}
@@ -177,41 +232,33 @@ Another option is to prove interpolant can not be formula? But this is unlikely
 
 -/
 noncomputable def PartialLeft_orₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.orₗ Δ φ ψ in_Δ)
-  : CutPre.CutProofFromPremises x (@leftInterpolant 𝕏 _) :=
+  : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then
     match p_def : p 𝕏.α x with
       | [y] =>
-        have 𝕏_h := 𝕏.h x
-        have h : equation x = (at (encodeVar y) & at (encodeVar y)) := by
-          simp [equation]
+        have interpolant_eq : Interpolant 𝕏 (at encodeVar x) = Interpolant 𝕏 (at encodeVar y) := by
+          rw [eq, equation]
           split <;> simp_all
-        { X := Fin 3
+        { X := Fin 2
           α u :=
             match u with
-            | 0 => ⟨CutPre.RuleApp.or (leftInterpolant x) φ ψ (by simp [leftInterpolant, rule_def, f, in_Δ]), [1]⟩
-            | 1 => ⟨CutPre.RuleApp.and ((leftInterpolant x) \ {φ v ψ} ∪ {φ, ψ}) (Interpolant 𝕏 (at encodeVar y)) (Interpolant 𝕏 (at encodeVar y)) (by
-              simp [Finset.mem_sdiff, leftInterpolant, eq, h]
-              tauto), [2, 2]⟩
-            | 2 => ⟨CutPre.RuleApp.pre y (by simp [p_def]), {}⟩
+            | 0 => ⟨CutPre.RuleApp.orₗ (leftInterpolantSequent x) φ ψ (by simp [leftInterpolantSequent, rule_def, f, in_Δ]), [1]⟩
+            | 1 => ⟨CutPre.RuleApp.pre y (by simp [p_def]), {}⟩
           h := by
+            have 𝕏_h := 𝕏.h x
+            simp only [rule_def, p_def, List.map_cons, List.map_nil, List.cons.injEq, and_true, fₙ_alternate] at 𝕏_h
             intro n
             match n with
-              | 0 => simp only [CutPre.r, CutPre.p, CutPre.T, List.map_eq_singleton_iff, List.cons.injEq, and_true, exists_eq_left', CutPre.f, CutPre.fₙ, CutPre.fₚ, leftInterpolant, rule_def]
+              | 0 =>
+                simp [CutPre.r, CutPre.p, CutPre.T, CutPre.f, CutPre.fₙ, CutPre.fₚ, leftInterpolantSequent, rule_def, 𝕏_h]
+                aesop -- big aesop
               | 1 =>
-                simp [rule_def, p_def, -Finset.union_insert, -Finset.union_singleton, -Finset.singleton_union] at 𝕏_h
-                simp only [fₙ_alternate] at 𝕏_h
-                simp? [CutPre.r, CutPre.p, CutPre.r, CutPre.f, CutPre.fₙ, CutPre.fₚ, leftInterpolant, -Finset.union_insert, -Finset.union_singleton, -Finset.singleton_union, eq, h]
-                sorry
-
-
-
-              | 2 => sorry
-          }
+                simp [CutPre.r, CutPre.p]}
         | _ => sorry -- not possible
   else sorry
 
 noncomputable def PartialLeft_orᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.orᵣ Δ φ ψ in_Δ)
-  : CutPre.CutProofFromPremises x (@leftInterpolant 𝕏 _) :=
+  : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
       | [y] =>
       if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then {
@@ -223,7 +270,7 @@ noncomputable def PartialLeft_orᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x :
         | _ => sorry
 
 noncomputable def PartialLeft_andₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.andₗ Δ φ ψ in_Δ)
-  : CutPre.CutProofFromPremises x (@leftInterpolant 𝕏 _) :=
+  : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then {
     X := sorry
     α u := sorry
@@ -232,7 +279,7 @@ noncomputable def PartialLeft_andₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
   else sorry
 
 noncomputable def PartialLeft_andᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.andᵣ Δ φ ψ in_Δ)
-  : CutPre.CutProofFromPremises x (@leftInterpolant 𝕏 _) :=
+  : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then {
     X := sorry
     α u := sorry
@@ -241,7 +288,7 @@ noncomputable def PartialLeft_andᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
   else sorry
 
 noncomputable def PartialLeft_boxₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ in_Δ} (rule_def : r 𝕏.α x = RuleApp.boxₗ Δ φ in_Δ)
-  : CutPre.CutProofFromPremises x (@leftInterpolant 𝕏 _) :=
+  : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then {
     X := sorry
     α u := sorry
@@ -250,7 +297,7 @@ noncomputable def PartialLeft_boxₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
   else sorry
 
 noncomputable def PartialLeft_boxᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ in_Δ} (rule_def : r 𝕏.α x = RuleApp.boxᵣ Δ φ in_Δ)
-  : CutPre.CutProofFromPremises x (@leftInterpolant 𝕏 _) :=
+  : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then {
     X := sorry
     α u := sorry
@@ -258,8 +305,8 @@ noncomputable def PartialLeft_boxᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
         }
   else sorry
 
-set_option maxHeartbeats 500000
-noncomputable def PartialLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : CutPre.CutProofFromPremises x (@leftInterpolant 𝕏 _) :=
+set_option maxHeartbeats 500000 --PartialInterpolationLeft
+noncomputable def PartialInterpolationLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   match rule_def : (r 𝕏.α x) with
     | .topₗ _ _ => PartialLeft_topₗ x rule_def
     | .topᵣ _ _ => PartialLeft_topᵣ x rule_def
@@ -273,117 +320,61 @@ noncomputable def PartialLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.
     | .andᵣ _ _ _ _ => PartialLeft_andᵣ x rule_def
     | .boxₗ _ _ _ => PartialLeft_boxₗ x rule_def
     | .boxᵣ _ _ _ => PartialLeft_boxᵣ x rule_def
-/-
-set_option maxHeartbeats 1000000
-noncomputable def InterpolantProofFromPremisesLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : CutPre.CutProofFromPremises ((p 𝕏.α x).map leftInterpolant) :=
-  if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then match rule : (r 𝕏.α x) with
-    | .topₗ Δ in_Δ => by exact {
-        X := Unit
-        α u := ⟨CutPre.RuleApp.top (leftInterpolant x) (by simp [leftInterpolant, rule, f, in_Δ]), {}⟩ -- : RuleApp × Sequent × Multiset X
-        h := by aesop}
-    | .topᵣ Δ in_Δ => by exact {
-        X := Unit
-        α u := ⟨CutPre.RuleApp.top (leftInterpolant x) (by
-          simp [leftInterpolant, eq, equation, rule] -- why not able to simpe with rule here
-          left
-          split <;> simp_all [Interpolant, partial_] -- wow, do not forget about split!!!
-          ), {}⟩
-        h := by aesop}
-    | .axₗₗ Δ n in_Δ => by exact {
-        X := Unit
-        α u := ⟨CutPre.RuleApp.ax (leftInterpolant x) n (by simp [leftInterpolant, rule, f, in_Δ]), {}⟩ -- : RuleApp × Sequent × Multiset X
-        h := by aesop}
-    | .axₗᵣ Δ n in_Δ => by exact {
-        X := Unit
-        α u := ⟨CutPre.RuleApp.ax (leftInterpolant x) n (by
-          simp [leftInterpolant, f, in_Δ, eq, equation, rule]
-          left
-          split <;> simp_all only [Interpolant, and_true, Subtype.forall, Finset.mem_image, forall_exists_index, reduceCtorEq, partial_]
-          split
-          · exfalso
-            sorry
-          · simp_all
-          ), {}⟩
-        h := by aesop}
-    | .axᵣₗ Δ n in_Δ => by exact {
-        X := Unit
-        α u := ⟨CutPre.RuleApp.ax (leftInterpolant x) n (by
-          simp [leftInterpolant, f, in_Δ, eq, equation, rule]
-          left
-          split <;> simp_all only [Interpolant, and_true, Subtype.forall, Finset.mem_image, forall_exists_index, reduceCtorEq, partial_]
-          split
-          · exfalso
-            sorry
-          · simp_all
-          ), {}⟩
-        h := by aesop}
-    | .axᵣᵣ Δ n in_Δ => by exact {
-        X := Unit
-        α u := ⟨CutPre.RuleApp.top (leftInterpolant x) (by
-          simp [leftInterpolant, rule, f, eq, equation]
-          left
-          split <;> simp_all [Interpolant, partial_]
-          ), {}⟩
-        h := by aesop}
-    | .orₗ Δ A B in_Δ => by
-      have := 𝕏.h x
-      simp only [rule, List.map_eq_singleton_iff] at this
-      exact {
-        X := Fin 2
-        α u :=
-          match u with
-          | 0 => ⟨CutPre.RuleApp.or (leftInterpolant x) A B (by simp [leftInterpolant, rule, f, in_Δ]), [1]⟩
-          | 1 => ⟨CutPre.RuleApp.pre (({Interpolant 𝕏 (at encodeVar x)} ∪ (f (RuleApp.orₗ Δ A B in_Δ)).left) \ {A v B} ∪ {A, B}) (by sorry), {}⟩
-        h := by
-          intro n
-          match n with
-            | 0 => simp only [CutPre.r, CutPre.p, List.map_singleton, CutPre.f, CutPre.fₙ, List.cons.injEq,
-                   and_true, CutPre.fₚ, leftInterpolant, eq, equation] --List.getElem_map, leftInterpolant, and_true]
-                   split <;> simp_all only [reduceCtorEq]
-            | 1 => simp [CutPre.r, CutPre.p]
-        }
-    | .orᵣ Δ A B in_Δ => by
-      have := 𝕏.h x
-      simp only [rule, List.map_eq_singleton_iff] at this
-      exact {
-        X := Unit
-        α u := ⟨CutPre.RuleApp.pre (leftInterpolant x) (by sorry), {}⟩
-        h := by simp [CutPre.r, CutPre.p]
-        }
-    | _ => sorry -- another Interpolant x = ... thing
 
-  else by sorry -- same thing but with cut used first
--/
-
-
--- noncomputable def InterpolantProofFromPremisesLeft_node {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : (InterpolantProofFromPremisesLeft x).X := by sorry
-
-
--- noncomputable def InterpolantProofLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : CutPre.CutProofFromPremises [] := by exact --∀ x : 𝕏.X, 𝕐 ⊢ leftInterpolant x
---   {
---     X := (y : 𝕏.X) × (InterpolantProofFromPremisesLeft y).X
---     α :=  -- change to match?
---       fun ⟨y, z_y⟩ ↦
---       match (@CutPre.r _ _ (InterpolantProofFromPremisesLeft y).α z_y) with
---       | .pre Δ in_Δ => ⟨CutPre.RuleApp.skp Δ, (p 𝕏.α y).map (fun x ↦ ⟨x, InterpolantProofFromPremisesLeft_node x⟩)⟩ -- only interesting case
---       | .cut Δ A => ⟨CutPre.RuleApp.cut Δ A, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
---       | .wk Δ A in_Δ => ⟨CutPre.RuleApp.wk Δ A in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
---       | .skp Δ => ⟨CutPre.RuleApp.skp Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
---       | .top Δ in_Δ => ⟨CutPre.RuleApp.top Δ in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
---       | .ax Δ n in_Δ => ⟨CutPre.RuleApp.ax Δ n in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
---       | .and Δ A B in_Δ => ⟨CutPre.RuleApp.and Δ A B in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
---       | .or Δ A B in_Δ => ⟨CutPre.RuleApp.or Δ A B in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
---       | .box Δ A in_Δ => ⟨CutPre.RuleApp.box Δ A in_Δ, (CutPre.p (InterpolantProofFromPremisesLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
---     h := by
---       intro ⟨y, z_y⟩
---       simp [CutPre.r, CutPre.p]
---       split <;> split <;> simp_all -- reduce to 9 goals
---       · subst_eqs
---         have := (InterpolantProofFromPremisesLeft y).h z_y
---         simp_all [CutPre.r]
---       --  rw [←this]
-
---         sorry -- .cut case
---       all_goals
---         sorry
---   }
+set_option maxHeartbeats 20000000
+noncomputable def InterpolantProofLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : SplitCut.Proof := by exact --∀ x : 𝕏.X, 𝕐 ⊢ leftInterpolant x
+  { X := (y : 𝕏.X) × (PartialInterpolationLeft y).X
+    α :=  -- change to match?
+      fun ⟨y, z_y⟩ ↦
+      match (@CutPre.r _ _ _ _ (PartialInterpolationLeft y).α z_y) with
+      | .pre z z_in => ⟨SplitCut.RuleApp.skp (leftInterpolantSequent z), (p 𝕏.α y).map (fun x ↦ ⟨x, sorry⟩)⟩ -- map to the node
+      | .cut Δ A => ⟨SplitCut.RuleApp.cut Δ A, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .wkₗ Δ A in_Δ => ⟨SplitCut.RuleApp.wkₗ Δ A in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .wkᵣ Δ A in_Δ => ⟨SplitCut.RuleApp.wkᵣ Δ A in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .topₗ Δ in_Δ => ⟨SplitCut.RuleApp.topₗ Δ in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .topᵣ Δ in_Δ => ⟨SplitCut.RuleApp.topᵣ Δ in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .axₗₗ Δ n in_Δ => ⟨SplitCut.RuleApp.axₗₗ Δ n in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .axₗᵣ Δ n in_Δ => ⟨SplitCut.RuleApp.axₗᵣ Δ n in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .axᵣₗ Δ n in_Δ => ⟨SplitCut.RuleApp.axᵣₗ Δ n in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .axᵣᵣ Δ n in_Δ => ⟨SplitCut.RuleApp.axᵣᵣ Δ n in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .andₗ Δ A B in_Δ => ⟨SplitCut.RuleApp.andₗ Δ A B in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .andᵣ Δ A B in_Δ => ⟨SplitCut.RuleApp.andᵣ Δ A B in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .orₗ Δ A B in_Δ => ⟨SplitCut.RuleApp.orₗ Δ A B in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .orᵣ Δ A B in_Δ => ⟨SplitCut.RuleApp.orᵣ Δ A B in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .boxₗ Δ A in_Δ => ⟨SplitCut.RuleApp.boxₗ Δ A in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+      | .boxᵣ Δ A in_Δ => ⟨SplitCut.RuleApp.boxᵣ Δ A in_Δ, (CutPre.p (PartialInterpolationLeft y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+    h := by
+      intro y_zy
+      have h1 := 𝕏.h y_zy.1
+      have h2 := (PartialInterpolationLeft y_zy.1).h y_zy.2
+      cases r_def : (@CutPre.r _ _ _ _ (PartialInterpolationLeft y_zy.1).α y_zy.2) <;> simp [r_def, CutPre.fₙ_alternate] at h2 <;> try simp [SplitCut.r, r_def, h2, SplitCut.fₙ_alternate, SplitCut.p]
+      · sorry -- there is a sorry above so this is understandable
+      · simp [←h2]
+        intro a
+        split <;> simp_all [SplitCut.f, CutPre.f]
+      · have ⟨val, prop⟩ := h2
+        refine ⟨val, prop.1, ?_⟩
+        split <;> simp_all [SplitCut.f, CutPre.f]
+      · have ⟨val, prop⟩ := h2
+        refine ⟨val, prop.1, ?_⟩
+        split <;> simp_all [SplitCut.f, CutPre.f]
+      · simp [←h2]
+        intro a
+        split <;> simp_all [SplitCut.f, CutPre.f]
+      · simp [←h2]
+        intro a
+        split <;> simp_all [SplitCut.f, CutPre.f]
+      · have ⟨val, prop⟩ := h2
+        refine ⟨val, prop.1, ?_⟩
+        split <;> simp_all [SplitCut.f, CutPre.f]
+      · have ⟨val, prop⟩ := h2
+        refine ⟨val, prop.1, ?_⟩
+        split <;> simp_all [SplitCut.f, CutPre.f]
+      · have ⟨val, prop⟩ := h2
+        refine ⟨val, prop.1, ?_⟩
+        split <;> simp_all [SplitCut.f, CutPre.f]
+      · have ⟨val, prop⟩ := h2
+        refine ⟨val, prop.1, ?_⟩
+        split <;> simp_all [SplitCut.f, CutPre.f]
+    path := by sorry
+  }

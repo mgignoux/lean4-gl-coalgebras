@@ -2,63 +2,9 @@ import GL.Logic
 import GL.CoalgebraProof
 import GL.SplitCoalgebraProof
 import Mathlib.Data.Fintype.Defs
+import GL.Semantics
 
-/- TRANSFORMATIONS -/
-
-/-- Structure preserving map substituting Pₙ by C --/
-def single (n : Nat) (C : Formula) : Formula → Formula
-  | ⊥ => ⊥
-  | ⊤ => ⊤
-  | at k => if k == n then C else at k
-  | na k => if k == n then ~ C else na k
-  | A & B => (single n C A) & (single n C B)
-  | A v B => (single n C A) v (single n C B)
-  | □ A => □ (single n C A)
-  | ◇ A => ◇ (single n C A)
-
-theorem single_neg (n : Nat) (C D : Formula) : single n C (~D) = Formula.neg (single n C D) := by
-  induction D <;> simp [Formula.neg, single]
-  case neg_atom m =>
-    by_cases m = n
-    case pos h =>
-      simp [h]
-      induction C <;> simp [Formula.neg, Formula.instTop, Formula.instBot]
-      case and ih1 ih2 => exact ⟨ih1, ih2⟩
-      case or ih1 ih2 => exact ⟨ih1, ih2⟩
-      case box ih => exact ih
-      case diamond ih => exact ih
-    case neg h => simp [h]
-  all_goals
-    aesop
-
-/-- Structure preserving map substituting all atoms meeting a certain criteria p --/
-def partial_ {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) : Formula → Formula
-  | ⊥ => ⊥
-  | ⊤ => ⊤
-  | at n => if h : p n then σ ⟨n, h⟩ else at n
-  | na n => if h : p n then ~ σ ⟨n, h⟩ else na n
-  | A & B => (partial_ σ A) & (partial_ σ B)
-  | A v B => (partial_ σ A) v (partial_ σ B)
-  | □ A => □ (partial_ σ A)
-  | ◇ A => ◇ (partial_ σ A)
-
-/-- Structure preserving map substituting all atoms via a transformation σ --/
-def full (σ : Nat → Formula) (A : Formula) : Formula := match A with
-  | ⊥ => ⊥
-  | ⊤ => ⊤
-  | at n => σ n
-  | na n => ~ (σ n)
-  | A & B => (full σ A) & (full σ B)
-  | A v B => (full σ A) v (full σ B)
-  | □ A => □ (full σ A)
-  | ◇ A => ◇ (full σ A)
-termination_by Formula.size A
-decreasing_by
-  all_goals
-  simp [Formula.size]
-  try linarith
-
-namespace split
+namespace Split
 
 def Proof.Sequent (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Sequent :=
   fin_X.elems.biUnion (fun x ↦ (f (r 𝕏.α x)).image (Sum.elim id id))
@@ -73,7 +19,6 @@ theorem at_in_lt_freeVar {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {n : Nat} (h : 
   · apply Finset.le_max'
     simp
     exact ⟨at n, h, by simp [Formula.freshVar]⟩
-
 
 noncomputable def encodeVar {𝕏 : Proof} [Fintype 𝕏.X] : 𝕏.X → Nat :=
   fun x ↦ 𝕏.freeVar + Fintype.equivFin 𝕏.X x
@@ -90,6 +35,11 @@ lemma encodeVar_inj (𝕏 : Proof) [Fintype 𝕏.X] : Function.Injective (@encod
 lemma encodeVar_inv (𝕏 : Proof) [Fintype 𝕏.X] (x : 𝕏.X) : unencodeVar (encodeVar x) (by simp [encodeVar]) = x := by
   simp [unencodeVar, encodeVar]
 
+lemma at_in_not_encodeVar {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {n : Nat} (h : at n ∈ 𝕏.Sequent) (x : 𝕏.X) : ¬ encodeVar x = n := by
+  have := at_in_lt_freeVar h
+  intro con
+  subst con
+  simp_all [encodeVar]
 
 noncomputable def equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Formula := match r : r 𝕏.α x with
   | RuleApp.topₗ _ _ => ⊥
@@ -98,8 +48,8 @@ noncomputable def equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) 
   | RuleApp.axₗᵣ _ k _ => na k
   | RuleApp.axᵣₗ _ k _ => at k
   | RuleApp.axᵣᵣ _ _ _ => ⊤
-  | RuleApp.orₗ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop))) & at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))
-  | RuleApp.orᵣ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop))) v at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))
+  | RuleApp.orₗ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))
+  | RuleApp.orᵣ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))
   | RuleApp.andₗ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map]))) v at (encodeVar ((p 𝕏.α x)[1]'(by have := 𝕏.h x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map])))
   | RuleApp.andᵣ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map]))) & at (encodeVar ((p 𝕏.α x)[1]'(by have := 𝕏.h x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map])))
   | RuleApp.boxₗ _ _ _ => ◇ at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))
@@ -193,9 +143,6 @@ theorem single_preserves_equiv (n : Nat) (C D E : Formula) (h : D ≅ E) : singl
   all_goals
   sorry
 
-
-theorem equiv_help {C D E : Formula} (h : C ≅ D) (g : D = E) : (C ≅ E) := by aesop
-
 theorem Solution_strong_helper {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) (n : ℕ) {B A : Formula}
   : single n B (partial_ σ A) = @partial_ (fun m ↦ p m ∨ m = n) _ (fun m ↦ single n B (if h : p m then σ ⟨m, h⟩ else at m)) A := by
   induction A
@@ -266,149 +213,159 @@ theorem finite_and_no_loop_implies_exists_leaf {𝕏 : Proof} [fin_X : Fintype �
   apply inf_X.not_finite
   apply Subtype.finite
 
-set_option maxHeartbeats 900000
-theorem Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
+
+
+
+open Classical in
+def Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
+  {Y : Finset 𝕏.X} (Y_sub : Y ⊆ fin_X.elems) :
+    {n // n ∈ Y.image encodeVar} → Formula :=
+    if em_con : Y = ∅ then (fun ⟨n, n_prop⟩ ↦ False.elim (by simp_all)) else
+    if loop_con : ∃ y, Relation.TransGen (edge_restr (fun x ↦ x ∈ Y)) y y then
+      have box_in_Y := exists_box_on_restr_loop loop_con.choose (fun x ↦ x ∈ Y) loop_con.choose_spec
+      let box := box_in_Y.choose
+      have τ := @Solution_strong _ _ (Y \ {box}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
+      fun n ↦ (single (encodeVar box) ⊤) (partial_ τ (at n)) -- fix this later
+    else
+      have y_in_Y : ∃ y, y ∈ Y := by by_contra h; apply em_con; apply Finset.eq_empty_of_forall_notMem; simp_all
+      have leaf_in_Y := finite_and_no_loop_implies_exists_leaf (fun x ↦ x ∈ Y) y_in_Y.choose y_in_Y.choose_spec loop_con
+      let leaf := leaf_in_Y.choose
+      let τ := @Solution_strong _ _ (Y \ {leaf}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
+      fun n ↦ (single (encodeVar leaf) (equation leaf)) (partial_ τ (at n))
+
+termination_by Finset.card Y
+decreasing_by
+  · have box_in : box ∈ Y := box_in_Y.choose_spec.2
+    simp [←Finset.card_sdiff_add_card_inter Y {box}, box_in]
+    linarith
+  · have leaf_in : leaf ∈ Y := leaf_in_Y.choose_spec.1
+    simp [←Finset.card_sdiff_add_card_inter Y {leaf}, leaf_in]
+    linarith
+
+theorem equiv_help {C D E : Formula} (h : C ≅ D) (g : D = E) : (C ≅ E) := by aesop
+
+set_option maxHeartbeats 1000000
+open Classical in
+theorem Solution_strong_prop' {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
   (Y : Finset 𝕏.X) (Y_sub : Y ⊆ fin_X.elems) :
-    ∃ σ : {n // n ∈ Y.image encodeVar} → Formula,
       ∀ n : {n // n ∈ Y.image encodeVar},
-          ((σ n = partial_ σ (equation (unencodeVar n (helper_1 n.2)))) ∨ (σ n ≅ partial_ σ (equation (unencodeVar n (helper_1 n.2)))))
-       ∧ (True) -- not a subformula property)
-      := by
-  -- induction Y using Finset.induction_on --- DONT DO THIS, WE WANT TO SELECT THE ELEMENTS WE REMOVE
-  by_cases Y = ∅
-  case pos Y_em => -- if empty then vacuously done
-    subst Y_em
-    simp
+          ((Solution_strong Y_sub n = partial_ (Solution_strong Y_sub) (equation (unencodeVar n (helper_1 n.2))))
+         ∨ (Solution_strong Y_sub n ≅ partial_ (Solution_strong Y_sub) (equation (unencodeVar n (helper_1 n.2)))))
+       ∧ (∀ m : {m // m ∈ Y.image encodeVar}, m.1 ∉ (Solution_strong Y_sub n).vocab) := by
 
-  case neg Y_ne =>
-    have dec := 𝕏.decidable
-    by_cases ∃ y, Relation.TransGen (edge_restr (fun x ↦ x ∈ Y)) y y
-
-    case pos h =>  -- if there is a loop then find the box node which must be in Y
-      have ⟨y, y_y⟩ := h
-      have ⟨z, z_box, z_in⟩ := exists_box_on_restr_loop y (fun x ↦ x ∈ Y) y_y
-
-      have ⟨τ, τ_prop⟩ := Solution_strong (Y \ {z}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
-      use fun n ↦ (single (encodeVar z) ⊤) (partial_ τ (at n)) -- fix this later
-
+  intro ⟨n, n_in⟩
+  unfold Solution_strong
+  by_cases em_con : Y = ∅
+  · subst em_con
+    simp at n_in
+  · by_cases loop_con : ∃ y, Relation.TransGen (edge_restr (fun x ↦ x ∈ Y)) y y
+    case pos =>
+      simp [em_con, loop_con]
       sorry
 
-    case neg h => -- if there is no loop then find a leaf in ↑y
-      simp at Y_ne
-      have ⟨y, in_Y⟩ : ∃ y, y ∈ Y := by by_contra h; apply Y_ne; apply Finset.eq_empty_of_forall_notMem; simp_all
-      have ⟨leaf, leaf_in, leaf_prop⟩ := finite_and_no_loop_implies_exists_leaf (fun x ↦ x ∈ Y) y in_Y h
-      have ⟨τ, τ_prop⟩ := Solution_strong (Y \ {leaf}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
-      use fun n ↦ (single (encodeVar leaf) (equation leaf)) (partial_ τ (at n))
+    case neg =>
+      simp [em_con, loop_con]
+      have y_in_Y : ∃ y, y ∈ Y := by by_contra h; apply em_con; apply Finset.eq_empty_of_forall_notMem; simp_all
+      have leaf_in_Y := finite_and_no_loop_implies_exists_leaf (fun x ↦ x ∈ Y) y_in_Y.choose y_in_Y.choose_spec loop_con
 
-      intro ⟨y, y_in⟩
-      by_cases y = encodeVar leaf
+      let τ_prop := @Solution_strong_prop' _ _ (Y \ {leaf_in_Y.choose}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
+
+      have helper : ¬ encodeVar leaf_in_Y.choose ∈ Finset.image encodeVar (Y \ {leaf_in_Y.choose}) := by
+        simp
+        intro x x_in hyp con
+        apply hyp
+        exact encodeVar_inj 𝕏 con
+
+      by_cases n = encodeVar leaf_in_Y.choose
       case pos y_eq_leaf =>
         subst y_eq_leaf
-        refine ⟨Or.inl ?_, by simp⟩
-        have  h : ¬ encodeVar leaf ∈ Finset.image encodeVar (Y \ {leaf}) := by
-          simp
-          intro x x_in hyp con
-          apply hyp
-          exact encodeVar_inj 𝕏  con
-        simp [partial_, h, single, encodeVar_inv]
-        apply partial_const
-        intro n n_in
-        by_contra h
-        simp at h
-        have ⟨z, z_prop⟩ := h
-        rw [←z_prop.2] at n_in
-        have y_z := encodeVar_in_equation_imp_pred n_in
-        -- this is a contradiction, z is in p α y, and z ∈ Y, so leaf_prop cannot hold
-        exact leaf_prop z y_z z_prop.1
-
+        simp [partial_, helper, single, encodeVar_inv]
+        refine ⟨Or.inl ?_, ?_⟩
+        · apply partial_const
+          intro n n_in
+          by_contra h
+          simp at h
+          have ⟨z, z_prop⟩ := h
+          rw [←z_prop.2] at n_in
+          have y_z := encodeVar_in_equation_imp_pred n_in
+          exact leaf_in_Y.choose_spec.2 _ y_z z_prop.1
+        · intro z z_in con
+          exact leaf_in_Y.choose_spec.2 z (encodeVar_in_equation_imp_pred con) z_in
       case neg y_ne_leaf =>
-        have y_in : y ∈ Finset.image encodeVar (Y \ {leaf}) := by
+        have helper : n ∈ Finset.image encodeVar (Y \ {leaf_in_Y.choose}) := by
           simp
-          simp at y_in
-          have ⟨n, n_prop⟩ := y_in
+          simp at n_in
+          have ⟨n, n_prop⟩ := n_in
           refine ⟨n, ⟨n_prop.1, ?_⟩, n_prop.2⟩
           intro con
           rw [←con] at y_ne_leaf
           exact y_ne_leaf (Eq.symm n_prop.2)
-        simp only [partial_, y_in, ↓reduceDIte]
-        have ⟨eq_or_equiv, prop⟩ := τ_prop ⟨y, by aesop⟩
-        rcases eq_or_equiv with eq | equiv -- substitution preserves equality/equivelance
-        · refine ⟨Or.inl ?_, by simp⟩ -- recover the other goal here later
-          simp only [eq] -- for some reason you can comment this and it still works??
-          convert @Solution_strong_helper (fun n ↦ n ∈ Finset.image encodeVar (Y \ {leaf})) _ τ (encodeVar leaf) (equation leaf) (equation (unencodeVar y (helper_1 y_in)))
-          · simp [Finset.image_sdiff _ _ (encodeVar_inj 𝕏)]
-            clear *- leaf_in
-            rename_i x
-            refine ⟨?_, by tauto⟩
-            intro ⟨a, a_prop⟩
-            by_cases a = leaf <;> try simp_all
-            left
-            refine ⟨⟨a, a_prop⟩, by rw [←a_prop.2]; apply Function.Injective.ne (encodeVar_inj 𝕏) (by assumption)⟩
-        · refine ⟨Or.inr ?_, by simp⟩ -- recover the other goal here later
-          have := single_preserves_equiv (encodeVar leaf) (equation leaf) _ _ equiv
-          apply equiv_help this
-          convert @Solution_strong_helper (fun n ↦ n ∈ Finset.image encodeVar (Y \ {leaf})) _ τ (encodeVar leaf) (equation leaf) (equation (unencodeVar y (helper_1 y_in)))
-          · simp [Finset.image_sdiff _ _ (encodeVar_inj 𝕏)]
-            clear *- leaf_in
-            rename_i x
-            refine ⟨?_, by tauto⟩
-            intro ⟨a, a_prop⟩
-            by_cases a = leaf <;> try simp_all
-            left
-            refine ⟨⟨a, a_prop⟩, by rw [←a_prop.2]; apply Function.Injective.ne (encodeVar_inj 𝕏) (by assumption)⟩
+        simp [partial_, helper]
+        have ⟨eq_or_equiv, sub_prop⟩ := τ_prop ⟨n, by aesop⟩
+        refine ⟨?_, ?_⟩
+        · rcases eq_or_equiv with eq | equiv
+          · left
+            convert @Solution_strong_helper (fun n ↦ n ∈ Finset.image encodeVar (Y \ {leaf_in_Y.choose})) _ (@Solution_strong _ _ (Y \ {leaf_in_Y.choose}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in)) (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) (equation (unencodeVar n (helper_1 n_in)))
+            · simp only [Finset.image_sdiff _ _ (encodeVar_inj 𝕏), Finset.mem_sdiff, Finset.image_singleton, Finset.not_mem_singleton]
+              refine ⟨by tauto, ?_⟩
+              intro h
+              rcases h with h | h <;> simp_all
+              exact ⟨leaf_in_Y.choose, leaf_in_Y.choose_spec.1, rfl⟩
+            · sorry
+          · right
+            have := single_preserves_equiv (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) _ _ equiv
+            apply equiv_help this
+            convert @Solution_strong_helper (fun n ↦ n ∈ Finset.image encodeVar (Y \ {leaf_in_Y.choose})) _ (@Solution_strong _ _ (Y \ {leaf_in_Y.choose}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in)) (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) (equation (unencodeVar n (helper_1 n_in)))
+            · simp only [Finset.image_sdiff _ _ (encodeVar_inj 𝕏), Finset.mem_sdiff, Finset.image_singleton, Finset.not_mem_singleton]
+              refine ⟨by tauto, ?_⟩
+              intro h
+              rcases h with h | h <;> simp_all
+              exact ⟨leaf_in_Y.choose, leaf_in_Y.choose_spec.1, rfl⟩
+            · sorry
+        · intro z z_in
+          apply in_single_voc
+          · intro con
+            exact leaf_in_Y.choose_spec.2 z (encodeVar_in_equation_imp_pred con) z_in
+          · intro not_leaf
+            exact sub_prop ⟨encodeVar z, by aesop⟩
+          · intro con
+            exact leaf_in_Y.choose_spec.2 leaf_in_Y.choose (encodeVar_in_equation_imp_pred con) leaf_in_Y.choose_spec.1
 
 termination_by Finset.card Y
 decreasing_by
-  · rw [←Finset.card_sdiff_add_card_inter Y {z}]
-    cases value : (Y ∩ {z}).card -- roundabout method
-    case zero h =>
-      exfalso
-      simp only [Finset.card_eq_zero, Finset.inter_singleton, z_in, ↓reduceIte, Finset.singleton_ne_empty] at value
-    case succ =>
-      simp only [lt_add_iff_pos_right, add_pos_iff, zero_lt_one, or_true]
-  · rw [←Finset.card_sdiff_add_card_inter Y {leaf}]
-    cases value : (Y ∩ {leaf}).card -- roundabout method
-    case zero h =>
-      exfalso
-      simp only [Finset.card_eq_zero, Finset.inter_singleton, leaf_in, ↓reduceIte, Finset.singleton_ne_empty] at value
-    case succ => simp only [lt_add_iff_pos_right, add_pos_iff, zero_lt_one, or_true]
+  all_goals
+    have leaf_in := leaf_in_Y.choose_spec.1
+    simp [←Finset.card_sdiff_add_card_inter Y {leaf_in_Y.choose}, leaf_in]
 
-
-theorem Solution_exists {𝕏 : Proof} [fin_X : Fintype 𝕏.X] :
-    ∃ σ : {n // n ∈ fin_X.elems.image encodeVar} → Formula,
-      ∀ n : {n // n ∈ fin_X.elems.image encodeVar},
-          ((σ n = partial_ σ (equation (unencodeVar n (helper_1 n.2)))) ∨ (σ n ≅ partial_ σ (equation (unencodeVar n (helper_1 n.2)))))
-       ∧ (True) -- not a subformula property)
-  := Solution_strong fin_X.elems subset_rfl
-
-noncomputable def Interpolant (𝕏 : Proof) [fin_X : Fintype 𝕏.X] (φ : Formula) : Formula
-  := partial_ (@Solution_exists 𝕏 _).choose φ
+noncomputable def Interpolant (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Formula → Formula
+  := partial_ $ @Solution_strong 𝕏 _ fin_X.elems (by aesop)
 
 lemma eq_chain {α : Type} {a b c d : α} {r : α → α → Prop} (h₁ : r a c) (h₂ : a = b) (h₃ : c = d) : r b d :=
 by
   aesop
 
 theorem Interpolant_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
-    Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) ∨ (Interpolant 𝕏 (at (encodeVar x)) ≅ Interpolant 𝕏 (equation x))
+    (Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
+  ∨ (Interpolant 𝕏 (at (encodeVar x)) ≅ Interpolant 𝕏 (equation x)))
+  ∧ (∀ y : 𝕏.X, encodeVar y ∉ (Interpolant 𝕏 (at (encodeVar x))).vocab)
  := by
-  have := (@Solution_exists 𝕏 _).choose_spec ⟨encodeVar x, by simp [encodeVar, Fintype.complete]⟩
   unfold Interpolant
-  simp [encodeVar_inv] at this
-  rcases this with l | r
-  · left
-    refine eq_chain l ?_ ?_
-    · have h : encodeVar x ∈ Finset.image encodeVar fin_X.elems := by simp [Fintype.complete]
-      simp [partial_, h]
-    · apply congrArg₂
-      · simp only [and_true, Subtype.forall, Finset.mem_image, forall_exists_index,
-        forall_and_index]
-      · rfl
-
-  · right
-    refine eq_chain r ?_ ?_
-    · have h : encodeVar x ∈ Finset.image encodeVar fin_X.elems := by simp [Fintype.complete]
-      simp [partial_, h]
-    · apply congrArg₂
-      · simp only [and_true, Subtype.forall, Finset.mem_image, forall_exists_index,
-        forall_and_index]
-      · rfl
+  have h : ∀ y : 𝕏.X, encodeVar y ∈ Finset.image encodeVar fin_X.elems := by simp [Fintype.complete]
+  have := @Solution_strong_prop' 𝕏 _ fin_X.elems (by aesop) ⟨encodeVar x, by simp [h]⟩
+  refine ⟨?_, ?_⟩
+  · rcases this.1 with l | r
+    · left
+      refine eq_chain l ?_ ?_
+      · simp [partial_, h]
+      · apply congrArg₂
+        · rfl
+        · simp [encodeVar_inv]
+    · right
+      refine eq_chain r ?_ ?_
+      · simp [partial_, h]
+      · apply congrArg₂
+        · rfl
+        · simp [encodeVar_inv]
+  · intro y
+    convert this.2 ⟨encodeVar y, by simp [encodeVar, Fintype.complete]⟩
+    simp [partial_, h]

@@ -11,12 +11,12 @@ open Classical
 noncomputable def chain
   {𝕏 : Proof}
   {x : 𝕏.X}
-  {φ : Formula}
-  (prop : f (r 𝕏.α x) = {φ})
+  {Γ : Sequent}
+  (prop : f (r 𝕏.α x) = Γ)
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate (M, w) φ)
+  (w_prop : ¬Evaluate_seq (M, w) Γ)
   (n : Nat) : (y : 𝕏.X) × {u : W // ¬ Evaluate_seq ⟨M, u⟩ (f (r 𝕏.α y))}
     := match n with
        | 0 => ⟨x, ⟨w, by simp_all⟩⟩
@@ -44,7 +44,7 @@ noncomputable def chain
               ⟨y, w_ih, by
                 have := 𝕏.h x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at this
-                simp [Evaluate_seq, this.1, w_ih_nφ₁, fₙ_alternate]
+                simp [Evaluate_seq, this.1, w_ih_nφ₁, fₙ_alternate, -Evaluate_neg]
                 intro χ χ_in χ_not con
                 apply w_ih_prop
                 exact ⟨χ, r_def ▸ χ_in, con⟩
@@ -54,7 +54,7 @@ noncomputable def chain
                 have w_ih_nφ₂ : ¬Evaluate (M, w_ih) φ₂ := by simp_all
                 have := 𝕏.h x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at this
-                simp [Evaluate_seq, this.2, w_ih_nφ₂, fₙ_alternate]
+                simp [Evaluate_seq, this.2, w_ih_nφ₂, fₙ_alternate, -Evaluate_neg]
                 intro χ χ_in χ_not con
                 apply w_ih_prop
                 exact ⟨χ, r_def ▸ χ_in, con⟩
@@ -69,7 +69,7 @@ noncomputable def chain
             have h : ¬Evaluate_seq (M, w_ih) (f (r 𝕏.α y)) := by
               have 𝕏h_x_ih := 𝕏.h x_ih
               simp [r_def, p_def, -Finset.union_singleton] at 𝕏h_x_ih
-              simp [Evaluate_seq, 𝕏h_x_ih, fₙ_alternate, this]
+              simp [Evaluate_seq, 𝕏h_x_ih, fₙ_alternate, this, -Evaluate_neg]
               intro χ χ_in χ_not con
               apply w_ih_prop
               exact ⟨χ, r_def ▸ χ_in, con⟩
@@ -87,11 +87,11 @@ noncomputable def chain
               have h : ¬Evaluate_seq (M, w_next) (f (r 𝕏.α y)) := by
                 have 𝕏h_x_ih := 𝕏.h x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at 𝕏h_x_ih
-                simp [Evaluate_seq, 𝕏h_x_ih, fₙ_alternate]
+                simp [Evaluate_seq, 𝕏h_x_ih, fₙ_alternate, -Evaluate_neg]
                 constructor
                 · exact w_next_prop.2
-                · simp [Sequent.D]
-                  simp [Evaluate_seq, r_def, f] at w_ih_prop
+                · simp [Sequent.D, -Evaluate_neg]
+                  simp [Evaluate_seq, r_def, f, -Evaluate_neg] at w_ih_prop
                   intro χ χ_in con
                   rcases χ_in with ⟨⟨χ_in, χ_not_box_φ⟩, χ_di⟩ | diχ_Δ
                   · apply w_ih_prop _ χ_in
@@ -106,12 +106,12 @@ noncomputable def chain
 
 lemma chain_proof_prop   {𝕏 : Proof}
   {x : 𝕏.X}
-  {φ : Formula}
-  (prop : f (r 𝕏.α x) = {φ})
+  {Γ : Sequent}
+  (prop : f (r 𝕏.α x) = Γ)
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate (M, w) φ)
+  (w_prop : ¬Evaluate_seq (M, w) Γ)
   : ∀ n, edge 𝕏.α (chain prop w_prop n).1 (chain prop w_prop (n + 1)).1 := by
     intro n
     conv =>
@@ -126,12 +126,12 @@ lemma chain_proof_prop   {𝕏 : Proof}
 
 lemma chain_model_prop {𝕏 : Proof}
   {x : 𝕏.X}
-  {φ : Formula}
-  (prop : f (r 𝕏.α x) = {φ})
+  {Γ : Sequent}
+  (prop : f (r 𝕏.α x) = Γ)
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate (M, w) φ)
+  (w_prop : ¬Evaluate_seq (M, w) Γ)
   : ∀ n, (¬ (r 𝕏.α (chain prop w_prop n).1).isBox → (chain prop w_prop n).2.1 = (chain prop w_prop (n + 1)).2.1)
        ∧ (  (r 𝕏.α (chain prop w_prop n).1).isBox → M.R (chain prop w_prop n).2.1 (chain prop w_prop (n + 1)).2.1)
   := by
@@ -161,7 +161,7 @@ lemma chain_model_prop {𝕏 : Proof}
     intro mp
     simp
     split <;> try grind
-    simp
+    simp [-Evaluate_neg]
     rename_i Δ φ ih_Δ r_def y p_def
     have := (funext fun x ↦ Classical.not_imp._simp_1) ▸
     chain._proof_14 x_ih w_ih w_ih_prop Δ φ ih_Δ (Eq.trans r_def (Eq.refl (RuleApp.box Δ φ ih_Δ)))
@@ -169,12 +169,12 @@ lemma chain_model_prop {𝕏 : Proof}
 
 theorem has_children_of_chain_model {𝕏 : Proof}
   {x : 𝕏.X}
-  {φ : Formula}
-  (prop : f (r 𝕏.α x) = {φ})
+  {Γ : Sequent}
+  (prop : f (r 𝕏.α x) = Γ)
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate (M, w) φ) :
+  (w_prop : ¬Evaluate_seq (M, w) Γ) :
   ∀ n, ∃ m, M.R (chain prop w_prop n).2.1 (chain prop w_prop (n + m)).2.1 := by
   intro n
   by_contra h
@@ -236,11 +236,12 @@ theorem inc_chain_eventual_inc_chain_prop {β}
     convert this
     · exact ih_prop.choose_spec
 
-theorem Soundness (φ : Formula) : ⊢ φ → ⊨ φ := by
+
+theorem Soundness_seq (Γ : Sequent) : ⊢ Γ → ⊨ Γ := by
   intro mp
   have ⟨𝕏, x, prop⟩ := mp
   by_contra h
-  simp [Formula.isValid] at h
+  simp only [Sequent.isValid, not_forall] at h
   have ⟨W, M, w, w_prop⟩ := h
   apply (wellFounded_iff_isEmpty_descending_chain.1 M.con_wf).false
   use fun k ↦ (@inc_chain_eventual_inc_chain _ M.R (fun n ↦ (chain prop w_prop n).2.1)
@@ -253,3 +254,8 @@ theorem Soundness (φ : Formula) : ⊢ φ → ⊨ φ := by
       intro n
       have ⟨m, m_prop⟩ := has_children_of_chain_model prop w_prop n
       use n + m) k
+
+theorem Soundness (φ : Formula) : ⊢ φ → ⊨ φ := by
+  intro mp
+  convert Soundness_seq {φ} mp
+  simp [Sequent.isValid, Formula.isValid]

@@ -1,61 +1,9 @@
-import GL.CoalgebraProof
+import GL.Logic
 import Mathlib.Data.List.Chain
-
-namespace split
 
 universe u
 
-abbrev SplitFormula := Formula ⊕ Formula
-abbrev SplitSequent := Finset SplitFormula
-namespace SplitFormula
-
-def isDiamond : Formula ⊕ Formula -> Prop
-  | Sum.inl (◇_) => true
-  | Sum.inr (◇_) => true
-  | _ => false
-
-def opUnDi (A : Formula ⊕ Formula) : Option (Formula ⊕ Formula) := match A with
-  | Sum.inl (◇B) => Option.some (Sum.inl B)
-  | Sum.inr (◇B) => Option.some (Sum.inr B)
-  | _ => none
-
-instance : DecidablePred isDiamond := by
-  intro A
-  rcases A with A | A
-  all_goals
-  cases A <;> simp [isDiamond]
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isTrue;  simp
-
-def size : (Formula ⊕ Formula) → Nat
-  | Sum.inl A => A.size
-  | Sum.inr A => A.size
-
-end SplitFormula
-
-def D (Γ : SplitSequent) : SplitSequent
-  := Finset.filter SplitFormula.isDiamond Γ ∪ Finset.filterMap SplitFormula.opUnDi Γ (by
-  intro A B C C_in_A C_in_B
-  rcases A with A | A <;> rcases B with B | B <;> rcases C with C | C
-  all_goals
-  simp_all
-  cases A <;> cases B
-  all_goals
-    simp_all [SplitFormula.opUnDi])
-
-namespace SplitSequent
-
-def toSequent (Δ : SplitSequent) : Sequent := Finset.image (Sum.elim id id) Δ
-def size (Δ : SplitSequent) : Nat := Finset.sum Δ (SplitFormula.size)
-
-end SplitSequent
-
+namespace Split
 inductive RuleApp
   | topₗ : (Δ : SplitSequent) → (Sum.inl ⊤) ∈ Δ → RuleApp
   | topᵣ : (Δ : SplitSequent) → (Sum.inr ⊤) ∈ Δ → RuleApp
@@ -127,17 +75,22 @@ def p {X : Type u} (α : X → T.obj X) (x : X) := (α x).2
 def edge {X : Type u} (α : X → T.obj X) (x y : X) : Prop := y ∈ p α x
 
 structure Proof where
-  X : Type u
-  decidable : DecidableEq X
+  X : Type
   α : X → T.obj X
   h : ∀ (x : X), match r α x with
     | RuleApp.andₗ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A}, (fₙ (r α x)) ∪ {Sum.inl B}]
     | RuleApp.andᵣ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inr A}, (fₙ (r α x)) ∪ {Sum.inr B}]
     | RuleApp.orₗ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A, Sum.inl B}]
     | RuleApp.orᵣ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inr A, Sum.inr B}]
-    | RuleApp.boxₗ _ A _ => (p α x).map (λ x ↦ f (r α x)) = [D (fₙ (r α x)) ∪ {Sum.inl A}]
-    | RuleApp.boxᵣ _ A _ => (p α x).map (λ x ↦ f (r α x)) = [D (fₙ (r α x)) ∪ {Sum.inr A}]
+    | RuleApp.boxₗ _ A _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {Sum.inl A}]
+    | RuleApp.boxᵣ _ A _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {Sum.inr A}]
     | _ => p α x = {}
+
+def Proves (𝕏 : Proof) (Δ : SplitSequent) : Prop := ∃ x : 𝕏.X, f (r 𝕏.α x) = Δ
+def SplitSequent.isTrue (Δ : SplitSequent) : Prop := ∃ (𝕏 : Proof), Proves 𝕏 Δ
+
+infixr:6 "⊢" => Proves
+prefix:40 "⊢" => SplitSequent.isTrue
 
 instance instSetoidXSplit (𝕏 : Proof) : Setoid 𝕏.X where
   r x y := f (r 𝕏.α x) = f (r 𝕏.α y)
@@ -152,10 +105,10 @@ instance instSetoidXSplit (𝕏 : Proof) : Setoid 𝕏.X where
 
 noncomputable def Filtration (𝕐 : Proof) : Proof where
   X := Quotient (instSetoidXSplit 𝕐)
-  decidable := @Quotient.decidableEq _ _ (by
-    intro a b
-    simp [HasEquiv.Equiv, instSetoidXSplit]
-    apply Finset.decidableEq)
+  -- decidable := @Quotient.decidableEq _ _ (by
+  --   intro a b
+  --   simp [HasEquiv.Equiv, instSetoidXSplit]
+  --   apply Finset.decidableEq)
   α := α_quot 𝕐
   h := by
     intro x
@@ -224,7 +177,7 @@ noncomputable def Filtration (𝕐 : Proof) : Proof where
 
 
 /- FINITENESS -/
-
+theorem finite_proof_of_proof (𝕏 : Proof) (Δ : SplitSequent) : (𝕏 ⊢ Δ) → ∃ 𝕐, Finite 𝕐.X ∧ (𝕐 ⊢ Δ) := by sorry
 
 /- WIP : PARTIAL INTERPOLATION PROOFS -/
 #check hm
@@ -352,6 +305,15 @@ lemma exists_box_on_restr_loop {𝕏 : Proof} (x : 𝕏.X) (p : 𝕏.X → Prop)
     case tail _x => exact _x.2.2
   case tail _z => exact _z.2.2
 
+theorem inf_path_has_inf_boxes {𝕏 : Proof} (g : ℕ → 𝕏.X) (h : ∀ n, edge 𝕏.α (g n) (g (n + 1))) :
+  ∀ n, ∃ m, (r 𝕏.α (g (n + m))).isBox := by
+    intro n
+    by_contra h2
+    simp at h2
+    apply (wellFounded_iff_isEmpty_descending_chain.1 (@wellFounded_lt ℕ _ _)).false
+    use fun m ↦ SplitSequent.size (f (r 𝕏.α (g (n + m))))
+    intro m
+    apply lt_if_not_box_edge ⟨h (n + m), h2 m⟩
 
 --  Relation.TransGen (fun y1 y2 ↦ edge 𝕏.α y1 y2 ∧ (y1 ∈ Y ∧ y2 ∈ Y)) y y
 -- wellfounded)iff)isEnoty

@@ -120,8 +120,13 @@ instance : DecidablePred isBox := by
   | ◇ A => □ (neg A)
 
 prefix:50 "~" => Formula.neg
-notation:55 φ:56 " ↣ " ψ:55 => (¬ φ) ∨ ψ
+notation:55 φ:56 " ↣ " ψ:55 => (~ φ) v ψ
 notation:55 φ:56 " ⟷ " ψ:55 => (φ ↣ ψ) & (ψ ↣ φ)
+prefix:50 " ⊡ " => fun φ ↦ φ & (□ φ)
+
+
+@[simp]
+theorem neg_neg_eq (φ : Formula) : (~~φ) = φ := by induction φ <;> simp [Formula.instBot, Formula.instTop] <;> grind
 
 def P := at 0
 def Q := at 1
@@ -192,7 +197,7 @@ def FL : Formula → Sequent
 theorem FL_refl {φ : Formula} : φ ∈ FL φ := by cases φ <;> simp [FL, instBot, instTop]
 
 theorem FL_mon {φ ψ : Formula} (ψ_sub_φ : ψ ∈ FL φ) : FL ψ ⊆ FL φ := by
-  cases φ <;> simp_all [FL, ]
+  cases φ <;> simp_all [FL]
   · rcases ψ_sub_φ with _|ψ_sub|ψ_sub <;> subst_eqs
     · simp [FL]
     · have := FL_mon ψ_sub
@@ -298,3 +303,172 @@ def freshVar (Γ : Finset Formula) : Nat :=
   if h : Γ = {} then 0 else Finset.max' (Γ.image (Formula.freshVar)) (by
     by_contra con
     simp_all)
+
+end Sequent
+
+abbrev SplitFormula := Formula ⊕ Formula
+abbrev SplitSequent := Finset SplitFormula
+
+namespace SplitFormula
+def isDiamond : SplitFormula -> Prop
+  | Sum.inl (◇_) => true
+  | Sum.inr (◇_) => true
+  | _ => false
+
+def opUnDi (A : SplitFormula) : Option SplitFormula := match A with
+  | Sum.inl (◇B) => Option.some (Sum.inl B)
+  | Sum.inr (◇B) => Option.some (Sum.inr B)
+  | _ => none
+
+instance : DecidablePred isDiamond := by
+  intro A
+  rcases A with A | A
+  all_goals
+  cases A <;> simp [isDiamond]
+  · apply Decidable.isFalse; simp
+  · apply Decidable.isFalse; simp
+  · apply Decidable.isFalse; simp
+  · apply Decidable.isFalse; simp
+  · apply Decidable.isFalse; simp
+  · apply Decidable.isFalse; simp
+  · apply Decidable.isFalse; simp
+  · apply Decidable.isTrue;  simp
+
+def size : (Formula ⊕ Formula) → Nat
+  | Sum.inl A => A.size
+  | Sum.inr A => A.size
+
+def FL : SplitFormula → SplitSequent
+  | Sum.inl ⊥ => {Sum.inl ⊥}
+  | Sum.inr ⊥ => {Sum.inr ⊥}
+  | Sum.inl ⊤ => {Sum.inl ⊤}
+  | Sum.inr ⊤ => {Sum.inr ⊤}
+  | Sum.inl (at n) => {Sum.inl (at n)}
+  | Sum.inr (at n) => {Sum.inr (at n)}
+  | Sum.inl (na n) => {Sum.inl (na n)}
+  | Sum.inr (na n) => {Sum.inr (na n)}
+  | Sum.inl (φ v ψ) => {Sum.inl (φ v ψ)} ∪ FL (Sum.inl φ) ∪ FL (Sum.inl ψ)
+  | Sum.inr (φ v ψ) => {Sum.inr (φ v ψ)} ∪ FL (Sum.inr φ) ∪ FL (Sum.inr ψ)
+  | Sum.inl (φ & ψ) => {Sum.inl (φ & ψ)} ∪ FL (Sum.inl φ) ∪ FL (Sum.inl ψ)
+  | Sum.inr (φ & ψ) => {Sum.inr (φ & ψ)} ∪ FL (Sum.inr φ) ∪ FL (Sum.inr ψ)
+  | Sum.inl (□ φ) => {Sum.inl (□ φ)} ∪ FL (Sum.inl φ)
+  | Sum.inr (□ φ) => {Sum.inr (□ φ)} ∪ FL (Sum.inr φ)
+  | Sum.inl (◇ φ) => {Sum.inl (◇ φ)} ∪ FL (Sum.inl φ)
+  | Sum.inr (◇ φ) => {Sum.inr (◇ φ)} ∪ FL (Sum.inr φ)
+
+/- Lemmas about FL closure -/
+
+theorem FL_refl {φ : SplitFormula} : φ ∈ FL φ := by rcases φ with φ | φ <;> cases φ <;> simp [FL, Formula.instBot, Formula.instTop]
+
+theorem FL_mon {φ ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL φ) : FL ψ ⊆ FL φ := by sorry
+
+
+end SplitFormula
+
+namespace SplitSequent
+
+def FL : SplitSequent → SplitSequent := fun Δ ↦ Finset.biUnion Δ SplitFormula.FL
+
+/- Lemmas about FL Closure of Sequents -/
+
+theorem FL_refl {Δ : SplitSequent} : Δ ⊆ FL Δ := by
+  simp [Finset.subset_iff, FL]
+  constructor
+  · intro x x_in
+    left
+    exact ⟨x, x_in, SplitFormula.FL_refl⟩
+  · intro x x_in
+    right
+    exact ⟨x, x_in, SplitFormula.FL_refl⟩
+
+theorem FL_subset {Δ Γ : SplitSequent} (Δ_sub_Γ : Δ ⊆ Γ) : FL Δ ⊆ FL Γ := by
+  simp_all [Finset.subset_iff, FL]
+  constructor
+  all_goals
+    intro φ h
+    rcases h with h | h
+    · have ⟨ψ, ψ_in_Δ, φ_sub_ψ⟩ := h
+      left
+      refine ⟨ψ, Δ_sub_Γ.1 _ ψ_in_Δ, φ_sub_ψ⟩
+    · have ⟨ψ, ψ_in_Δ, φ_sub_ψ⟩ := h
+      right
+      refine ⟨ψ, Δ_sub_Γ.2 _ ψ_in_Δ, φ_sub_ψ⟩
+
+
+theorem FL_idem {Δ : SplitSequent} : FL (FL Δ) = FL Δ := by
+  simp [Finset.Subset.antisymm_iff]
+  constructor
+  · simp [Finset.subset_iff, FL]
+    constructor
+    all_goals
+    intro φ h
+    · rcases h with ⟨ψ, ⟨χ, χ_in_Δ, ψ_sub_χ⟩ | ⟨χ, χ_in_Δ, ψ_sub_χ⟩, φ_sub_ψ⟩ | ⟨ψ, ⟨χ, χ_in_Δ, ψ_sub_χ⟩ | ⟨χ, χ_in_Δ, ψ_sub_χ⟩, φ_sub_ψ⟩
+      · left
+        exact ⟨χ, χ_in_Δ, by apply SplitFormula.FL_mon ψ_sub_χ; simp_all⟩
+      · right
+        exact ⟨χ, χ_in_Δ, by apply SplitFormula.FL_mon ψ_sub_χ; simp_all⟩
+      · left
+        exact ⟨χ, χ_in_Δ, by apply SplitFormula.FL_mon ψ_sub_χ; simp_all⟩
+      · right
+        exact ⟨χ, χ_in_Δ, by apply SplitFormula.FL_mon ψ_sub_χ; simp_all⟩
+  · exact FL_subset (FL_refl)
+
+def D (Γ : SplitSequent) : SplitSequent
+  := Finset.filter SplitFormula.isDiamond Γ ∪ Finset.filterMap SplitFormula.opUnDi Γ (by
+  intro A B C C_in_A C_in_B
+  rcases A with A | A <;> rcases B with B | B <;> rcases C with C | C
+  all_goals
+  simp_all
+  cases A <;> cases B
+  all_goals
+    simp_all [SplitFormula.opUnDi])
+
+@[simp]
+theorem opUnDi_eqₗₗ {φ ψ : Formula} : SplitFormula.opUnDi (Sum.inl φ) = some (Sum.inl ψ) ↔ φ = ◇ ψ := by
+  cases φ <;> simp [SplitFormula.opUnDi]
+
+@[simp]
+theorem opUnDi_eqᵣᵣ {φ ψ : Formula} : SplitFormula.opUnDi (Sum.inr φ) = some (Sum.inr ψ) ↔ φ = ◇ ψ := by
+  cases φ <;> simp [SplitFormula.opUnDi]
+
+@[simp]
+theorem opUnDi_eqₗᵣ {φ ψ : Formula} : ¬ (SplitFormula.opUnDi (Sum.inl φ) = some (Sum.inr ψ)) := by
+  cases φ <;> simp [SplitFormula.opUnDi]
+
+@[simp]
+theorem opUnDi_eqᵣₗ {φ ψ : Formula} : ¬ (SplitFormula.opUnDi (Sum.inr φ) = some (Sum.inl ψ)) := by
+  cases φ <;> simp [SplitFormula.opUnDi]
+
+def toSequent (Δ : SplitSequent) : Sequent := Finset.image (Sum.elim id id) Δ
+def size (Δ : SplitSequent) : Nat := Finset.sum Δ (SplitFormula.size)
+
+end SplitSequent
+
+
+
+
+/- needs a new home -/
+lemma hm {a b c : ℕ} : b ≤ a → (c < b) → (a - b) + c < a := by grind only [cases Or]
+
+lemma helper {α : Type} [DecidableEq α] {A C : Finset α} {b : α} {f : α → Nat}
+  : b ∈ A → C.sum f < f b → Finset.sum ((A \ {b}) ∪ C) f < Finset.sum A f := by
+  intro b_in_A C_lt_B
+  calc
+    _ ≤ Finset.sum (A \ {b}) f + Finset.sum C f := by
+     simp [Sequent.jfef $ @Finset.sum_union_inter _ _ (A \ {b}) C _ f _]
+    _ = Finset.sum A f - Finset.sum {b} f + Finset.sum C f := by
+      simp [Sequent.jfef $ @Finset.sum_sdiff α Nat {b} A _ f _ (Finset.singleton_subset_iff.2 b_in_A)]
+    _ < Finset.sum A f := by
+      apply hm
+      · exact (Finset.sum_le_sum_of_subset_of_nonneg (Finset.singleton_subset_iff.2 b_in_A) (by simp))
+      · exact C_lt_B
+
+instance {α} [DecidableEq α] (Γ : Finset α) : Union {x // x ∈ Γ.powerset} where -- mathlib ????
+  union A B := ⟨A ∪ B, by
+    apply Finset.mem_powerset.2
+    apply Finset.subset_iff.2
+    intro x h
+    rcases (Finset.mem_union.1 h) with h | h
+    · apply Finset.mem_of_subset (Finset.mem_powerset.1 A.2) h
+    · apply Finset.mem_of_subset (Finset.mem_powerset.1 B.2) h
+    ⟩

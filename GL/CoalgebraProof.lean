@@ -12,32 +12,6 @@ import Mathlib.Tactic
 import Mathlib.Data.Setoid.Partition
 import Mathlib.Data.Finset.Lattice.Basic
 
-
-lemma hm {a b c : ℕ} : b ≤ a → (c < b) → (a - b) + c < a := by grind only [cases Or]
-
-lemma helper {α : Type} [DecidableEq α] {A C : Finset α} {b : α} {f : α → Nat}
-  : b ∈ A → C.sum f < f b → Finset.sum ((A \ {b}) ∪ C) f < Finset.sum A f := by
-  intro b_in_A C_lt_B
-  calc
-    _ ≤ Finset.sum (A \ {b}) f + Finset.sum C f := by
-     simp [Sequent.jfef $ @Finset.sum_union_inter _ _ (A \ {b}) C _ f _]
-    _ = Finset.sum A f - Finset.sum {b} f + Finset.sum C f := by
-      simp [Sequent.jfef $ @Finset.sum_sdiff α Nat {b} A _ f _ (Finset.singleton_subset_iff.2 b_in_A)]
-    _ < Finset.sum A f := by
-      apply hm
-      · exact (Finset.sum_le_sum_of_subset_of_nonneg (Finset.singleton_subset_iff.2 b_in_A) (by simp))
-      · exact C_lt_B
-
-instance {α} [DecidableEq α] (Γ : Finset α) : Union {x // x ∈ Γ.powerset} where -- mathlib ????
-  union A B := ⟨A ∪ B, by
-    apply Finset.mem_powerset.2
-    apply Finset.subset_iff.2
-    intro x h
-    rcases (Finset.mem_union.1 h) with h | h
-    · apply Finset.mem_of_subset (Finset.mem_powerset.1 A.2) h
-    · apply Finset.mem_of_subset (Finset.mem_powerset.1 B.2) h
-    ⟩
-
 universe u
 
 inductive RuleApp
@@ -56,7 +30,6 @@ def Sequent.D (Γ : Sequent) : Sequent := Finset.filter Formula.isDiamond Γ ∪
   cases A <;> cases B
   all_goals
   simp_all [Formula.opUnDi])
-
 
 def fₚ : RuleApp → Sequent
   | RuleApp.top _ _ => {⊤}

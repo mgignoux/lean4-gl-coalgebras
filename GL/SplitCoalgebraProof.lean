@@ -277,33 +277,37 @@ def edge_restr {𝕏 : Proof} (p : 𝕏.X → Prop) : 𝕏.X → 𝕏.X → Prop
 
 lemma exists_box_on_le_restr_path {𝕏 : Proof} (x y : 𝕏.X) (p : 𝕏.X → Prop) :
   Relation.TransGen (edge_restr p) x y → (f (r 𝕏.α x)).size ≤ (f (r 𝕏.α y)).size
-    → ∃ z, Relation.ReflTransGen (edge_restr p) x z ∧ Relation.ReflTransGen (edge_restr p) z y ∧ (r 𝕏.α z).isBox := by
+    → ∃ z, Relation.ReflTransGen (edge_restr p) x z ∧ Relation.TransGen (edge_restr p) z y ∧ (r 𝕏.α z).isBox := by
   intro x_y size_le
   induction x_y
   case single y x_y =>
     by_cases (r 𝕏.α x).isBox
-    case pos h => exact ⟨x, Relation.ReflTransGen.refl, Relation.ReflTransGen.single x_y, h⟩
+    case pos h => exact ⟨x, Relation.ReflTransGen.refl, Relation.TransGen.single x_y, h⟩
     case neg h =>
       have := lt_if_not_box_edge ⟨x_y.1, h⟩
       linarith
   case tail y z x_y y_z ih =>
     by_cases (r 𝕏.α y).isBox
-    case pos h => exact ⟨y, x_y.to_reflTransGen, Relation.ReflTransGen.single y_z, h⟩
+    case pos h => exact ⟨y, x_y.to_reflTransGen, Relation.TransGen.single y_z, h⟩
     case neg h =>
       have ⟨u, x_u, u_y, u_box⟩ := ih (LE.le.trans size_le (Nat.le_of_lt (lt_if_not_box_edge ⟨y_z.1, h⟩)))
       exact ⟨u, x_u, u_y.tail y_z, u_box⟩
 
 lemma exists_box_on_restr_loop {𝕏 : Proof} (x : 𝕏.X) (p : 𝕏.X → Prop) : Relation.TransGen (edge_restr p) x x
-    → ∃ z, (r 𝕏.α z).isBox ∧ p z := by -- this is a heavy simplification
+    → ∃ z, (r 𝕏.α z).isBox ∧ p z ∧ Relation.TransGen (edge_restr p) z z := by
   intro x_x
   have ⟨z, z_prop⟩ := exists_box_on_le_restr_path x x p x_x (by simp)
-  refine ⟨z, z_prop.2.2, ?_⟩
-  cases z_prop.1
-  case refl =>
-    cases x_x
-    case single x_x => exact x_x.2.2
-    case tail _x => exact _x.2.2
-  case tail _z => exact _z.2.2
+  refine ⟨z, z_prop.2.2, ?_, Relation.TransGen.trans z_prop.2.1 ?_⟩
+  · cases z_prop.1
+    case refl =>
+      cases x_x
+      case single x_x => exact x_x.2.2
+      case tail _x => exact _x.2.2
+    case tail _z => exact _z.2.2
+  · cases z_prop.1
+    case refl => exact x_x
+    case tail x_ _z => apply Relation.TransGen.trans_right x_ (Relation.TransGen.single _z)
+
 
 theorem inf_path_has_inf_boxes {𝕏 : Proof} (g : ℕ → 𝕏.X) (h : ∀ n, edge 𝕏.α (g n) (g (n + 1))) :
   ∀ n, ∃ m, (r 𝕏.α (g (n + m))).isBox := by

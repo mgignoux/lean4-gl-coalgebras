@@ -89,8 +89,8 @@ theorem single_neg (n : Nat) (C D : Formula) : single n C (~D) = Formula.neg (si
     aesop
 
 @[simp]
-theorem in_neg_voc_iff {n : Nat} {φ : Formula} : n ∈ (~φ).vocab → n ∈ φ.vocab := by
-  induction φ <;> simp_all [Formula.vocab] <;> tauto
+theorem in_neg_voc_iff {n : Nat} {φ : Formula} : n ∈ (~φ).vocab ↔ n ∈ φ.vocab := by
+  induction φ <;> simp_all [Formula.vocab]
 
 theorem in_single_voc (m n : Nat) (φ ψ : Formula) :
   m ∉ φ.vocab → (m ≠ n → m ∉ ψ.vocab) → n ∉ φ.vocab → m ∉ (single n φ ψ).vocab
@@ -101,8 +101,7 @@ theorem in_single_voc (m n : Nat) (φ ψ : Formula) :
       by_cases k = n <;> simp_all [Formula.vocab]; aesop
     case neg_atom k =>
       by_cases k = n <;> simp_all [Formula.vocab]
-      · intro _ con; exact mp (in_neg_voc_iff con)
-      · case neg h => aesop
+      aesop
 
 /-- Structure preserving map substituting all atoms meeting a certain criteria p --/
 def partial_ {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) : Formula → Formula
@@ -131,38 +130,6 @@ decreasing_by
   simp [Formula.size]
   try linarith
 
-
--- A(p) = I (□ φ(p))
--- Ai(p) = I (⊤) = ⊤
--- FP ⊤ is ⊤ so Di = ⊤
--- D = I (□ φ (⊤)) = □ (single n ⊤ φ)
-
-theorem FixedPointTheorem_box (φ : Formula) (n : ℕ) : sem_equiv (□ (single n ⊤ φ)) (single n (□ (single n ⊤ φ)) (□ φ)) := by
-  sorry
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-axiom FixedPointTheorem (φ : Formula) (n : ℕ) : ∃ (ψ : Formula),
-  n ∉ Formula.vocab ψ ∧ sem_equiv ψ (single n φ ψ)
+-- set_option maxHeartbeats 10000000000 in
+-- theorem single_preserves_sem_equiv (n : Nat) (χ φ ψ : Formula) (h : sem_equiv φ ψ) : sem_equiv (single n χ φ) (single n χ ψ) := by
+--   induction φ <;> induction ψ <;> simp_all [sem_equiv, Formula.isValid, single]

@@ -4,6 +4,8 @@ import GL.Game
 import GL.SplitCoalgebraGame
 import GL.SplitCompleteness1
 import GL.AxiomBlame
+import GL.SplitSoundness
+
 
 namespace Split
 def after_box (g : coalgebraGame.Pos) : Prop := match g with
@@ -1232,7 +1234,7 @@ theorem gameB_general {Γ : SplitSequent}
 
 def startPos (Γ : SplitSequent) : gamePos := ⟨Sum.inl Γ, [], []⟩
 
-theorem Completeness (Γ : SplitSequent) : ⊨ Γ → ⊢ Γ := by
+theorem Completeness (Γ : SplitSequent) : ⊨ Γ → SplitSequent.isTrue Γ := by
   intro Γ_sat
   rcases gamedet coalgebraGame (startPos Γ) with builder_wins | prover_wins
   · have ⟨strat, h⟩ := builder_wins
@@ -1243,3 +1245,28 @@ theorem Completeness (Γ : SplitSequent) : ⊨ Γ → ⊢ Γ := by
     exact gameP_general strat h
 
 #axiom_blame Completeness
+
+
+/- COROLLARIES -/
+
+theorem equiv_iff_sem_equiv {φ ψ : Formula} : sem_equiv φ ψ ↔ (φ ≅ ψ) := by
+  constructor
+  · intro mp
+    simp [sem_equiv] at mp
+    unfold equiv
+    constructor
+    · apply Completeness
+      simp_all [Formula.isValid, SplitSequent.isValid]
+    · apply Completeness
+      simp_all [Formula.isValid, SplitSequent.isValid]
+      grind
+  · intro ⟨mpp1, mpp2⟩
+    simp [sem_equiv]
+    simp [Formula.isValid]
+    have := Soundness {Sum.inl (~ψ), Sum.inr φ} mpp1
+    have := Soundness {Sum.inl (ψ), Sum.inr (~φ)} mpp2
+    simp_all [SplitSequent.isValid, Evaluate_sseq, Sum.elim]
+    grind
+
+theorem single_preserves_equiv (n : Nat) (φ ψ χ : Formula) (equiv : φ ≅ ψ) : single n χ φ ≅ single n χ ψ :=
+  equiv_iff_sem_equiv.1 $ @single_preserves_sem_equiv n χ φ ψ (equiv_iff_sem_equiv.2 equiv)

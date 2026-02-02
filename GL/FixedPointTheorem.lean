@@ -10,5 +10,5 @@ def Formula.modalized (n : Nat) : Formula → Bool
   | □ _ => True
   | ◇ _ => True
 
-axiom FixedPointTheorem (φ : Formula) (n : ℕ) (h : φ.modalized n) : ∃ (ψ : Formula),
+axiom FixedPointTheorem (φ : Formula) (n : ℕ) (n_modal_in_φ : φ.modalized n) : ∃ (ψ : Formula),
   n ∉ Formula.vocab ψ ∧ sem_equiv ψ (single n ψ φ) ∧ Formula.vocab ψ ⊆ Formula.vocab φ

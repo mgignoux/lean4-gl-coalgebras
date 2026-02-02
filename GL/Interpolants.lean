@@ -5,6 +5,7 @@ import Mathlib.Data.Fintype.Defs
 import GL.Semantics
 import GL.FixedPointTheorem
 import GL.AxiomBlame
+import GL.SplitCompleteness2
 
 namespace Split
 
@@ -141,8 +142,6 @@ theorem var_in_equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {x : 𝕏.X} (n 
     simp [r, f, SplitSequent.left, SplitSequent.right, Sequent.vocab]
     grind [Formula.vocab]
 
-
-theorem single_preserves_equiv (n : Nat) (C D E : Formula) (h : D ≅ E) : single n C D ≅ single n C E := by sorry
   -- induction D <;> induction E <;> simp [single] <;> try exact h
   -- case bottom.atom n =>
   --   have ⟨𝕏, x, x_prop⟩ := h.2
@@ -463,7 +462,7 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
         refine ⟨?_, ?_, ?_⟩
         · right -- double check this
           simp [partial_, single, encodeVar_inv]
-          have h : fpt.choose ≅ (single (encodeVar box_in_Y.choose) fpt.choose (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose))) := by sorry
+          have h : fpt.choose ≅ (single (encodeVar box_in_Y.choose) fpt.choose (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose))) := equiv_iff_sem_equiv.1 fpt.choose_spec.2.1
           convert h using 1
           rcases equation_eq with c | c
           all_goals
@@ -580,7 +579,7 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
                 convert y_eq
           · right
             simp [partial_, n_in']
-            have := single_preserves_equiv (encodeVar box_in_Y.choose) fpt.choose _ _ equiv
+            have := single_preserves_equiv (encodeVar box_in_Y.choose) _ _ fpt.choose equiv
             apply equiv_help this
 
             convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar box_in_Y.choose) fpt.choose (equation (unencodeVar n (helper_1 n_in)))
@@ -799,7 +798,7 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
                 convert y_eq
           · right
             simp [partial_, n_in']
-            have := single_preserves_equiv (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) _ _ equiv
+            have := single_preserves_equiv (encodeVar leaf_in_Y.choose) _ _ (equation leaf_in_Y.choose) equiv
             apply equiv_help this
 
             convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) (equation (unencodeVar n (helper_1 n_in)))

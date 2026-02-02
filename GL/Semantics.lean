@@ -30,18 +30,18 @@ theorem Evaluate_neg {α : Type} (M : Model α) (u : α) (φ : Formula) : ¬ Eva
   induction φ generalizing u <;> simp [Formula.neg, Evaluate] <;> grind
 
 @[simp]
-theorem Evaluate_and  {α : Type} (M : Model α) (u : α) (φ ψ : Formula) : Evaluate (M, u) (φ & ψ) ↔ (Evaluate (M, u) φ ∧ Evaluate (M, u) ψ) := by
+theorem Evaluate_and {α : Type} (M : Model α) (u : α) (φ ψ : Formula) : Evaluate (M, u) (φ & ψ) ↔ (Evaluate (M, u) φ ∧ Evaluate (M, u) ψ) := by
   simp
 
 @[simp]
-theorem Evaluate_imp  {α : Type} (M : Model α) (u : α) (φ ψ : Formula) : Evaluate (M, u) (φ ↣ ψ) ↔ (Evaluate (M, u) φ → Evaluate (M, u) ψ) := by
+theorem Evaluate_imp {α : Type} (M : Model α) (u : α) (φ ψ : Formula) : Evaluate (M, u) (φ ↣ ψ) ↔ (Evaluate (M, u) φ → Evaluate (M, u) ψ) := by
   simp [←Evaluate_neg]
   tauto
 
-@[simp]
-theorem Evaluate_imp'  {α : Type} (M : Model α) (u : α) (φ ψ : Formula) : Evaluate (M, u) (~ φ v ψ) ↔ (Evaluate (M, u) φ → Evaluate (M, u) ψ) := by
-  simp [←Evaluate_neg]
-  tauto
+-- @[simp]
+-- theorem Evaluate_imp' {α : Type} (M : Model α) (u : α) (φ ψ : Formula) : Evaluate (M, u) (~ φ v ψ) ↔ (Evaluate (M, u) φ → Evaluate (M, u) ψ) := by
+--   simp [←Evaluate_neg]
+--   tauto
 
 @[simp]
 def Evaluate_seq {α : Type} : Model α × α → Sequent → Prop :=
@@ -88,6 +88,9 @@ theorem single_neg (n : Nat) (C D : Formula) : single n C (~D) = Formula.neg (si
   all_goals
     aesop
 
+theorem single_iff (n : Nat) (C D E : Formula) : single n C (D ⟷ E) = (single n C D) ⟷ (single n C E) := by
+  simp [single, single_neg]
+
 @[simp]
 theorem in_neg_voc_iff {n : Nat} {φ : Formula} : n ∈ (~φ).vocab ↔ n ∈ φ.vocab := by
   induction φ <;> simp_all [Formula.vocab]
@@ -130,6 +133,26 @@ decreasing_by
   simp [Formula.size]
   try linarith
 
--- set_option maxHeartbeats 10000000000 in
--- theorem single_preserves_sem_equiv (n : Nat) (χ φ ψ : Formula) (h : sem_equiv φ ψ) : sem_equiv (single n χ φ) (single n χ ψ) := by
---   induction φ <;> induction ψ <;> simp_all [sem_equiv, Formula.isValid, single]
+def Substitution {α} (M : Model α) (n : Nat) (φ : Formula) : Model α where
+  V u k := if n = k then Evaluate ⟨M, u⟩ φ else M.V u k
+  R := M.R
+  trans := M.trans
+  con_wf := M.con_wf
+
+/- Substitution Lemma -/
+theorem Substitution_Lemma {α} (M : Model α) (u : α) (n : Nat) (ψ : Formula)
+  : ∀ φ, Evaluate ⟨M, u⟩ (single n ψ φ) ↔ Evaluate ⟨(Substitution M n ψ), u⟩ φ := by
+  intro φ
+  induction φ generalizing u <;> simp_all [single, Substitution] <;> try grind
+  case atom k => aesop
+  case neg_atom k => if eq : k = n then simp [eq, Evaluate_neg] else aesop
+
+open Classical in
+theorem single_preserves_validity (n : Nat) (φ ψ : Formula) : ⊨ φ → ⊨ single n ψ φ := by
+  intro φ_val α M u
+  exact (Substitution_Lemma M u n ψ φ).2 (φ_val α (Substitution M n ψ) u)
+
+theorem single_preserves_sem_equiv (n : Nat) (χ φ ψ : Formula)
+    (φ_equiv_ψ : ⊨ φ ⟷ ψ) : ⊨ (single n χ φ) ⟷ (single n χ ψ) := by
+  convert single_preserves_validity n (φ ⟷ ψ) χ φ_equiv_ψ using 1
+  simp [single_iff]

@@ -92,6 +92,11 @@ def r {X : Type u} {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSeque
 def p {X : Type u} {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (α : X → (T x τ).obj X) (x : X) := (α x).2
 def edge  {X : Type u} {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (α : X → (T x τ).obj X) (x y : X) : Prop := y ∈ p α x
 
+def RuleApp.isBox {𝕏 : Split.Proof} {x : 𝕏.X} {τ} : RuleApp x τ → Prop
+  | RuleApp.boxₗ _ _ _ => true
+  | RuleApp.boxᵣ _ _ _ => true
+  | _ => false
+
 structure CutProofFromPremises {𝕏 : Split.Proof} (x : 𝕏.X) (τ : 𝕏.X → SplitSequent) where
   X : Type
   α : X → (T x τ).obj X
@@ -115,6 +120,8 @@ structure CutProofFromPremises {𝕏 : Split.Proof} (x : 𝕏.X) (τ : 𝕏.X �
     | RuleApp.boxᵣ _ A _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {Sum.inr A}]
   root : X
   root_prop : f (r α root) = τ x
+  path : ∀ x, ∀ f : {f : ℕ → X // f 0 = x ∧ ∀ (n : ℕ), edge α (f n) (f (n + 1))},
+    ∀ n, ∃ m, (r α (f.1 (n + m))).isBox
 
 def CutProofFromPremises.Proves {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (𝕐 : CutProofFromPremises x τ) (Δ : SplitSequent) : Prop := ∃ x : 𝕐.X, f (r 𝕐.α x) = Δ
 infixr:6 "⊢" => CutProofFromPremises.Proves
@@ -173,9 +180,10 @@ noncomputable def PartialLeft_topₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then {
     X := Unit
     α u := ⟨CutPre.RuleApp.topₗ (leftInterpolantSequent x) (by simp [leftInterpolantSequent, rule_def, f, in_Δ]), {}⟩
-    h := by intro u; simp [CutPre.r, CutPre.p]
+    h u := by simp [CutPre.r, CutPre.p]
     root := ()
-    root_prop := by sorry}
+    root_prop := by simp [CutPre.f, CutPre.r]
+    path u f := by sorry}
   else
     have eq_or_equiv := (Interpolant_prop x).1
     have equiv : Interpolant 𝕏 (at (encodeVar x)) ≅ Interpolant 𝕏 (equation x) := by simp_all
@@ -201,7 +209,9 @@ noncomputable def PartialLeft_topₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
           simp [Split_to_CutPre_f, Split_to_CutPre_fₙ, CutPre.r, CutPre.p]
           cases rz_def : r 𝕐.α z <;> simp_all only <;> rw [Split_to_CutPre] <;> simp_all <;> try simp [←𝕐_h, Split_to_CutPre_f]
       root := Sum.inl 0
-      root_prop := by sorry}
+      root_prop := by sorry
+      path := by sorry
+      }
 
 noncomputable def PartialLeft_topᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topᵣ Δ in_Δ)
   : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
@@ -213,7 +223,8 @@ noncomputable def PartialLeft_topᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
       ), {}⟩
     h := by intro u; simp [CutPre.r, CutPre.p]
     root := ()
-    root_prop := by sorry}
+    root_prop := by sorry
+    path := by sorry}
   else
     have eq_or_equiv := (Interpolant_prop x).1
     have equiv : Interpolant 𝕏 (at (encodeVar x)) ≅ Interpolant 𝕏 (equation x) := by simp_all
@@ -242,7 +253,8 @@ noncomputable def PartialLeft_topᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
           simp [Split_to_CutPre_f, Split_to_CutPre_fₙ, CutPre.r, CutPre.p]
           cases rz_def : r 𝕐.α z <;> simp_all only <;> rw [Split_to_CutPre] <;> simp_all <;> try simp [←𝕐_h, Split_to_CutPre_f]
       root := by sorry
-      root_prop := by sorry}
+      root_prop := by sorry
+      path := by sorry}
 
 
 noncomputable def PartialLeft_axₗₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axₗₗ Δ n in_Δ)
@@ -252,7 +264,8 @@ noncomputable def PartialLeft_axₗₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (
     α u := ⟨CutPre.RuleApp.axₗₗ (leftInterpolantSequent x) n (by simp [leftInterpolantSequent, rule_def, f, in_Δ]), {}⟩
     h := by intro u; simp [CutPre.r, CutPre.p]
     root := ()
-    root_prop := by sorry}
+    root_prop := by sorry
+    path := by sorry}
   else sorry
 
 noncomputable def PartialLeft_axₗᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axₗᵣ Δ n in_Δ)
@@ -274,7 +287,8 @@ noncomputable def PartialLeft_axₗᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (
       ), {}⟩
     h := by intro u; simp [CutPre.r, CutPre.p]
     root := ()
-    root_prop := by sorry}
+    root_prop := by sorry
+    path := by sorry}
   else sorry
 
 noncomputable def PartialLeft_axᵣₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axᵣₗ Δ n in_Δ)
@@ -296,7 +310,8 @@ noncomputable def PartialLeft_axᵣₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (
       ), {}⟩
     h := by intro u; simp [CutPre.r, CutPre.p]
     root := ()
-    root_prop := by sorry}
+    root_prop := by sorry
+    path := by sorry}
   else sorry
 
 noncomputable def PartialLeft_axᵣᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axᵣᵣ Δ n in_Δ)
@@ -309,7 +324,8 @@ noncomputable def PartialLeft_axᵣᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (
       ), {}⟩
     h := by intro u; simp [CutPre.r, CutPre.p]
     root := ()
-    root_prop := by sorry}
+    root_prop := by sorry
+    path := by sorry}
   else sorry
 
 /-
@@ -364,7 +380,8 @@ noncomputable def PartialLeft_orₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x :
               | 1 =>
                 simp [CutPre.r, CutPre.p]
           root := sorry
-          root_prop := by sorry}
+          root_prop := by sorry
+          path := by sorry}
         | _ => sorry -- not possible
   else sorry
 
@@ -378,7 +395,8 @@ noncomputable def PartialLeft_orᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x :
           , {}⟩
         h := by simp [CutPre.r, CutPre.p]
         root := sorry
-        root_prop := by sorry}
+        root_prop := by sorry
+        path := by sorry}
       else sorry
         | _ => sorry
 
@@ -389,7 +407,8 @@ noncomputable def PartialLeft_andₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
     α u := sorry
     h := sorry
     root := sorry
-    root_prop := sorry}
+    root_prop := sorry
+    path := by sorry}
   else sorry
 
 noncomputable def PartialLeft_andᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.andᵣ Δ φ ψ in_Δ)
@@ -399,7 +418,8 @@ noncomputable def PartialLeft_andᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
     α u := sorry
     h := sorry
     root := sorry
-    root_prop := sorry}
+    root_prop := sorry
+    path := by sorry}
   else sorry
 
 noncomputable def PartialLeft_boxₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ in_Δ} (rule_def : r 𝕏.α x = RuleApp.boxₗ Δ φ in_Δ)
@@ -409,7 +429,8 @@ noncomputable def PartialLeft_boxₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
     α u := sorry
     h := sorry
     root := sorry
-    root_prop := sorry}
+    root_prop := sorry
+    path := by sorry}
   else sorry
 
 noncomputable def PartialLeft_boxᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ in_Δ} (rule_def : r 𝕏.α x = RuleApp.boxᵣ Δ φ in_Δ)
@@ -419,8 +440,10 @@ noncomputable def PartialLeft_boxᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
     α u := sorry
     h := sorry
     root := sorry
-    root_prop := sorry}
+    root_prop := sorry
+    path := by sorry}
   else sorry
+
 
 noncomputable def PartialInterpolationLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   match rule_def : (r 𝕏.α x) with
@@ -461,21 +484,25 @@ def ProofTranslationMap {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → Cut
 @[simp]
 theorem ProofTranslation_f {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
   SplitCut.f (SplitCut.r (ProofTranslationMap PartialProof) ⟨y, z_in_Cy⟩) = CutPre.f (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) := by
-    cases r_def : (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.f, CutPre.f]
+    cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.f, CutPre.f]
 
 @[simp]
 theorem ProofTranslation_fₚ {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
   SplitCut.fₚ (SplitCut.r (ProofTranslationMap PartialProof) ⟨y, z_in_Cy⟩) = CutPre.fₚ (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) := by
-    cases r_def : (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.fₚ, CutPre.fₚ]
+    cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.fₚ, CutPre.fₚ]
 
 @[simp]
 theorem ProofTranslation_fₙ {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
   SplitCut.fₙ (SplitCut.r (ProofTranslationMap PartialProof) ⟨y, z_in_Cy⟩) = CutPre.fₙ (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) := by
-    cases r_def : (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.fₙ_alternate, CutPre.fₙ_alternate]
+    cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.fₙ_alternate, CutPre.fₙ_alternate]
+
+theorem ProofTranslation_isBox {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
+  (SplitCut.r (ProofTranslationMap PartialProof) ⟨y, z_in_Cy⟩).isBox ↔ (CutPre.r (PartialProof y).α z_in_Cy).isBox := by
+  cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.RuleApp.isBox, CutPre.RuleApp.isBox]
 
 noncomputable def ProofTranslation {𝕏 : Proof} {σ}
 (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ)
-  : SplitCut.Proof := by exact --∀ x : 𝕏.X, 𝕐 ⊢ leftInterpolant x
+  : SplitCut.Proof := by exact -- ∀ x : 𝕏.X, 𝕐 ⊢ leftInterpolant x
   { X := (y : 𝕏.X) × (PartialProof y).X
     α := ProofTranslationMap PartialProof
     h := by -- this is a lot of repetition! but I find that not using the intermediate 'ptm_eq' steps causes lean to oversimplify down to something harder to work from
@@ -569,21 +596,32 @@ noncomputable def ProofTranslation {𝕏 : Proof} {σ}
             rw [SplitCut.r]
             simp [ptm_eq, SplitCut.fₙ_alternate, h2]
     path := by
-      intro ⟨y, z_y⟩ ⟨f, ⟨f_zero, f_succ⟩⟩ n
+      intro ⟨y, z_y⟩ ⟨f, ⟨f_zero, f_succ⟩⟩ l
       -- infinite path in translation induces a path in the original proof
-      let g : ℕ → {x : 𝕏.X // ∃ m, (f m).1 = x} := Nat.rec ⟨y, ⟨0, by simp [f_zero]⟩⟩ (fun n ⟨y, y_prop⟩ => by
-        sorry)
 
-      have g_prop : ∀ n, edge 𝕏.α (g n).1 (g (n + 1)).1 := by sorry
+      by_cases ∃ (y : 𝕏.X), ∃ n, ∀ m ≥ n, (f m).1 = y
+      case pos loop =>
+        have ⟨y, n, n_prop⟩ := loop
+        let g : ℕ → (PartialProof y).X := fun m ↦ (n_prop (m + n) (by simp)) ▸ (f (m + n)).2
+        have ⟨n₂, n₂_prop⟩ := (PartialProof y).path ((n_prop n (by simp)) ▸ (f n).2) ⟨g, by sorry, by sorry⟩ l
+        use n₂ + n
+        unfold g at n₂_prop
+        simp_all
+        convert n₂_prop
+        convert ProofTranslation_isBox PartialProof (f (l + n₂ + n)).fst (f (l + n₂ + n)).snd using 4
+        · linarith
+        · exact Eq.symm $ n_prop (l + n₂ + n) (by simp)
+        · grind
+      case neg path =>
+        simp at path
+        sorry
 
-      have ⟨m, m_box⟩ := @inf_path_has_inf_boxes 𝕏 (fun n ↦ (g n).1) g_prop n
+      -- let g : ℕ → {x : 𝕏.X // ∃ m, (f m).1 = x} := Nat.rec ⟨y, ⟨0, by simp [f_zero]⟩⟩ (fun n ⟨y, y_prop⟩ => by sorry)
+      -- have g_prop : ∀ n, edge 𝕏.α (g n).1 (g (n + 1)).1 := by sorry
+      -- have ⟨m, m_box⟩ := @inf_path_has_inf_boxes 𝕏 (fun n ↦ (g n).1) g_prop n
+      -- if g (n + m) is Box then whatever g....
 
-      -- if g (n + m) is Box then whatever g
-      sorry
     }
-
--- f is in Y y_0,0,y_0,1,....y_1,0,...
--- g is in X x_0,x_1...
 
 noncomputable def InterpolantProofLeft' {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : SplitCut.Proof :=
   @ProofTranslation 𝕏 (@leftInterpolantSequent 𝕏 _) PartialInterpolationLeft

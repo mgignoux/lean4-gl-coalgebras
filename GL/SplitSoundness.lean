@@ -40,21 +40,17 @@ noncomputable def chain
           | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
           | y :: z :: l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
 
-        | .cut Δ φ => match p_def : p 𝕏.α x_ih with
+        | .cutₗ Δ φ => match p_def : p 𝕏.α x_ih with
           | [y,z] =>
             if w_ih_nφ : ¬Evaluate (M, w_ih) φ
             then
               ⟨y, w_ih, by
                 have := 𝕏.h x_ih
-                simp [r_def, p_def, -Finset.union_singleton] at this
-                simp [Evaluate_sseq, this.1, w_ih_nφ, fₙ_alternate]
-                constructor
-                · intro χ χ_in con
-                  apply w_ih_prop
-                  exact ⟨Sum.inl χ, r_def ▸ χ_in, con⟩
-                · intro χ χ_in con
-                  apply w_ih_prop
-                  exact ⟨Sum.inr χ, r_def ▸ χ_in, con⟩
+                simp [r_def, p_def, -Finset.union_singleton, fₙ_alternate] at this
+                simp [Evaluate_sseq, this.1, w_ih_nφ]
+                intro χ χ_in con
+                apply w_ih_prop
+                exact ⟨Sum.inr χ, r_def ▸ χ_in, con⟩
               ⟩
             else
               ⟨z, w_ih, by
@@ -64,18 +60,40 @@ noncomputable def chain
                 have := 𝕏.h x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at this
                 simp [Evaluate_sseq, this.2, w_ih_nnφ, fₙ_alternate]
-                constructor
-                · intro χ χ_in con
-                  apply w_ih_prop
-                  exact ⟨Sum.inl χ, r_def ▸ χ_in, con⟩
-                · intro χ χ_in con
-                  apply w_ih_prop
-                  exact ⟨Sum.inr χ, r_def ▸ χ_in, con⟩
+                intro χ χ_in con
+                apply w_ih_prop
+                exact ⟨Sum.inl χ, r_def ▸ χ_in, con⟩
               ⟩
           | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
           | [y] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
           | x::y::z::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-
+        | .cutᵣ Δ φ => match p_def : p 𝕏.α x_ih with
+          | [y,z] =>
+            if w_ih_nφ : ¬Evaluate (M, w_ih) φ
+            then
+              ⟨y, w_ih, by
+                have := 𝕏.h x_ih
+                simp [r_def, p_def, -Finset.union_singleton, fₙ_alternate] at this
+                simp [Evaluate_sseq, this.1, w_ih_nφ]
+                intro χ χ_in con
+                apply w_ih_prop
+                exact ⟨Sum.inl χ, r_def ▸ χ_in, con⟩
+              ⟩
+            else
+              ⟨z, w_ih, by
+                have w_ih_nnφ : ¬Evaluate (M, w_ih) (~φ) := by
+                  simp [Evaluate_neg]
+                  tauto
+                have := 𝕏.h x_ih
+                simp [r_def, p_def, -Finset.union_singleton] at this
+                simp [Evaluate_sseq, this.2, w_ih_nnφ, fₙ_alternate]
+                intro χ χ_in con
+                apply w_ih_prop
+                exact ⟨Sum.inr χ, r_def ▸ χ_in, con⟩
+              ⟩
+          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | [y] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | x::y::z::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
         | .wkₗ Δ φ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y] =>
             have h : ¬Evaluate_sseq (M, w_ih) (f (r 𝕏.α y)) := by

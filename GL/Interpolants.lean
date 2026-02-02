@@ -1,5 +1,5 @@
 import GL.Logic
-import GL.CoalgebraProof
+-- import GL.CoalgebraProof
 import GL.SplitCoalgebraProof
 import Mathlib.Data.Fintype.Defs
 import GL.Semantics
@@ -142,30 +142,30 @@ theorem var_in_equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {x : 𝕏.X} (n 
     grind [Formula.vocab]
 
 
-theorem single_preserves_equiv (n : Nat) (C D E : Formula) (h : D ≅ E) : single n C D ≅ single n C E := by
-  induction D <;> induction E <;> simp [single] <;> try exact h
-  case bottom.atom n =>
-    have ⟨𝕏, x, x_prop⟩ := h.2
-    have := @_root_.fₚ_sub_f (_root_.r 𝕏.α x)
-    rcases r : (_root_.r 𝕏.α x) <;>
-      simp_all [_root_.f, Formula.neg, _root_.fₚ]
-  case atom.bottom n =>
-    have ⟨𝕏, x, x_prop⟩ := h.1
-    have := @_root_.fₚ_sub_f (_root_.r 𝕏.α x)
-    rcases r : (_root_.r 𝕏.α x) <;>
-      simp_all [_root_.f, Formula.neg, _root_.fₚ]
-  case bottom.neg_atom n =>
-    have ⟨𝕏, x, x_prop⟩ := h.2
-    have := @_root_.fₚ_sub_f (_root_.r 𝕏.α x)
-    rcases r : (_root_.r 𝕏.α x) <;>
-      simp_all [_root_.f, Formula.neg, _root_.fₚ]
-  case neg_atom.bottom n =>
-    have ⟨𝕏, x, x_prop⟩ := h.1
-    have := @_root_.fₚ_sub_f (_root_.r 𝕏.α x)
-    rcases r : (_root_.r 𝕏.α x) <;>
-      simp_all [_root_.f, Formula.neg, _root_.fₚ]
-  all_goals
-  sorry
+theorem single_preserves_equiv (n : Nat) (C D E : Formula) (h : D ≅ E) : single n C D ≅ single n C E := by sorry
+  -- induction D <;> induction E <;> simp [single] <;> try exact h
+  -- case bottom.atom n =>
+  --   have ⟨𝕏, x, x_prop⟩ := h.2
+  --   have := @_root_.fₚ_sub_f (_root_.r 𝕏.α x)
+  --   rcases r : (_root_.r 𝕏.α x) <;>
+  --     simp_all [_root_.f, Formula.neg, _root_.fₚ]
+  -- case atom.bottom n =>
+  --   have ⟨𝕏, x, x_prop⟩ := h.1
+  --   have := @_root_.fₚ_sub_f (_root_.r 𝕏.α x)
+  --   rcases r : (_root_.r 𝕏.α x) <;>
+  --     simp_all [_root_.f, Formula.neg, _root_.fₚ]
+  -- case bottom.neg_atom n =>
+  --   have ⟨𝕏, x, x_prop⟩ := h.2
+  --   have := @_root_.fₚ_sub_f (_root_.r 𝕏.α x)
+  --   rcases r : (_root_.r 𝕏.α x) <;>
+  --     simp_all [_root_.f, Formula.neg, _root_.fₚ]
+  -- case neg_atom.bottom n =>
+  --   have ⟨𝕏, x, x_prop⟩ := h.1
+  --   have := @_root_.fₚ_sub_f (_root_.r 𝕏.α x)
+  --   rcases r : (_root_.r 𝕏.α x) <;>
+  --     simp_all [_root_.f, Formula.neg, _root_.fₚ]
+  -- all_goals
+  -- sorry
 
 theorem Solution_strong_helper {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) (n : ℕ) {B A : Formula}
   : single n B (partial_ σ A) = @partial_ (fun m ↦ p m ∨ m = n) _ (fun m ↦ single n B (if h : p m then σ ⟨m, h⟩ else at m)) A := by

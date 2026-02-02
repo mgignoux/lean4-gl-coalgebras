@@ -78,19 +78,28 @@ structure Proof where
   X : Type
   α : X → T.obj X
   h : ∀ (x : X), match r α x with
+    | RuleApp.topₗ _ _ => p α x = ∅
+    | RuleApp.topᵣ _ _ => p α x = ∅
+    | RuleApp.axₗₗ _ _ _ => p α x = ∅
+    | RuleApp.axₗᵣ _ _ _ => p α x = ∅
+    | RuleApp.axᵣₗ _ _ _ => p α x = ∅
+    | RuleApp.axᵣᵣ _ _ _ => p α x = ∅
     | RuleApp.andₗ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A}, (fₙ (r α x)) ∪ {Sum.inl B}]
     | RuleApp.andᵣ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inr A}, (fₙ (r α x)) ∪ {Sum.inr B}]
     | RuleApp.orₗ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A, Sum.inl B}]
     | RuleApp.orᵣ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inr A, Sum.inr B}]
     | RuleApp.boxₗ _ A _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {Sum.inl A}]
     | RuleApp.boxᵣ _ A _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {Sum.inr A}]
-    | _ => p α x = {}
 
 def Proves (𝕏 : Proof) (Δ : SplitSequent) : Prop := ∃ x : 𝕏.X, f (r 𝕏.α x) = Δ
 def SplitSequent.isTrue (Δ : SplitSequent) : Prop := ∃ (𝕏 : Proof), Proves 𝕏 Δ
 
 infixr:6 "⊢" => Proves
 prefix:40 "⊢" => SplitSequent.isTrue
+
+def equiv (B : Formula) (A : Formula) : Prop :=
+  (∃ (𝕏 : Proof), 𝕏 ⊢ {Sum.inl (~A), Sum.inr B}) ∧ (∃ (𝕏 : Proof), 𝕏 ⊢ {Sum.inl A, Sum.inr (~B)})
+infixr:7 "≅" => equiv
 
 instance instSetoidXSplit (𝕏 : Proof) : Setoid 𝕏.X where
   r x y := f (r 𝕏.α x) = f (r 𝕏.α y)

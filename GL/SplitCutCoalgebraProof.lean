@@ -12,12 +12,18 @@ import Mathlib.Tactic
 import Mathlib.Data.Setoid.Partition
 import Mathlib.Data.Finset.Lattice.Basic
 
+@[simp]
+noncomputable def SplitSequent.filter_left  : SplitSequent → SplitSequent := @Finset.filter _ (fun | Sum.inl _ => true | Sum.inr _ => false) (fun | Sum.inl _ => isTrue (by simp) | Sum.inr _ => isFalse (by simp))
+
+@[simp]
+noncomputable def SplitSequent.filter_right : SplitSequent → SplitSequent := @Finset.filter _ (fun | Sum.inl _ => false | Sum.inr _ => true) (fun | Sum.inl _ => isFalse (by simp) | Sum.inr _ => isTrue (by simp))
 
 namespace SplitCut
 universe u
 inductive RuleApp
   | skp : (Δ : SplitSequent) → RuleApp
-  | cut : (Δ : SplitSequent) → (A : Formula) → RuleApp
+  | cutₗ : (Δ : SplitSequent) → (A : Formula) → RuleApp
+  | cutᵣ : (Δ : SplitSequent) → (A : Formula) → RuleApp
   | wkₗ : (Δ : SplitSequent) → (A : Formula) → (Sum.inl A) ∈ Δ → RuleApp
   | wkᵣ : (Δ : SplitSequent) → (A : Formula) → (Sum.inr A) ∈ Δ → RuleApp
   | topₗ : (Δ : SplitSequent) → (Sum.inl ⊤) ∈ Δ → RuleApp
@@ -40,7 +46,8 @@ def RuleApp.isBox : RuleApp → Prop
 
 def fₚ : RuleApp → SplitSequent
   | RuleApp.skp _ => ∅
-  | RuleApp.cut _ _ => ∅
+  | RuleApp.cutₗ _ _ => ∅
+  | RuleApp.cutᵣ _ _ => ∅
   | RuleApp.wkₗ _ A _ => {Sum.inl A}
   | RuleApp.wkᵣ _ A _ => {Sum.inr A}
   | RuleApp.topₗ _ _ => {Sum.inl ⊤}
@@ -58,7 +65,8 @@ def fₚ : RuleApp → SplitSequent
 
 def f : RuleApp → SplitSequent
   | RuleApp.skp Δ => Δ
-  | RuleApp.cut Δ _ => Δ
+  | RuleApp.cutₗ Δ _ => Δ
+  | RuleApp.cutᵣ Δ _ => Δ
   | RuleApp.wkₗ Δ _ _ => Δ
   | RuleApp.wkᵣ Δ _ _ => Δ
   | RuleApp.topₗ Δ _ => Δ
@@ -78,7 +86,8 @@ def fₙ : RuleApp → SplitSequent := fun r ↦ f r \ fₚ r
 
 theorem fₙ_alternate (r : RuleApp) : fₙ r = match r with
   | RuleApp.skp Δ => Δ
-  | RuleApp.cut Δ _ => Δ
+  | RuleApp.cutₗ Δ _ => Δ
+  | RuleApp.cutᵣ Δ _ => Δ
   | RuleApp.wkₗ Δ A _ =>  Δ \ {Sum.inl A}
   | RuleApp.wkᵣ Δ A _ =>  Δ \ {Sum.inr A}
   | RuleApp.topₗ Δ _ => Δ \ {Sum.inl ⊤}
@@ -106,16 +115,23 @@ structure Proof where
   α : X → T.obj X
   h : ∀ (x : X), match r α x with
     | RuleApp.skp _ => (p α x).map (fun x ↦ f (r α x)) = [(f (r α x))]
-    | RuleApp.cut _ A => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A}, (fₙ (r α x)) ∪ {Sum.inl $ ~A}]
+    | RuleApp.cutₗ _ A => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)).filter_right ∪ {Sum.inl $ A}, (fₙ (r α x)).filter_left ∪ {Sum.inr $ ~A}]
+    | RuleApp.cutᵣ _ A => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)).filter_left ∪ {Sum.inr $ A}, (fₙ (r α x)).filter_right ∪ {Sum.inl $ ~A}]
     | RuleApp.wkₗ _ _ _ => (p α x).map (fun x ↦ f (r α x)) = [fₙ (r α x)]
     | RuleApp.wkᵣ _ _ _ => (p α x).map (fun x ↦ f (r α x)) = [fₙ (r α x)]
+    | RuleApp.topₗ _ _ => p α x = ∅
+    | RuleApp.topᵣ _ _ => p α x = ∅
+    | RuleApp.axₗₗ _ _ _ => p α x = ∅
+    | RuleApp.axₗᵣ _ _ _ => p α x = ∅
+    | RuleApp.axᵣₗ _ _ _ => p α x = ∅
+    | RuleApp.axᵣᵣ _ _ _ => p α x = ∅
     | RuleApp.andₗ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A}, (fₙ (r α x)) ∪ {Sum.inl B}]
     | RuleApp.andᵣ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inr A}, (fₙ (r α x)) ∪ {Sum.inr B}]
     | RuleApp.orₗ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A, Sum.inl B}]
     | RuleApp.orᵣ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inr A, Sum.inr B}]
     | RuleApp.boxₗ _ A _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {Sum.inl A}]
     | RuleApp.boxᵣ _ A _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {Sum.inr A}]
-    | _ => p α x = {}
+
   path : ∀ x, ∀ f : {f : ℕ → X // f 0 = x ∧ ∀ (n : ℕ), edge α (f n) (f (n + 1))},
     ∀ n, ∃ m, (r α (f.1 (n + m))).isBox
 

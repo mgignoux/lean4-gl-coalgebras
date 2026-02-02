@@ -70,6 +70,8 @@ theorem fₙ_alternate (r : RuleApp) : fₙ r = match r with
   | RuleApp.boxₗ Δ A _ => Δ \ {Sum.inl (□ A)}
   | RuleApp.boxᵣ Δ A _ => Δ \ {Sum.inr (□ A)} := by cases r <;> simp [fₙ, f, fₚ]
 
+theorem fₙ_sub_f {r : RuleApp} : fₙ r ⊆ f r := by simp [fₙ]
+
 def r {X : Type u} (α : X → T.obj X) (x : X) := (α x).1
 def p {X : Type u} (α : X → T.obj X) (x : X) := (α x).2
 def edge {X : Type u} (α : X → T.obj X) (x y : X) : Prop := y ∈ p α x
@@ -101,6 +103,135 @@ def equiv (B : Formula) (A : Formula) : Prop :=
   (∃ (𝕏 : Proof), 𝕏 ⊢ {Sum.inl (~A), Sum.inr B}) ∧ (∃ (𝕏 : Proof), 𝕏 ⊢ {Sum.inl A, Sum.inr (~B)})
 infixr:7 "≅" => equiv
 
+/- LEMMAS -/
+
+theorem edge_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : (edge 𝕏.α) x y) : f (r 𝕏.α y) ⊆ SplitSequent.FL (f (r 𝕏.α x)) := by
+  unfold edge at x_y
+  have := 𝕏.h x
+  cases rule : r 𝕏.α x <;> simp only [rule] at this
+  · exfalso; simp_all
+  · exfalso; simp_all
+  · exfalso; simp_all
+  · exfalso; simp_all
+  · exfalso; simp_all
+  · exfalso; simp_all
+  case andₗ Δ φ ψ in_Δ =>
+    apply @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) at x_y
+    simp only [this, List.mem_cons, List.not_mem_nil, or_false] at x_y
+    rcases x_y with h|h <;> rw [h]
+    · simp only [SplitSequent.FL, Finset.subset_iff,
+      Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion]
+      intro χ χ_cases
+      rcases χ_cases with h|_ <;> subst_eqs
+      · exact ⟨χ, fₙ_sub_f h, SplitFormula.FL_refl⟩
+      · exact ⟨Sum.inl (φ & ψ), by simp [f, in_Δ], by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+    · simp only [SplitSequent.FL, Finset.subset_iff,
+      Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion]
+      intro χ χ_cases
+      rcases χ_cases with h|_ <;> subst_eqs
+      · exact ⟨χ, fₙ_sub_f h, SplitFormula.FL_refl⟩
+      · exact ⟨Sum.inl (φ & ψ), by simp [f, in_Δ], by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+  case andᵣ Δ φ ψ in_Δ =>
+    apply @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) at x_y
+    simp only [this, List.mem_cons, List.not_mem_nil, or_false] at x_y
+    rcases x_y with h|h <;> rw [h]
+    · simp only [SplitSequent.FL, Finset.subset_iff,
+      Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion]
+      intro χ χ_cases
+      rcases χ_cases with h|_ <;> subst_eqs
+      · exact ⟨χ, fₙ_sub_f h, SplitFormula.FL_refl⟩
+      · exact ⟨Sum.inr (φ & ψ), by simp [f, in_Δ], by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+    · simp only [SplitSequent.FL, Finset.subset_iff,
+      Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion]
+      intro χ χ_cases
+      rcases χ_cases with h|_ <;> subst_eqs
+      · exact ⟨χ, fₙ_sub_f h, SplitFormula.FL_refl⟩
+      · exact ⟨Sum.inr (φ & ψ), by simp [f, in_Δ], by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+  case orₗ Δ φ ψ in_Δ =>
+    apply @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) at x_y
+    simp only [this, List.mem_singleton] at x_y
+    simp only [x_y, Finset.union_insert, SplitSequent.FL, Finset.subset_iff, Finset.mem_insert,
+      Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion]
+    intro χ χ_cases
+    rcases χ_cases with _|h|_ <;> subst_eqs
+    · exact ⟨Sum.inl (φ v ψ), by simp [f, in_Δ], by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+    · exact ⟨χ, fₙ_sub_f h, SplitFormula.FL_refl⟩
+    · exact ⟨Sum.inl (φ v ψ), by simp [f, in_Δ], by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+  case orᵣ Δ φ ψ in_Δ =>
+    apply @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) at x_y
+    simp only [this, List.mem_singleton] at x_y
+    simp only [x_y, Finset.union_insert, SplitSequent.FL, Finset.subset_iff, Finset.mem_insert,
+      Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion]
+    intro χ χ_cases
+    rcases χ_cases with _|h|_ <;> subst_eqs
+    · exact ⟨Sum.inr (φ v ψ), by simp [f, in_Δ], by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+    · exact ⟨χ, fₙ_sub_f h, SplitFormula.FL_refl⟩
+    · exact ⟨Sum.inr (φ v ψ), by simp [f, in_Δ], by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+  case boxₗ Δ φ in_Δ =>
+    apply @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) at x_y
+    simp only [this, List.mem_singleton] at x_y
+    simp only [x_y, SplitSequent.FL, Finset.subset_iff,
+      Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion]
+    intro χ χ_cases
+    rcases χ_cases with h|_ <;> subst_eqs
+    · simp [SplitSequent.D] at h
+      rcases h with ⟨h,_⟩|h
+      · refine ⟨χ, fₙ_sub_f h, by simp [SplitFormula.FL_refl]⟩
+      · rcases χ with χ | χ
+        · refine ⟨Sum.inl (◇χ), ?_, by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+          exact fₙ_sub_f (by simp at h; exact h)
+        · refine ⟨Sum.inr (◇χ), ?_, by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+          exact fₙ_sub_f (by simp at h; exact h)
+    · exact ⟨Sum.inl (□φ), by simp [f, in_Δ], by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+  case boxᵣ Δ φ in_Δ =>
+    apply @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) at x_y
+    simp only [this, List.mem_singleton] at x_y
+    simp only [x_y, SplitSequent.FL, Finset.subset_iff,
+      Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion]
+    intro χ χ_cases
+    rcases χ_cases with h|_ <;> subst_eqs
+    · simp [SplitSequent.D] at h
+      rcases h with ⟨h,_⟩|h
+      · refine ⟨χ, fₙ_sub_f h, by simp [SplitFormula.FL_refl]⟩
+      · rcases χ with χ | χ
+        · refine ⟨Sum.inl (◇χ), ?_, by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+          exact fₙ_sub_f (by simp at h; exact h)
+        · refine ⟨Sum.inr (◇χ), ?_, by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+          exact fₙ_sub_f (by simp at h; exact h)
+    · exact ⟨Sum.inr (□φ), by simp [f, in_Δ], by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
+
+theorem path_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y) : f (r 𝕏.α y) ⊆ SplitSequent.FL (f (r 𝕏.α x)) := by
+  induction x_y
+  case refl => exact SplitSequent.FL_refl
+  case tail y z x_y y_z fy_fx =>
+    apply Finset.Subset.trans (edge_in_FL y_z)
+    apply SplitSequent.FL_subset at fy_fx
+    simp only [SplitSequent.FL_idem] at fy_fx
+    exact fy_fx
+
+/- POINT GENERATED PROOFS -/
+
+@[simp] def α_point (𝕐 : Proof) (x : 𝕐.X) : {y : 𝕐.X // Relation.ReflTransGen (edge 𝕐.α) x y} → T.obj {y : 𝕐.X // Relation.ReflTransGen (edge 𝕐.α) x y} :=
+  fun y ↦ ⟨(𝕐.α y.1).1,
+          List.pmap (fun x y ↦ ⟨x, y⟩) (𝕐.α y.1).2 (fun _ z_in ↦ Relation.ReflTransGen.tail y.2 z_in)⟩
+
+def PointGeneratedProof (𝕐 : Proof) (x : 𝕐.X) : Proof where
+  X := {y : 𝕐.X // Relation.ReflTransGen (edge 𝕐.α) x y }
+  α := α_point 𝕐 x
+  h := by
+    intro ⟨y, y_in⟩
+    have h := 𝕐.h y
+    simp_all only [r, α_point]
+    cases r_def : (𝕐.α y).1 <;> simp_all only [p, α_point, List.pmap, List.map_pmap, List.pmap_eq_map, List.empty_eq]
+
+lemma node_in_pg_sequent_in_FL (𝕏 : Proof) (x : 𝕏.X) : ∀ y : (PointGeneratedProof 𝕏 x).X, f (r (α_point 𝕏 x) y) ⊆ SplitSequent.FL (f (r 𝕏.α x)) := by
+  simp [PointGeneratedProof, r]
+  intro y x_y
+  exact path_in_FL x_y
+
+
+/- FILTRATIONS -/
+
 instance instSetoidXSplit (𝕏 : Proof) : Setoid 𝕏.X where
   r x y := f (r 𝕏.α x) = f (r 𝕏.α y)
   iseqv := ⟨by intro x; exact rfl,
@@ -110,86 +241,53 @@ instance instSetoidXSplit (𝕏 : Proof) : Setoid 𝕏.X where
 @[simp] noncomputable def α_quot 𝕐 (x : Quotient (instSetoidXSplit 𝕐)) :=
   T.map (Quotient.mk (instSetoidXSplit 𝕐)) (𝕐.α (Quotient.out x))
 
-/- FILTRATIONS -/
 
 noncomputable def Filtration (𝕐 : Proof) : Proof where
   X := Quotient (instSetoidXSplit 𝕐)
-  -- decidable := @Quotient.decidableEq _ _ (by
-  --   intro a b
-  --   simp [HasEquiv.Equiv, instSetoidXSplit]
-  --   apply Finset.decidableEq)
   α := α_quot 𝕐
   h := by
     intro x
     cases x using Quotient.inductionOn
     case h x =>
-    --  have hyp := fun x ↦ @Quotient.mk_out _ (instSetoidXSplit 𝕐) x
-    --  have claim : f (fun x ↦ (T.map (fun (x : 𝕐.X) ↦ (⟦x⟧ : Quotient (instSetoidXSplit 𝕐)))) (𝕐.α (Quotient.out x))) ∘ (fun x ↦ ⟦x⟧) = fun x ↦ f (r 𝕐.α x) := by
-    --   funext x
-    --    rw [←(hyp x)]
-    --    simp [f, fₚ, fₙ]
-    -- sorry -- rewrite
-    --  have h := 𝕐.h (@Quotient.out _ (instSetoidXSplit 𝕐) ⟦x⟧)
-      sorry -- rewrite
-      -- rcases h with ⟨bot1, bot2⟩ | ⟨bot1, bot2⟩ | ⟨n, lem1, lem2⟩ | ⟨n, lem1, lem2⟩ | ⟨n, lem1, lem2⟩ | ⟨n, lem1, lem2⟩ | ⟨A, B, and1, and2⟩ | ⟨A, B, and1, and2⟩ | ⟨A, B, or1, or2⟩ | ⟨A, B, or1, or2⟩ | ⟨A, box1, box2⟩ | ⟨A, box1, box2⟩
-      -- · refine Or.inl ⟨bot1, ?_⟩
-      --   simp [p]
-      --   exact bot2
-      -- · refine Or.inr $ Or.inl ⟨bot1, ?_⟩
-      --   simp [p]
-      --   exact bot2
-      -- · refine Or.inr $ Or.inr $ Or.inl ⟨n, lem1, ?_⟩
-      --   simp [p]
-      --   exact lem2
-      -- · refine Or.inr $ Or.inr $ Or.inr $ Or.inl ⟨n, lem1, ?_⟩
-      --   simp [p]
-      --   exact lem2
-      -- · refine Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inl ⟨n, lem1, ?_⟩
-      --   simp [p]
-      --   exact lem2
-      -- · refine Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inl ⟨n, lem1, ?_⟩
-      --   simp [p]
-      --   exact lem2
-      -- · refine Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inl ⟨A, B, and1, ?_⟩
-      --   simp only [fₙ, α_quot, T, f, p, Multiset.map_map]
-      --   simp only [fₙ] at and2
-      --   rw [←and2]
-      --   apply congr_arg₂ Multiset.map claim rfl
-      -- · refine Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inl ⟨A, B, and1, ?_⟩
-      --   simp only [fₙ, α_quot, T, f, p, Multiset.map_map]
-      --   simp only [fₙ] at and2
-      --   rw [←and2]
-      --   apply congr_arg₂ Multiset.map claim rfl
-      -- · refine Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inl ⟨A, B, or1, ?_⟩
-      --   simp only [fₙ, α_quot, T, f, p, Multiset.map_map]
-      --   simp only [fₙ] at or2
-      --   rw [←or2]
-      --   apply congr_arg₂ Multiset.map claim rfl
-      -- · refine Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inl ⟨A, B, or1, ?_⟩
-      --   simp only [fₙ, α_quot, T, f, p, Multiset.map_map]
-      --   simp only [fₙ] at or2
-      --   rw [←or2]
-      --   apply congr_arg₂ Multiset.map claim rfl
-      -- · refine Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inl ⟨A, box1, ?_⟩
-      --   simp only [fₙ, α_quot, T, f, p, Multiset.map_map]
-      --   simp only [fₙ] at box2
-      --   rw [←box2]
-      --   apply congr_arg₂ Multiset.map claim rfl
-      -- · refine Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr $ Or.inr ⟨A, box1, ?_⟩
-      --   simp only [fₙ, α_quot, T, f, p, Multiset.map_map]
-      --   simp only [fₙ] at box2
-      --   rw [←box2]
-      --   apply congr_arg₂ Multiset.map claim rfl
-
+      have hyp := fun x ↦ @Quotient.mk_out _ (instSetoidXSplit 𝕐) x
+      have h := 𝕐.h (@Quotient.out _ (instSetoidXSplit 𝕐) ⟦x⟧)
+      simp only [r,p,α_quot,T] at *
+      convert h <;> simp_all
+      all_goals
+        intro x x_in
+        exact hyp x
 
 /- GENERATED COALGEBRA -/
 
 
 /- FINITENESS -/
-theorem finite_proof_of_proof (𝕏 : Proof) (Δ : SplitSequent) : (𝕏 ⊢ Δ) → ∃ 𝕐, Finite 𝕐.X ∧ (𝕐 ⊢ Δ) := by sorry
+theorem finite_proof_of_proof (𝕏 : Proof) (Δ : SplitSequent) : (𝕏 ⊢ Δ) → ∃ 𝕐, Finite 𝕐.X ∧ (𝕐 ⊢ Δ) := by
+  intro X_proves_Δ
+  have ⟨x, f_Δ⟩ := X_proves_Δ
+  use PointGeneratedProof (Filtration 𝕏) (Quotient.mk (instSetoidXSplit 𝕏) x)
+  constructor
+  -- · refine ⟨?_, by simp⟩ -- just to get rid of the true thing
+  · have h : Finite (SplitSequent.FL Δ).powerset := by
+      apply Set.finite_coe_iff.1
+      apply Finset.finite_toSet
+    apply @Finite.of_injective _ _ h (fun y ↦ ⟨f (r ((PointGeneratedProof (Filtration 𝕏) ⟦x⟧).α) y), by
+      simp only [Finset.mem_powerset]
+      have in_fl := node_in_pg_sequent_in_FL (Filtration 𝕏) ⟦x⟧ y
+      convert in_fl
+      simp [←f_Δ, Filtration, r]
+      exact Eq.symm $ Quotient.mk_out x⟩)
+    simp [Function.Injective]
+    intro z1 z2 f_z_eq
+    simp [PointGeneratedProof, Filtration, r] at f_z_eq
+    apply Subtype.eq
+    apply Quotient.out_equiv_out.1
+    exact f_z_eq
+  · use ⟨Quotient.mk (instSetoidXSplit 𝕏) x, Relation.ReflTransGen.refl⟩
+    rw [←f_Δ]
+    simp [r, Filtration, PointGeneratedProof]
+    exact Quotient.mk_out x
 
 /- WIP : PARTIAL INTERPOLATION PROOFS -/
-#check hm
 
 def nb_edge {X : Type u} (α : X → T.obj X) (x y : X) := y ∈ p α x ∧ ¬ (r α x).isBox
 
@@ -224,11 +322,7 @@ lemma lt_if_not_box_edge {𝕏 : Proof} {x y : 𝕏.X} : (x_y : nb_edge 𝕏.α 
         simp [SplitFormula.size, Formula.size]
         linarith
       · have := @Finset.sum_union _ _ {Sum.inl A} {Sum.inl B} _ SplitFormula.size _ (by aesop)
-        sorry -- broken after update
-
-        -- rw [this]
-        -- simp [SplitFormula.size, Formula.size]
-      )
+        simp_all [SplitFormula.size, Formula.size])
   case orᵣ Δ A B or_in =>
     have := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) x_y
     simp only [h, List.mem_singleton] at this
@@ -240,11 +334,7 @@ lemma lt_if_not_box_edge {𝕏 : Proof} {x y : 𝕏.X} : (x_y : nb_edge 𝕏.α 
         simp [SplitFormula.size, Formula.size]
         linarith
       · have := @Finset.sum_union _ _ {Sum.inr A} {Sum.inr B} _ SplitFormula.size _ (by aesop)
-        sorry -- broken after update
-
-        -- rw [this]
-        -- simp [SplitFormula.size, Formula.size]
-      )
+        simp_all [SplitFormula.size, Formula.size])
   all_goals
     simp_all [RuleApp.isBox]
 

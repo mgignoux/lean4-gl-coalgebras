@@ -356,12 +356,42 @@ def FL : SplitFormula → SplitSequent
   | Sum.inl (◇ φ) => {Sum.inl (◇ φ)} ∪ FL (Sum.inl φ)
   | Sum.inr (◇ φ) => {Sum.inr (◇ φ)} ∪ FL (Sum.inr φ)
 
+theorem FL_SplitFormula_left_eq_FL_Formula_map (φ : Formula) : FL (Sum.inl φ) = φ.FL.map ⟨Sum.inl, by intro x; grind⟩ := by
+  induction φ <;> simp_all [FL, Formula.FL, Finset.map_union]
+
+theorem FL_SplitFormula_right_eq_FL_Formula_map (φ : Formula) : FL (Sum.inr φ) = φ.FL.map ⟨Sum.inr, by intro x; grind⟩ := by
+  induction φ <;> simp_all [FL, Formula.FL, Finset.map_union]
+
+theorem in_FL_SplitFormula_left {φ : Formula} {ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL (Sum.inl φ)) : ψ.isLeft := by
+  induction φ <;> simp_all [FL] <;> grind
+
+theorem in_FL_SplitFormula_right {φ : Formula} {ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL (Sum.inr φ)) : ψ.isRight := by
+  induction φ <;> simp_all [FL] <;> grind
+
+theorem in_FL_of_in_FL_SplitFormula_left {φ : Formula} {ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL (Sum.inl φ)) : ψ.elim id id ∈ φ.FL := by
+  rcases ψ with ψ | ψ <;> induction φ <;> simp_all [FL, Formula.FL] <;> grind
+
+theorem in_FL_of_in_FL_SplitFormula_right {φ : Formula} {ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL (Sum.inr φ)) : ψ.elim id id ∈ φ.FL := by
+  rcases ψ with ψ | ψ <;> induction φ <;> simp_all [FL, Formula.FL] <;> grind
+
 /- Lemmas about FL closure -/
 
 theorem FL_refl {φ : SplitFormula} : φ ∈ FL φ := by rcases φ with φ | φ <;> cases φ <;> simp [FL, Formula.instBot, Formula.instTop]
 
-theorem FL_mon {φ ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL φ) : FL ψ ⊆ FL φ := by sorry
-
+theorem FL_mon {φ ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL φ) : FL ψ ⊆ FL φ := by
+  rcases φ with φ | φ
+  · simp [FL_SplitFormula_left_eq_FL_Formula_map φ]
+    have is_left := in_FL_SplitFormula_left ψ_sub_φ
+    rcases ψ with ψ | ψ <;> simp_all
+    simp [FL_SplitFormula_left_eq_FL_Formula_map ψ]
+    apply Formula.FL_mon
+    exact in_FL_of_in_FL_SplitFormula_left ψ_sub_φ
+  · simp [FL_SplitFormula_right_eq_FL_Formula_map φ]
+    have is_left := in_FL_SplitFormula_right ψ_sub_φ
+    rcases ψ with ψ | ψ <;> simp_all
+    simp [FL_SplitFormula_right_eq_FL_Formula_map ψ]
+    apply Formula.FL_mon
+    exact in_FL_of_in_FL_SplitFormula_right ψ_sub_φ
 
 end SplitFormula
 

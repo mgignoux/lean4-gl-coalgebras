@@ -450,7 +450,7 @@ theorem formula_in_successor_of_diamond_formula_in {Γ : SplitSequent} {strat : 
       rcases diφ_in with diφ_in | diφ_in <;> simp [diφ_in]
 
 
-  theorem diamond_in_path_of_diamond_formula_in {Γ : SplitSequent} {strat : Strategy coalgebraGame Builder}
+ theorem diamond_in_path_of_diamond_formula_in {Γ : SplitSequent} {strat : Strategy coalgebraGame Builder}
   (h : winning strat ⟨Sum.inl Γ, [], []⟩) {π ρ : maximal_path Γ strat} (π_ρ : Relation.TransGen (path_relation Γ strat) π ρ) :
   ∀ φ, ◇ φ ∈ (last_SplitSequent h π).toSequent → ◇ φ ∈ (first_SplitSequent ρ).toSequent := by
   intro φ φ_in
@@ -474,7 +474,7 @@ theorem formula_in_successor_of_diamond_formula_in {Γ : SplitSequent} {strat : 
       simp
       grind
 
- theorem formula_in_path_of_diamond_formula_in {Γ : SplitSequent} {strat : Strategy coalgebraGame Builder}
+theorem formula_in_path_of_diamond_formula_in {Γ : SplitSequent} {strat : Strategy coalgebraGame Builder}
   (h : winning strat ⟨Sum.inl Γ, [], []⟩) {π ρ : maximal_path Γ strat} (π_ρ : Relation.TransGen (path_relation Γ strat) π ρ) :
   ∀ φ, ◇ φ ∈ (last_SplitSequent h π).toSequent → φ ∈ (first_SplitSequent ρ).toSequent := by
   intro φ φ_in
@@ -499,15 +499,19 @@ theorem formula_in_successor_of_diamond_formula_in {Γ : SplitSequent} {strat : 
       grind
 
 set_option maxHeartbeats 1000000 in
-def gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame Builder) (h : winning strat ⟨Sum.inl Δ, [], []⟩)
+theorem gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame Builder) (h : winning strat ⟨Sum.inl Δ, [], []⟩)
   (π : maximal_path Δ strat) (φ) (i : ℕ) (lt : i < π.under.length) helper (ps) :
   φ ∈ (prover_SplitSequent ((π.under)[π.under.length - i - 1]'helper) ps).toSequent → ¬Evaluate (gameB_model Δ h, π) φ := by
   simp [SplitSequent.toSequent]
   intro φ_in
   rcases φ_in with φ_in | φ_in
-  · have φ_in' : Sum.inl φ ∈ last_SplitSequent h π := by sorry
-    cases i
+  · cases i
     case zero =>
+      have φ_in' : Sum.inl φ ∈ last_SplitSequent h π := by
+        convert φ_in
+        simp [last_SplitSequent]
+        congr
+        grind
       have is_last : π.under[π.under.length - 0 - 1] = π.last := by simp; grind
       have P_turn_y : coalgebraGame.turn π.last = Prover := maximal_path_ends_in_prover_turn h π
       rcases last_def : π.last with ⟨Γ' | R', Γs', Rs'⟩ <;> simp only [last_def, coalgebraGame, reduceCtorEq] at P_turn_y
@@ -808,7 +812,339 @@ def gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame Bui
             have h : is_box ⟨Sum.inr (RuleApp.boxᵣ Δ ψ in_Δ), Γ :: Γs, Rs⟩ := by simp [is_box, RuleApp.isBox]
             convert h
             exact Eq.symm u₁_def
-  · sorry -- copy
+  · cases i
+    case zero =>
+      have φ_in' : Sum.inr φ ∈ last_SplitSequent h π := by
+        convert φ_in
+        simp [last_SplitSequent]
+        congr
+        grind
+      have is_last : π.under[π.under.length - 0 - 1] = π.last := by simp; grind
+      have P_turn_y : coalgebraGame.turn π.last = Prover := maximal_path_ends_in_prover_turn h π
+      rcases last_def : π.last with ⟨Γ' | R', Γs', Rs'⟩ <;> simp only [last_def, coalgebraGame, reduceCtorEq] at P_turn_y
+      have eq : Γ' = last_SplitSequent h π := by
+        unfold last_SplitSequent
+        simp only [last_def]
+        simp [prover_SplitSequent]
+      subst eq
+      have in_cone : inMyCone strat ⟨Sum.inl Δ, [], []⟩ π.last := by
+        rcases π with ⟨π, ne, chain, max, head_cases, in_cone⟩
+        apply in_cone
+        simp
+      cases φ
+      case bottom => simp_all
+      case top =>
+        let next_move : gamePos := ⟨Sum.inr (RuleApp.topᵣ (last_SplitSequent h π) φ_in'), (last_SplitSequent h π) :: Γs', Rs'⟩
+        have B_turn_next : coalgebraGame.turn next_move = Builder := by unfold Game.turn next_move; simp [coalgebraGame]
+        have next_in_moves : next_move ∈ coalgebraGame.moves π.last := by
+          simp only [last_def]
+          unfold next_move
+          simp [coalgebraGame, SplitSequent.RuleApps]
+          refine Or.inr ⟨⊤, φ_in', by simp⟩
+        have still_winning_next : winning strat next_move :=
+          in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
+        have has_moves := winning_has_moves B_turn_next still_winning_next
+        unfold Game.moves next_move at has_moves
+        simp [coalgebraGame, RuleApp.SplitSequents] at has_moves
+      case atom n =>
+        simp [gameB_model, SplitSequent.toSequent, -not_or]
+        right
+        convert φ_in
+        simp [prover_SplitSequent, last_SplitSequent]
+        grind
+      case neg_atom n =>
+        simp [gameB_model, SplitSequent.toSequent]
+        constructor
+        · intro nφ_in
+          by_cases φ_in'' : Sum.inl (na n) ∈ last_SplitSequent h π
+          · let next_move : gamePos := ⟨Sum.inr (RuleApp.axₗₗ (last_SplitSequent h π) n ⟨nφ_in, φ_in''⟩), (last_SplitSequent h π) :: Γs', Rs'⟩
+            have B_turn_next : coalgebraGame.turn next_move = Builder := by unfold Game.turn next_move; simp [coalgebraGame]
+            have next_in_moves : next_move ∈ coalgebraGame.moves π.last := by
+              simp only [last_def]
+              unfold next_move
+              simp [coalgebraGame, SplitSequent.RuleApps]
+              refine Or.inl ⟨at n, nφ_in, by simp [φ_in'']⟩
+            have still_winning_next : winning strat next_move :=
+              in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
+            have has_moves := winning_has_moves B_turn_next still_winning_next
+            unfold Game.moves next_move at has_moves
+            simp [coalgebraGame, RuleApp.SplitSequents] at has_moves
+          · let next_move : gamePos := ⟨Sum.inr (RuleApp.axₗᵣ (last_SplitSequent h π) n ⟨nφ_in, φ_in'⟩), (last_SplitSequent h π) :: Γs', Rs'⟩
+            have B_turn_next : coalgebraGame.turn next_move = Builder := by unfold Game.turn next_move; simp [coalgebraGame]
+            have next_in_moves : next_move ∈ coalgebraGame.moves π.last := by
+              simp only [last_def]
+              unfold next_move
+              simp [coalgebraGame, SplitSequent.RuleApps]
+              refine Or.inl ⟨at n, nφ_in, by simp [φ_in', φ_in'']⟩
+            have still_winning_next : winning strat next_move :=
+              in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
+            have has_moves := winning_has_moves B_turn_next still_winning_next
+            unfold Game.moves next_move at has_moves
+            simp [coalgebraGame, RuleApp.SplitSequents] at has_moves
+        · intro nφ_in
+          by_cases φ_in'' : Sum.inl (na n) ∈ last_SplitSequent h π
+          · let next_move : gamePos := ⟨Sum.inr (RuleApp.axᵣₗ (last_SplitSequent h π) n ⟨nφ_in, φ_in''⟩), (last_SplitSequent h π) :: Γs', Rs'⟩
+            have B_turn_next : coalgebraGame.turn next_move = Builder := by unfold Game.turn next_move; simp [coalgebraGame]
+            have next_in_moves : next_move ∈ coalgebraGame.moves π.last := by
+              simp only [last_def]
+              unfold next_move
+              simp [coalgebraGame, SplitSequent.RuleApps]
+              refine Or.inr ⟨at n, nφ_in, by simp [φ_in', φ_in'']⟩
+            have still_winning_next : winning strat next_move :=
+              in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
+            have has_moves := winning_has_moves B_turn_next still_winning_next
+            unfold Game.moves next_move at has_moves
+            simp [coalgebraGame, RuleApp.SplitSequents] at has_moves
+          · let next_move : gamePos := ⟨Sum.inr (RuleApp.axᵣᵣ (last_SplitSequent h π) n ⟨nφ_in, φ_in'⟩), (last_SplitSequent h π) :: Γs', Rs'⟩
+            have B_turn_next : coalgebraGame.turn next_move = Builder := by unfold Game.turn next_move; simp [coalgebraGame]
+            have next_in_moves : next_move ∈ coalgebraGame.moves π.last := by
+              simp only [last_def]
+              unfold next_move
+              simp [coalgebraGame, SplitSequent.RuleApps]
+              refine Or.inr ⟨at n, nφ_in, by simp [φ_in', φ_in'']⟩
+            have still_winning_next : winning strat next_move :=
+              in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
+            have has_moves := winning_has_moves B_turn_next still_winning_next
+            unfold Game.moves next_move at has_moves
+            simp [coalgebraGame, RuleApp.SplitSequents] at has_moves
+      case or φ1 φ2 => -- then we will make a move
+        let next_move : gamePos := ⟨Sum.inr (RuleApp.orᵣ (last_SplitSequent h π) φ1 φ2 φ_in'), (last_SplitSequent h π) :: Γs', Rs'⟩
+        have B_turn_next : coalgebraGame.turn next_move = Builder := by unfold Game.turn next_move; simp [coalgebraGame]
+        have next_in_moves : next_move ∈ coalgebraGame.moves π.last := by
+          simp only [last_def]
+          unfold next_move
+          simp [coalgebraGame, SplitSequent.RuleApps]
+          exact Or.inr ⟨φ1 v φ2, φ_in', by simp⟩
+        exfalso
+        rcases π with ⟨π, ne, chain, max⟩
+        apply max
+        refine ⟨next_move, ?_, ?_⟩
+        · exact move_iff_in_moves.2 next_in_moves
+        · unfold next_move
+          simp [is_box, RuleApp.isBox]
+      case and φ1 φ2  => -- then we will make a move
+        let next_move : gamePos := ⟨Sum.inr (RuleApp.andᵣ (last_SplitSequent h π) φ1 φ2 φ_in'), (last_SplitSequent h π) :: Γs', Rs'⟩
+        have B_turn_next : coalgebraGame.turn next_move = Builder := by unfold Game.turn next_move; simp [coalgebraGame]
+        have next_in_moves : next_move ∈ coalgebraGame.moves π.last := by
+          simp only [last_def]
+          unfold next_move
+          simp [coalgebraGame, SplitSequent.RuleApps]
+          exact Or.inr ⟨φ1 & φ2, φ_in', by simp⟩
+        exfalso
+        rcases π with ⟨π, ne, chain, max⟩
+        apply max
+        refine ⟨next_move, ?_, ?_⟩
+        · exact move_iff_in_moves.2 next_in_moves
+        · unfold next_move
+          simp [is_box, RuleApp.isBox]
+      case diamond φ =>
+        simp
+        intro ρ π_ρ
+        apply gameB_general_helper strat h ρ φ (ρ.under.length - 1) --- termination
+        · rcases ρ with ⟨ρ, ne, chain, max, head_cases, in_cone⟩
+          simp
+          grind
+        · have φ_in_2 : φ ∈ (first_SplitSequent ρ).toSequent := formula_in_path_of_diamond_formula_in h π_ρ φ (by simp [SplitSequent.toSequent, φ_in'])
+          convert φ_in_2
+          simp [first_SplitSequent]
+          grind
+        · rcases ρ with ⟨ρ, ne, chain, max, head_cases, in_cone⟩
+          simp
+          grind
+        · convert (maximal_path_starts_in_prover_turn ρ)
+          rcases ρ with ⟨ρ, ne, chain, max, head_cases, in_cone⟩
+          simp
+          grind
+      case box φ =>
+        simp
+        let next_move : coalgebraGame.Pos := ⟨Sum.inr (RuleApp.boxᵣ (prover_SplitSequent π.last (is_last ▸ ps)) φ φ_in'), prover_SplitSequent π.last (is_last ▸ ps) :: π.last.2.1, π.last.2.2⟩
+        have move_last_next : move π.last next_move := by
+          unfold next_move
+          simp only [last_def]
+          apply move.prover
+          simp [SplitSequent.RuleApps]
+          refine Or.inr ⟨□ φ, φ_in', by simp [prover_SplitSequent]⟩
+        have B_turn_next : coalgebraGame.turn next_move = Builder := by simp [next_move, coalgebraGame]
+        have next_in_moves : next_move ∈ coalgebraGame.moves π.last := move_iff_in_moves.1 move_last_next
+        have next_in_cone : inMyCone strat (Sum.inl Δ, [], []) next_move :=
+          inMyCone.oStep in_cone (by simp only [last_def, coalgebraGame, other_A_eq_B]) next_in_moves
+        have B_turn_winning : winning strat next_move := in_cone_winning next_in_cone h
+        let next_next_move := strat next_move B_turn_next (winning_has_moves B_turn_next B_turn_winning)
+        have next_next_def := next_next_move.2
+        simp only [next_move, Game.Pos.moves, coalgebraGame, RuleApp.SplitSequents, Finset.mem_filterMap, Finset.mem_singleton, ↓existsAndEq, List.mem_cons,
+          Option.ite_none_left_eq_some, Option.some.injEq, true_and] at next_next_def
+        have ⟨nrep, next_next_def⟩ := next_next_def
+        have move_next_next : move next_move next_next_move.1 := move_iff_in_moves.2 next_next_move.2
+        have next_next_in_cone : inMyCone strat (Sum.inl Δ, [], []) next_next_move.1 := by
+          apply inMyCone.myStep next_in_cone
+        have after_box_next_next : after_box next_next_move.1 := by
+          rw [←next_next_def]
+          simp [after_box, RuleApp.isBox]
+        have ⟨ρ, ρ_def⟩ := always_exists_maximal_path_from_root_or_after Δ strat h next_next_move next_next_in_cone (Or.inl after_box_next_next)
+        refine ⟨ρ, ?_, ?_⟩
+        · simp [gameB_model]
+          apply Relation.TransGen.single
+          simp only [path_relation, Relation.Comp]
+          exact ⟨next_move, move_last_next, ρ_def ▸ move_next_next⟩
+        · apply gameB_general_helper strat h ρ φ (ρ.under.length - 1) --- termination
+          · rcases ρ with ⟨ρ, ne, chain, max, head_cases, in_cone⟩
+            simp
+            grind
+          · have φ_in_2 : φ ∈ (first_SplitSequent ρ).toSequent := by
+              simp only [first_SplitSequent, ρ_def, ←next_next_def, SplitSequent.toSequent]
+              simp [prover_SplitSequent]
+            convert φ_in_2
+            simp [first_SplitSequent]
+            grind
+          · rcases ρ with ⟨ρ, ne, chain, max, head_cases, in_cone⟩
+            simp
+            grind
+          · convert (maximal_path_starts_in_prover_turn ρ)
+            rcases ρ with ⟨ρ, ne, chain, max, head_cases, in_cone⟩
+            simp
+            grind
+    case succ i =>
+      cases i
+      case zero =>
+        exfalso
+        have P_turn_last := maximal_path_ends_in_prover_turn h π
+        have eq : π.under.length - (0 + 1) - 1 = π.under.length - 2 := by omega
+        have eq2 : π.under.length - (0 + 1) - 1 + 1 = π.under.length - 1 := by omega
+        have eq3 : π.under.length - 1 - 1 = π.under.length - 2 := by omega
+        rcases π with ⟨π, ne, chain, max, head_cases, in_cone⟩
+        have length_gt_one : π.length > 1 := by
+          simp at lt
+          grind
+        have u₁_last := List.IsChain.getElem chain (π.length - (0 + 1) - 1) (by omega)
+        have helper : π[π.length - 1]'(by omega) = π.getLast ne := by grind
+        simp_all
+        rcases u₁_def : π[π.length - 2] with ⟨Γ | R, Γs, Rs⟩
+        · simp_all
+          have u₁_last := move_iff_in_moves.1 u₁_last.1
+          simp [coalgebraGame] at u₁_last
+          have ⟨R, Γ_R, eq⟩ := u₁_last
+          rw [←eq] at P_turn_last
+          simp [coalgebraGame] at P_turn_last
+        · simp at ps
+          have helper : ¬ coalgebraGame.turn ⟨Sum.inr R, Γs, Rs⟩ = Prover := by simp [coalgebraGame]
+          apply helper
+          convert ps
+          convert Eq.symm u₁_def
+      case succ i =>
+        rcases π with ⟨π, ne, chain, max, head_cases, in_cone⟩
+        have ne_zero : π.length ≠ 0 := by grind
+        have length_gt_two : π.length > 2 := by
+          simp at lt
+          grind
+        have eq3 : π.length - (i + 1 + 1) - 1 = π.length - i - 3 := by omega
+        have eq2 : π.length - (i + 1 + 1) - 1 + 1 = π.length - i - 2 := by simp_all; omega
+        have y_u₁ := List.IsChain.getElem chain (π.length - (i + 1 + 1) - 1) (by omega)
+        have u₁_u₂ := List.IsChain.getElem chain (π.length - (i + 1 + 1) - 1 + 1) (by omega)
+        have no_box_u₁ := y_u₁.2
+        simp at no_box_u₁
+        simp at φ_in
+        rcases y_def : π[π.length - (i + 1 + 1) - 1] with ⟨Γ | R, Γs, Rs⟩ <;> simp [y_def] at ps <;> simp [coalgebraGame] at ps
+        simp [y_def] at φ_in
+        simp [y_def] at y_u₁
+        have y_u₁ := move_iff_in_moves.1 y_u₁.1
+        simp [Game.moves, coalgebraGame] at y_u₁
+        have ⟨R, R_Γ, u₁_def⟩ := y_u₁
+        have u₁_u₂ : non_box_move (Sum.inr R, Γ :: Γs, Rs) (π[π.length - (i + 1 + 1) - 1 + 1 + 1]'(by grind)) := by
+          convert u₁_u₂ -- dont understand why simp or rw doesn't do this
+        have u₁_u₂ := move_iff_in_moves.1 u₁_u₂.1
+        simp [Game.moves, coalgebraGame] at u₁_u₂
+        have ⟨Γ', Γ'_R, no_rep, u₂_def⟩ := u₁_u₂
+        have P_turn_u₂ : coalgebraGame.turn (Sum.inl Γ', Γ :: Γs, R :: Rs) = Prover := by simp [coalgebraGame]
+        have eq : π.length - i - 1 = π.length - (i + 1 + 1) - 1 + 1 + 1 := by
+          simp_all
+          omega
+        have P_turn : coalgebraGame.turn (maximal_path.mp π ne chain max head_cases in_cone).under[(maximal_path.mp π ne chain max head_cases in_cone).under.length - i - 1] = Prover := by
+          convert P_turn_u₂
+          convert Eq.symm u₂_def using 2
+        simp [←eq] at u₂_def
+        have eq_helper : prover_SplitSequent (maximal_path.mp π ne chain max head_cases in_cone).under[(maximal_path.mp π ne chain max head_cases in_cone).under.length - i - 1] P_turn = Γ' := by
+          simp
+          grind [prover_SplitSequent]
+        by_cases Sum.inr φ ∈ Γ'
+        case pos φ_in =>
+          exact gameB_general_helper strat h (maximal_path.mp π ne chain max head_cases in_cone) φ i (by grind) (by grind) P_turn (by simp [SplitSequent.toSequent]; exact Or.inr (eq_helper ▸ φ_in))
+        case neg nφ_in =>
+          cases R <;> simp [RuleApp.SplitSequents] at Γ'_R
+          case andᵣ Δ ψ₁ ψ₂ in_Δ _ =>
+            have ⟨eq1, eq2⟩ : φ = (ψ₁ & ψ₂) ∧ Γ = Δ := by
+              rcases Γ'_R with eq | eq <;> subst eq
+              all_goals
+              simp [SplitSequent.RuleApps] at R_Γ
+              rcases R_Γ with ⟨χ, χ_in, eq⟩ | ⟨χ, χ_in, eq⟩ <;> cases χ <;> simp at eq <;> try grind
+              simp [eq]
+              by_contra ne
+              apply nφ_in
+              simp
+              refine Or.inr ⟨?_, ne⟩
+              convert φ_in
+              simp [prover_SplitSequent, eq]
+            subst eq1 eq2
+            simp only [Evaluate, not_and_or]
+            rcases Γ'_R with eq | eq <;> subst eq
+            · left
+              apply gameB_general_helper strat h (maximal_path.mp π ne chain max head_cases in_cone) ψ₁ i (by grind) (by grind) P_turn
+              rw [eq_helper]
+              simp [SplitSequent.toSequent]
+            · right
+              apply gameB_general_helper strat h (maximal_path.mp π ne chain max head_cases in_cone) ψ₂ i (by grind) (by grind) P_turn
+              rw [eq_helper]
+              simp [SplitSequent.toSequent]
+          case andₗ Δ ψ₁ ψ₂ in_Δ _ =>
+            exfalso
+            rcases Γ'_R with Γ'_R | Γ'_R <;> subst Γ'_R
+            all_goals
+            simp [prover_SplitSequent] at φ_in
+            simp at nφ_in
+            apply nφ_in
+            simp [SplitSequent.RuleApps] at R_Γ
+            rcases R_Γ with ⟨χ, χ_in, eq⟩ | ⟨χ, χ_in, eq⟩ <;> cases χ <;> simp at eq <;> try grind
+          case orᵣ Δ ψ₁ ψ₂ in_Δ _ =>
+            have ⟨eq1, eq2⟩ : φ = (ψ₁ v ψ₂) ∧ Γ = Δ := by
+              subst Γ'_R
+              simp [SplitSequent.RuleApps] at R_Γ
+              rcases R_Γ with ⟨χ, χ_in, eq⟩ | ⟨χ, χ_in, eq⟩ <;> cases χ <;> simp at eq <;> try grind
+              all_goals
+                simp [eq]
+                by_contra ne
+                apply nφ_in
+                simp
+                refine Or.inr (Or.inr ⟨?_, ne⟩)
+                convert φ_in
+                simp [prover_SplitSequent, eq]
+            subst eq1 eq2 Γ'_R
+            simp
+            constructor
+            · apply gameB_general_helper strat h (maximal_path.mp π ne chain max head_cases in_cone) ψ₁ i (by grind) (by grind) P_turn
+              rw [eq_helper]
+              simp [SplitSequent.toSequent]
+            · apply gameB_general_helper strat h (maximal_path.mp π ne chain max head_cases in_cone) ψ₂ i (by grind) (by grind) P_turn
+              rw [eq_helper]
+              simp [SplitSequent.toSequent]
+          case orₗ Δ ψ₁ ψ₂ in_Δ _ =>
+            exfalso
+            subst Γ'_R
+            simp [prover_SplitSequent] at φ_in
+            simp at nφ_in
+            apply nφ_in
+            simp [SplitSequent.RuleApps] at R_Γ
+            rcases R_Γ with ⟨χ, χ_in, eq⟩ | ⟨χ, χ_in, eq⟩ <;> cases χ <;> simp at eq <;> try grind
+          case boxₗ Δ ψ in_Δ _ => -- if this breaks in the future, then if u₁ is a box then we have a contradiction since u₁ sees u₂
+            exfalso
+            apply no_box_u₁
+            have h : is_box ⟨Sum.inr (RuleApp.boxₗ Δ ψ in_Δ), Γ :: Γs, Rs⟩ := by simp [is_box, RuleApp.isBox]
+            convert h
+            exact Eq.symm u₁_def
+          case boxᵣ Δ ψ in_Δ _ =>
+            exfalso
+            apply no_box_u₁
+            have h : is_box ⟨Sum.inr (RuleApp.boxᵣ Δ ψ in_Δ), Γ :: Γs, Rs⟩ := by simp [is_box, RuleApp.isBox]
+            convert h
+            exact Eq.symm u₁_def
 termination_by (φ.size, i)
 decreasing_by
   · subst_eqs
@@ -820,8 +1156,44 @@ decreasing_by
   · subst_eqs
     apply Prod.Lex.right
     omega
-  all_goals
-    subst_eqs
+  · subst_eqs
+    apply Prod.Lex.left
+    simp [Formula.size]
+    omega
+  · subst_eqs
+    apply Prod.Lex.left
+    simp [Formula.size]
+    omega
+  · subst_eqs
+    apply Prod.Lex.left
+    simp [Formula.size]
+    omega
+  · subst_eqs
+    apply Prod.Lex.left
+    simp [Formula.size]
+    omega
+  · subst_eqs
+    apply Prod.Lex.left
+    simp [Formula.size]
+  · subst_eqs
+    apply Prod.Lex.left
+    simp [Formula.size]
+  · subst_eqs
+    apply Prod.Lex.right
+    omega
+  · subst_eqs
+    apply Prod.Lex.left
+    simp [Formula.size]
+    omega
+  · subst_eqs
+    apply Prod.Lex.left
+    simp [Formula.size]
+    omega
+  · subst_eqs
+    apply Prod.Lex.left
+    simp [Formula.size]
+    omega
+  · subst_eqs
     apply Prod.Lex.left
     simp [Formula.size]
     omega

@@ -165,7 +165,6 @@ theorem single_preserves_equiv (n : Nat) (C D E : Formula) (h : D ≅ E) : singl
   --   rcases r : (_root_.r 𝕏.α x) <;>
   --     simp_all [_root_.f, Formula.neg, _root_.fₚ]
   -- all_goals
-  -- sorry
 
 theorem Solution_strong_helper {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) (n : ℕ) {B A : Formula}
   : single n B (partial_ σ A) = @partial_ (fun m ↦ p m ∨ m = n) _ (fun m ↦ single n B (if h : p m then σ ⟨m, h⟩ else at m)) A := by

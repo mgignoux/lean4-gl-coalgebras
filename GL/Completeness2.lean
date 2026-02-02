@@ -469,7 +469,7 @@ theorem formula_in_successor_of_diamond_formula_in {Γ : Sequent} {strat : Strat
     right
     exact diφ_in
 
-  theorem diamond_in_path_of_diamond_formula_in {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
+theorem diamond_in_path_of_diamond_formula_in {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
   (h : winning strat ⟨Sum.inl Γ, [], []⟩) {π ρ : maximal_path Γ strat} (π_ρ : Relation.TransGen (path_relation Γ strat) π ρ) :
   ∀ φ, ◇ φ ∈ last_sequent h π → ◇ φ ∈ first_sequent ρ := by
   intro φ φ_in
@@ -493,7 +493,7 @@ theorem formula_in_successor_of_diamond_formula_in {Γ : Sequent} {strat : Strat
       simp
       grind
 
- theorem formula_in_path_of_diamond_formula_in {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
+theorem formula_in_path_of_diamond_formula_in {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
   (h : winning strat ⟨Sum.inl Γ, [], []⟩) {π ρ : maximal_path Γ strat} (π_ρ : Relation.TransGen (path_relation Γ strat) π ρ) :
   ∀ φ, ◇ φ ∈ last_sequent h π → φ ∈ first_sequent ρ := by
   intro φ φ_in

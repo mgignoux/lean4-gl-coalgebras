@@ -1,3 +1,5 @@
+import Mathlib.Data.Stream.Init
+
 import GL.Logic
 import GL.SplitCoalgebraProof
 import Mathlib.Data.Fintype.Defs
@@ -500,6 +502,21 @@ theorem ProofTranslation_isBox {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) 
   (SplitCut.r (ProofTranslationMap PartialProof) ⟨y, z_in_Cy⟩).isBox ↔ (CutPre.r (PartialProof y).α z_in_Cy).isBox := by
   cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.RuleApp.isBox, CutPre.RuleApp.isBox]
 
+def Stream'.map_fst {α : Type} {β : α → Type} (a : Stream' ((x : α) × β x)) :
+    Stream' α := Stream'.map (fun xy => xy.1) a
+
+def Stream'.destutter_with_map {α : Type} (f : Stream' α) (h : ∀ n, ∃ m ≥ n, f m ≠ f n) :
+    (Stream' α) × (ℕ → ℕ) :=
+  sorry
+
+lemma Stream'.destutter_with_map_snd_ge {α} (f : Stream' α) (h : ∀ n, ∃ m ≥ n, f m ≠ f n) n :
+    (Stream'.destutter_with_map f h).2 n ≥ n := by
+  sorry
+
+theorem Stream'.destutter_with_map_spec {α} (f : Stream' α) h k :
+    (Stream'.destutter_with_map f h).1 k = f ((Stream'.destutter_with_map f h).2 k) := by
+  sorry
+
 noncomputable def ProofTranslation {𝕏 : Proof} {σ}
 (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ)
   : SplitCut.Proof := by exact -- ∀ x : 𝕏.X, 𝕐 ⊢ leftInterpolant x
@@ -614,6 +631,37 @@ noncomputable def ProofTranslation {𝕏 : Proof} {σ}
         · grind
       case neg path =>
         simp at path
+
+        let g := (Stream'.map_fst f)
+        --
+
+        let f' := Stream'.destutter_with_map g (by sorry /- h -/)
+
+        have f'_claim : ∀ n, edge 𝕏.α (f'.1 n) (f'.1 (n + 1)) := sorry
+
+        have ge_claim := Stream'.destutter_with_map_snd_ge g (by sorry /- h -/) l
+
+        have := @inf_path_has_inf_boxes 𝕏 f'.1 f'_claim l -- hacky :-)
+
+        rcases this with ⟨m, m_h⟩
+
+        use f'.2 m + 1 + (Stream'.destutter_with_map g (by sorry /- h -/)).2 l - l
+        -- + 1 for cut case or even more because □ may be inside the interval
+
+        have : (l + (f'.2 m + 1 + (Stream'.destutter_with_map g sorry).2 l - l)) = ((f'.2 m + 1 + (Stream'.destutter_with_map g sorry).2 l)) := by omega
+        rw [this]; clear this
+
+        rw [ProofTranslation_isBox]
+
+        have map_same := Stream'.destutter_with_map_spec g (by sorry /- h -/) m
+
+        have g_same_f : ∀ k, g k = (f k).1 := by unfold g Stream'.map_fst; aesop
+        rw [g_same_f] at map_same
+
+        unfold f'
+        -- simp
+        -- rw [← map_same]
+
         sorry
 
       -- let g : ℕ → {x : 𝕏.X // ∃ m, (f m).1 = x} := Nat.rec ⟨y, ⟨0, by simp [f_zero]⟩⟩ (fun n ⟨y, y_prop⟩ => by sorry)

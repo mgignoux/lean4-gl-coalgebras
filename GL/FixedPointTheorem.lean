@@ -1,19 +1,6 @@
 import GL.Semantics
 import GL.AxiomBlame
 
-def Formula.modalized (n : Nat) : Formula → Bool
-  | ⊤ => False
-  | ⊥ => False
-  | at _ => False
-  | na _ => False
-  | φ & ψ => modalized n φ ∧ modalized n ψ
-  | φ v ψ => modalized n φ ∧ modalized n ψ
-  | □ _ => True
-  | ◇ _ => True
-
-axiom FixedPointTheorem (φ : Formula) (n : ℕ) (n_modal_in_φ : φ.modalized n) : ∃ (ψ : Formula),
-  n ∉ Formula.vocab ψ ∧ sem_equiv ψ (single n ψ φ) ∧ Formula.vocab ψ ⊆ Formula.vocab φ
-
 theorem not_in_single_voc (n : Nat) (φ ψ : Formula) : n ∉ φ.vocab → (single n ψ φ) = φ := by
   intro h
   induction φ <;> simp_all [single, Formula.instBot, Formula.instTop, Formula.vocab] <;> aesop
@@ -68,21 +55,6 @@ theorem Semantic_Substitution_Lemma {α : Type} (M : Model α) (u : α) (n : ℕ
         simp only [Evaluate_and, Evaluate_imp] at this
         exact (ih w ⟨this, fun o w_o ↦ mp.2 o (M.trans u_w w_o)⟩).2 h
 
-def Formula.positive : Formula → ℕ → Prop
-  | ⊤, _ => True
-  | ⊥, _ => True
-  | at _, _ => True
-  | na k, n => if k = n then False else True
-  | φ & ψ, n => Formula.positive φ n ∧ Formula.positive ψ n
-  | φ v ψ, n => Formula.positive φ n ∧ Formula.positive ψ n
-  | □ φ, n => Formula.positive φ n
-  | ◇ φ, n => Formula.positive φ n
-
--- theorem single_positive_semantic_imp (φ : Formula) (n : Nat) (pos : φ.positive n): ⊨ φ ↣ single n ⊤ φ := by
---   simp only [Formula.isValid, Evaluate_imp]
---   intro α M u u_φ
---   induction φ generalizing u <;> simp_all [single, Formula.positive] <;> aesop
-
 lemma GL_eval_not_box_prop {α : Type} {M : Model α} {u : α} {φ : Formula} :
   ¬ Evaluate ⟨M, u⟩ (□ φ) → ∃ w, M.R u w ∧ Evaluate ⟨M, w⟩ (□ φ) ∧ ¬ Evaluate ⟨M, w⟩ φ := by
   intro mp
@@ -96,7 +68,6 @@ termination_by
   M.con_wf.wrap u
 decreasing_by
   simp [WellFounded.wrap, Function.swap, u_w]
-
 
 theorem FPT_box_helper (φ : Formula) (n : Nat)
   : ⊨ (⊡ (at n ⟷ single n ⊤ (□ φ))) ↣ (at n ⟷ □ φ) := by
@@ -240,6 +211,41 @@ theorem FPT_diamond (φ : Formula) (n : Nat) : ⊨ (single n ⊥ (◇ φ)) ⟷ (
     rw [h]
     apply Evaluate_box_dot_iff)
   simp_all [single]
+
+theorem in_single_voc' {m n : ℕ} {φ ψ : Formula} : m ∈ (single n φ ψ).vocab → (m ∈ φ.vocab ∧ n ∈ ψ.vocab) ∨ (m ∈ ψ.vocab ∧ m ≠ n) := by
+  intro m_in
+  induction ψ <;> simp_all [single] <;> try grind [Formula.vocab, in_neg_voc_iff, Formula.instTop, Formula.instBot]
+
+theorem FPT_box_vocab (φ : Formula) (n : ℕ) :
+  n ∉ Formula.vocab (single n ⊤ (□ φ)) ∧ Formula.vocab (single n ⊤ (□ φ)) ⊆ Formula.vocab (□ φ) := by
+  constructor
+  · apply not_in_single_top_voc
+  · intro m m_in
+    have := in_single_voc' m_in
+    simp_all [Formula.vocab]
+
+theorem FPT_diamond_vocab (φ : Formula) (n : ℕ) :
+  n ∉ Formula.vocab (single n ⊥ (◇ φ)) ∧ Formula.vocab (single n ⊥ (◇ φ)) ⊆ Formula.vocab (◇ φ) := by
+  constructor
+  · apply not_in_single_bot_voc
+  · intro m m_in
+    have := in_single_voc' m_in
+    simp_all [Formula.vocab]
+
+theorem FixedPointTheorem_simple (φ : Formula) (n : ℕ) (box_or_dia : φ.isBox ∨ φ.isDiamond) :
+  ∃ (ψ : Formula), n ∉ Formula.vocab ψ ∧ sem_equiv ψ (single n ψ φ) ∧ Formula.vocab ψ ⊆ Formula.vocab φ := by
+  rcases box_or_dia with box | dia
+  · cases φ <;> simp [Formula.isBox] at box
+    case box φ =>
+      have FPT_box_prop := FPT_box_vocab φ n
+      exact ⟨single n ⊤ (□ φ), FPT_box_prop.1, FPT_box φ n, FPT_box_prop.2⟩
+  · cases φ <;> simp [Formula.isDiamond] at dia
+    case diamond φ =>
+      have FPT_diamond_prop := FPT_diamond_vocab φ n
+      exact ⟨single n ⊥ (◇ φ), FPT_diamond_prop.1, FPT_diamond φ n, FPT_diamond_prop.2⟩
+
+
+
 
 -- #axiom_blame FPT_box_helper
 -- #axiom_blame FPT_diamond_helper

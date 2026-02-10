@@ -247,17 +247,17 @@ def Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
       have box_in_Y := exists_box_on_restr_loop loop_con.choose (fun x ↦ x ∈ Y) loop_con.choose_spec
       let box := box_in_Y.choose
       have τ := @Solution_strong _ _ (Y \ {box}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
-      have modal : Formula.modalized (encodeVar box) (partial_ τ (equation box)) := by
+      have box_or_dia : (partial_ τ (equation box)).isBox ∨ (partial_ τ (equation box)).isDiamond := by
         unfold box
         have is_box := box_in_Y.choose_spec.1
         cases r_def : r 𝕏.α box_in_Y.choose <;> simp [r_def] at is_box <;> simp [RuleApp.isBox] at is_box
         · unfold equation
           split <;> simp_all
-          simp [partial_, Formula.modalized]
+          simp [partial_, Formula.isDiamond]
         · unfold equation
           split <;> simp_all
-          simp [partial_, Formula.modalized]
-      have ψ := (FixedPointTheorem (partial_ τ (equation box)) (encodeVar box) modal).choose-- I think this is what we want
+          simp [partial_, Formula.isBox]
+      have ψ := (FixedPointTheorem_simple (partial_ τ (equation box)) (encodeVar box) box_or_dia).choose -- I think this is what we want
       fun n ↦ (single (encodeVar box) ψ) (partial_ τ (at n))
     else
       have y_in_Y : ∃ y, y ∈ Y := by by_contra h; apply em_con; apply Finset.eq_empty_of_forall_notMem; simp_all
@@ -414,16 +414,16 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
       have box_in_Y := exists_box_on_restr_loop loop_con.choose (fun x ↦ x ∈ Y) loop_con.choose_spec
       have Z_sub : Y \ {box_in_Y.choose} ⊆ Fintype.elems := by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in
       let τ_prop := @Solution_strong_prop _ _ (Y \ {box_in_Y.choose}) Z_sub -- maybe make seperate
-      have modal : Formula.modalized (encodeVar box_in_Y.choose) (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose)) := by
+      have box_or_dia : (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose)).isBox ∨ (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose)).isDiamond := by
         have is_box := box_in_Y.choose_spec.1
         cases r_def : r 𝕏.α box_in_Y.choose <;> simp [r_def] at is_box <;> simp [RuleApp.isBox] at is_box
         · unfold equation
           split <;> simp_all
-          simp [partial_, Formula.modalized]
+          simp [partial_, Formula.isDiamond]
         · unfold equation
           split <;> simp_all
-          simp [partial_, Formula.modalized]
-      have fpt := FixedPointTheorem (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose)) (encodeVar box_in_Y.choose) modal
+          simp [partial_, Formula.isBox]
+      have fpt := (FixedPointTheorem_simple (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose)) (encodeVar box_in_Y.choose) box_or_dia)
       have const := partial_const (Solution_strong Z_sub) (at (encodeVar box_in_Y.choose)) (by
         simp [Formula.vocab, Finset.mem_singleton, forall_eq])
       have ⟨z, p_eq, z_in, box_z⟩ : ∃ z, p 𝕏.α box_in_Y.choose = [z] ∧ z ∈ Y ∧ z ∈ p 𝕏.α box_in_Y.choose := by

@@ -100,7 +100,7 @@ infixr:6 "⊢" => Proves
 prefix:40 "⊢" => SplitSequent.isTrue
 
 def equiv (B : Formula) (A : Formula) : Prop :=
-  (∃ (𝕏 : Proof), 𝕏 ⊢ {Sum.inl (~A), Sum.inr B}) ∧ (∃ (𝕏 : Proof), 𝕏 ⊢ {Sum.inl A, Sum.inr (~B)})
+  (∃ (𝕏 : Proof), 𝕏 ⊢ {Sum.inl (~A), Sum.inr B}) ∧ (∃ (𝕏 : Proof), 𝕏 ⊢ {Sum.inr A, Sum.inl (~B)})
 infixr:7 "≅" => equiv
 
 /- LEMMAS -/
@@ -242,6 +242,7 @@ instance instSetoidXSplit (𝕏 : Proof) : Setoid 𝕏.X where
   T.map (Quotient.mk (instSetoidXSplit 𝕐)) (𝕐.α (Quotient.out x))
 
 
+set_option maxHeartbeats 300000
 noncomputable def Filtration (𝕐 : Proof) : Proof where
   X := Quotient (instSetoidXSplit 𝕐)
   α := α_quot 𝕐

@@ -500,7 +500,7 @@ theorem formula_in_path_of_diamond_formula_in {Γ : SplitSequent} {strat : Strat
       simp
       grind
 
-set_option maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 theorem gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame Builder) (h : winning strat ⟨Sum.inl Δ, [], []⟩)
   (π : maximal_path Δ strat) (φ) (i : ℕ) (lt : i < π.under.length) helper (ps) :
   φ ∈ (prover_SplitSequent ((π.under)[π.under.length - i - 1]'helper) ps).toSequent → ¬Evaluate (gameB_model Δ h, π) φ := by
@@ -1264,7 +1264,7 @@ theorem equiv_iff_sem_equiv {φ ψ : Formula} : sem_equiv φ ψ ↔ (φ ≅ ψ) 
     simp [sem_equiv]
     simp [Formula.isValid]
     have := Soundness {Sum.inl (~ψ), Sum.inr φ} mpp1
-    have := Soundness {Sum.inl (ψ), Sum.inr (~φ)} mpp2
+    have := Soundness {Sum.inr (ψ), Sum.inl (~φ)} mpp2
     simp_all [SplitSequent.isValid, Evaluate_sseq, Sum.elim]
     grind
 

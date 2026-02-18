@@ -124,6 +124,24 @@ notation:55 φ:56 " ↣ " ψ:55 => (~ φ) v ψ
 notation:55 φ:56 " ⟷ " ψ:55 => (φ ↣ ψ) & (ψ ↣ φ)
 prefix:50 " ⊡ " => fun φ ↦ φ & (□ φ)
 
+@[simp]
+theorem neg_eq {φ ψ : Formula} : (~φ) = (~ψ) → φ = ψ := by
+  intro mpp
+  cases φ <;> cases ψ <;> simp [Formula.neg] at mpp <;> try grind
+  case and.and φ₁ φ₂ φ₃ φ₄ =>
+    have := neg_eq mpp.1
+    have := neg_eq mpp.2
+    grind
+  case or.or φ₁ φ₂ φ₃ φ₄ =>
+    have := neg_eq mpp.1
+    have := neg_eq mpp.2
+    grind
+  case box.box φ₁ φ₂ =>
+    have := neg_eq mpp
+    grind
+  case diamond.diamond φ₁ φ₂ =>
+    have := neg_eq mpp
+    grind
 
 @[simp]
 theorem neg_neg_eq (φ : Formula) : (~~φ) = φ := by induction φ <;> simp [Formula.instBot, Formula.instTop] <;> grind

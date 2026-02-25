@@ -1,4 +1,5 @@
 /- GL interpolation, using everything so far! -/
+import GL.AxiomBlame
 import GL.Logic
 import GL.Semantics
 import GL.Completeness2
@@ -31,4 +32,10 @@ theorem Interpolation (φ ψ : Formula) : ⊨ (φ ↣ ψ) → ∃ χ, isInterpol
     simp [SplitSequent.isValid, Evaluate_sseq, Split.leftInterpolantSequent, y_prop] at φ_χ
     simp [Formula.isValid]
     grind
-  · sorry
+  · have hr := Split.InterpolantProofRight_proves_interpolant y
+    have φ_χ := SplitCut.Soundness _ ⟨_, hr⟩
+    simp [SplitSequent.isValid, Evaluate_sseq, Split.rightInterpolantSequent, y_prop] at φ_χ
+    simp [Formula.isValid]
+    grind
+
+#axiom_blame Interpolation

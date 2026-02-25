@@ -54,6 +54,7 @@ inductive move : gamePos → gamePos → Prop
   | prover  {R Rs Γ Γs} : R ∈ SplitSequent.RuleApps Γ → move ⟨Sum.inl Γ, Γs, Rs⟩ ⟨Sum.inr R, Γ :: Γs, Rs⟩
   | builder {R Rs Γ Γs} : Γ ∈ R.SplitSequents → Γ ∉ Γs → move ⟨Sum.inr R, Γs, Rs⟩ ⟨Sum.inl Γ, Γs, R :: Rs⟩
 
+set_option maxHeartbeats 300000
 theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLeft))
 (g1_g2 : Relation.ReflTransGen (Relation.Comp move move) g1 g2) : g2.1.getLeft h3 ∈ (g1.1.getLeft h1).FL.powerset := by
   simp

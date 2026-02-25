@@ -13,6 +13,7 @@ import GL.AxiomBlame
 namespace SplitCut
 
 open Classical in
+set_option maxHeartbeats 300000 in
 noncomputable def chain
   {𝕏 : Proof}
   {x : 𝕏.X}

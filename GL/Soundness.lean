@@ -5,18 +5,17 @@ import Mathlib.Data.Set.Lattice
 import GL.Logic
 import GL.Semantics
 import GL.CoalgebraProof
-import Pdl.AxiomBlame
 
 open Classical
 noncomputable def chain
   {𝕏 : Proof}
   {x : 𝕏.X}
-  {φ : Formula}
-  (prop : f (r 𝕏.α x) = {φ})
+  {Γ : Sequent}
+  (prop : f (r 𝕏.α x) = Γ)
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate (M, w) φ)
+  (w_prop : ¬Evaluate_seq (M, w) Γ)
   (n : Nat) : (y : 𝕏.X) × {u : W // ¬ Evaluate_seq ⟨M, u⟩ (f (r 𝕏.α y))}
     := match n with
        | 0 => ⟨x, ⟨w, by simp_all⟩⟩
@@ -106,12 +105,12 @@ noncomputable def chain
 
 lemma chain_proof_prop   {𝕏 : Proof}
   {x : 𝕏.X}
-  {φ : Formula}
-  (prop : f (r 𝕏.α x) = {φ})
+  {Γ : Sequent}
+  (prop : f (r 𝕏.α x) = Γ)
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate (M, w) φ)
+  (w_prop : ¬Evaluate_seq (M, w) Γ)
   : ∀ n, edge 𝕏.α (chain prop w_prop n).1 (chain prop w_prop (n + 1)).1 := by
     intro n
     conv =>
@@ -126,12 +125,12 @@ lemma chain_proof_prop   {𝕏 : Proof}
 
 lemma chain_model_prop {𝕏 : Proof}
   {x : 𝕏.X}
-  {φ : Formula}
-  (prop : f (r 𝕏.α x) = {φ})
+  {Γ : Sequent}
+  (prop : f (r 𝕏.α x) = Γ)
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate (M, w) φ)
+  (w_prop : ¬Evaluate_seq (M, w) Γ)
   : ∀ n, (¬ (r 𝕏.α (chain prop w_prop n).1).isBox → (chain prop w_prop n).2.1 = (chain prop w_prop (n + 1)).2.1)
        ∧ (  (r 𝕏.α (chain prop w_prop n).1).isBox → M.R (chain prop w_prop n).2.1 (chain prop w_prop (n + 1)).2.1)
   := by
@@ -158,23 +157,15 @@ lemma chain_model_prop {𝕏 : Proof}
     rcases chain prop w_prop n with ⟨x_ih, w_ih, w_ih_prop⟩ -- when you do split directly after this it 'redoes' this
     simp
     split <;> try grind [RuleApp.isBox]
-    intro mp
-    simp
-    split <;> try grind
-    simp
-    rename_i Δ φ ih_Δ r_def y p_def
-    have := (funext fun x ↦ Classical.not_imp._simp_1) ▸
-    chain._proof_14 x_ih w_ih w_ih_prop Δ φ ih_Δ (Eq.trans r_def (Eq.refl (RuleApp.box Δ φ ih_Δ)))
-    exact this.choose_spec.1
 
 theorem has_children_of_chain_model {𝕏 : Proof}
   {x : 𝕏.X}
-  {φ : Formula}
-  (prop : f (r 𝕏.α x) = {φ})
+  {Γ : Sequent}
+  (prop : f (r 𝕏.α x) = Γ)
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate (M, w) φ) :
+  (w_prop : ¬Evaluate_seq (M, w) Γ) :
   ∀ n, ∃ m, M.R (chain prop w_prop n).2.1 (chain prop w_prop (n + m)).2.1 := by
   intro n
   by_contra h
@@ -236,11 +227,12 @@ theorem inc_chain_eventual_inc_chain_prop {β}
     convert this
     · exact ih_prop.choose_spec
 
-theorem Soundness (φ : Formula) : ⊢ φ → ⊨ φ := by
+
+theorem Soundness_seq (Γ : Sequent) : ⊢ Γ → ⊨ Γ := by
   intro mp
   have ⟨𝕏, x, prop⟩ := mp
   by_contra h
-  simp [Formula.isValid] at h
+  simp only [Sequent.isValid, not_forall] at h
   have ⟨W, M, w, w_prop⟩ := h
   apply (wellFounded_iff_isEmpty_descending_chain.1 M.con_wf).false
   use fun k ↦ (@inc_chain_eventual_inc_chain _ M.R (fun n ↦ (chain prop w_prop n).2.1)
@@ -253,3 +245,8 @@ theorem Soundness (φ : Formula) : ⊢ φ → ⊨ φ := by
       intro n
       have ⟨m, m_prop⟩ := has_children_of_chain_model prop w_prop n
       use n + m) k
+
+theorem Soundness (φ : Formula) : ⊢ φ → ⊨ φ := by
+  intro mp
+  convert Soundness_seq {φ} mp
+  simp [Sequent.isValid, Formula.isValid]

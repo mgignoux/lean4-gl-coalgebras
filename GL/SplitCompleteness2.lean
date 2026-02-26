@@ -1,9 +1,8 @@
 import GL.Logic
 import GL.SplitCoalgebraProof
-import GL.Game
+import Pdl.Game
 import GL.SplitCoalgebraGame
 import GL.SplitCompleteness1
-import GL.AxiomBlame
 import GL.SplitSoundness
 
 
@@ -59,7 +58,7 @@ theorem maximal_path_ends_in_prover_turn {Γ : SplitSequent} {strat : Strategy c
       exfalso
       rcases π with ⟨π, ne, chain, max, head_cases, in_cone⟩
       apply max
-      have is_winning : winning strat ⟨Sum.inr R, Γs, Rs⟩ := in_cone_winning (by
+      have is_winning : winning strat ⟨Sum.inr R, Γs, Rs⟩ := winning_of_in_cone_winning (by
         simp at last_def
         simp [←last_def]
         apply in_cone
@@ -555,7 +554,7 @@ theorem gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame
           simp [coalgebraGame, SplitSequent.RuleApps]
           refine Or.inl ⟨⊤, φ_in', by simp⟩
         have still_winning_next : winning strat next_move :=
-          in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
+          winning_of_in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
         have has_moves := winning_has_moves B_turn_next still_winning_next
         unfold Game.moves next_move at has_moves
         simp [coalgebraGame, RuleApp.SplitSequents] at has_moves
@@ -577,7 +576,7 @@ theorem gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame
             simp [coalgebraGame, SplitSequent.RuleApps]
             refine Or.inl ⟨at n, nφ_in, by simp [φ_in']⟩
           have still_winning_next : winning strat next_move :=
-            in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
+            winning_of_in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
           have has_moves := winning_has_moves B_turn_next still_winning_next
           unfold Game.moves next_move at has_moves
           simp [coalgebraGame, RuleApp.SplitSequents] at has_moves
@@ -590,7 +589,7 @@ theorem gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame
             simp [coalgebraGame, SplitSequent.RuleApps]
             refine Or.inr ⟨at n, nφ_in, by simp [φ_in']⟩
           have still_winning_next : winning strat next_move :=
-            in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
+            winning_of_in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
           have has_moves := winning_has_moves B_turn_next still_winning_next
           unfold Game.moves next_move at has_moves
           simp [coalgebraGame, RuleApp.SplitSequents] at has_moves
@@ -655,7 +654,7 @@ theorem gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame
         have next_in_moves : next_move ∈ coalgebraGame.moves π.last := move_iff_in_moves.1 move_last_next
         have next_in_cone : inMyCone strat (Sum.inl Δ, [], []) next_move :=
           inMyCone.oStep in_cone (by simp only [last_def, coalgebraGame, other_A_eq_B]) next_in_moves
-        have B_turn_winning : winning strat next_move := in_cone_winning next_in_cone h
+        have B_turn_winning : winning strat next_move := winning_of_in_cone_winning next_in_cone h
         let next_next_move := strat next_move B_turn_next (winning_has_moves B_turn_next B_turn_winning)
         have next_next_def := next_next_move.2
         simp only [next_move, Game.Pos.moves, coalgebraGame, RuleApp.SplitSequents, Finset.mem_filterMap, Finset.mem_singleton, ↓existsAndEq, List.mem_cons,
@@ -860,7 +859,7 @@ theorem gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame
           simp [coalgebraGame, SplitSequent.RuleApps]
           refine Or.inr ⟨⊤, φ_in', by simp⟩
         have still_winning_next : winning strat next_move :=
-          in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
+          winning_of_in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
         have has_moves := winning_has_moves B_turn_next still_winning_next
         unfold Game.moves next_move at has_moves
         simp [coalgebraGame, RuleApp.SplitSequents] at has_moves
@@ -883,7 +882,7 @@ theorem gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame
               simp [coalgebraGame, SplitSequent.RuleApps]
               refine Or.inl ⟨at n, nφ_in, by simp [φ_in'']⟩
             have still_winning_next : winning strat next_move :=
-              in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
+              winning_of_in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
             have has_moves := winning_has_moves B_turn_next still_winning_next
             unfold Game.moves next_move at has_moves
             simp [coalgebraGame, RuleApp.SplitSequents] at has_moves
@@ -895,7 +894,7 @@ theorem gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame
               simp [coalgebraGame, SplitSequent.RuleApps]
               refine Or.inl ⟨at n, nφ_in, by simp [φ_in', φ_in'']⟩
             have still_winning_next : winning strat next_move :=
-              in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
+              winning_of_in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
             have has_moves := winning_has_moves B_turn_next still_winning_next
             unfold Game.moves next_move at has_moves
             simp [coalgebraGame, RuleApp.SplitSequents] at has_moves
@@ -909,7 +908,7 @@ theorem gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame
               simp [coalgebraGame, SplitSequent.RuleApps]
               refine Or.inr ⟨at n, nφ_in, by simp [φ_in'']⟩
             have still_winning_next : winning strat next_move :=
-              in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
+              winning_of_in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
             have has_moves := winning_has_moves B_turn_next still_winning_next
             unfold Game.moves next_move at has_moves
             simp [coalgebraGame, RuleApp.SplitSequents] at has_moves
@@ -921,7 +920,7 @@ theorem gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame
               simp [coalgebraGame, SplitSequent.RuleApps]
               refine Or.inr ⟨at n, nφ_in, by simp [φ_in', φ_in'']⟩
             have still_winning_next : winning strat next_move :=
-              in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
+              winning_of_in_cone_winning (inMyCone.oStep in_cone (maximal_path_ends_in_prover_turn h π) next_in_moves) h
             have has_moves := winning_has_moves B_turn_next still_winning_next
             unfold Game.moves next_move at has_moves
             simp [coalgebraGame, RuleApp.SplitSequents] at has_moves
@@ -986,7 +985,7 @@ theorem gameB_general_helper {Δ : SplitSequent} (strat : Strategy coalgebraGame
         have next_in_moves : next_move ∈ coalgebraGame.moves π.last := move_iff_in_moves.1 move_last_next
         have next_in_cone : inMyCone strat (Sum.inl Δ, [], []) next_move :=
           inMyCone.oStep in_cone (by simp only [last_def, coalgebraGame, other_A_eq_B]) next_in_moves
-        have B_turn_winning : winning strat next_move := in_cone_winning next_in_cone h
+        have B_turn_winning : winning strat next_move := winning_of_in_cone_winning next_in_cone h
         let next_next_move := strat next_move B_turn_next (winning_has_moves B_turn_next B_turn_winning)
         have next_next_def := next_next_move.2
         simp only [next_move, Game.Pos.moves, coalgebraGame, RuleApp.SplitSequents, Finset.mem_filterMap, Finset.mem_singleton, ↓existsAndEq, List.mem_cons,

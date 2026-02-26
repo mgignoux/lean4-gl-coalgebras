@@ -4,7 +4,6 @@ import GL.SplitCoalgebraProof
 import Mathlib.Data.Fintype.Defs
 import GL.Semantics
 import GL.FixedPointTheorem
-import GL.AxiomBlame
 import GL.SplitCompleteness2
 
 namespace Split
@@ -922,5 +921,3 @@ theorem Interpolant_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
     simp at this
     convert this
     simp [encodeVar_inv]
-
-#axiom_blame Interpolant_prop

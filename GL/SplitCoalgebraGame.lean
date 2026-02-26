@@ -1,8 +1,7 @@
 import GL.Logic
 import GL.Semantics
 import GL.SplitCoalgebraProof
-import GL.AxiomBlame
-import GL.Game
+import Pdl.Game
 
 namespace Split
 

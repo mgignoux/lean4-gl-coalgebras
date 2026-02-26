@@ -5,7 +5,6 @@ import Mathlib.Data.Set.Lattice
 import GL.Logic
 import GL.Semantics
 import GL.CoalgebraProof
-import GL.AxiomBlame
 
 open Classical
 noncomputable def chain

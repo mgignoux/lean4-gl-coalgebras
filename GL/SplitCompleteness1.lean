@@ -1,8 +1,7 @@
 import GL.Logic
 import GL.Semantics
 import GL.SplitCoalgebraProof
-import GL.AxiomBlame
-import GL.Game
+import Pdl.Game
 import GL.SplitCoalgebraGame
 
 namespace Split
@@ -75,16 +74,6 @@ def builder_RuleApp (g : coalgebraGame.Pos) (h : coalgebraGame.turn g = Builder)
   | ⟨Sum.inr R, _, _⟩ => R
   | ⟨Sum.inl _, _, _⟩ => False.elim (by simp_all [coalgebraGame])
 
-theorem in_cone_winning {G : Game} {i : Player} {g g' : G.Pos} {strat : Strategy G i}
-  (in_cone : inMyCone strat g g') (h : winning strat g) : winning strat g' := by
-  induction in_cone
-  case nil => exact h
-  case myStep q q_in_cone has_moves my_turn ih =>
-    apply winning_of_winning_move
-    exact ih
-  case oStep q q' q_in_cone o_turn in_moves ih =>
-    exact @winning_of_whatever_other_move G i strat q o_turn ih ⟨q', in_moves⟩
-
 /- Defining next move without a repeat -/
 def next_next {Γ Δ : SplitSequent} {strat : Strategy coalgebraGame Prover} (g : btype Γ strat)
   (h : winning strat ⟨Sum.inl Γ, [], []⟩) (nrep : Δ ∉ g.1.2.1) (pos : Δ ∈ (builder_RuleApp g.1 g.2.2).SplitSequents) : btype Γ strat :=
@@ -97,8 +86,8 @@ def next_next {Γ Δ : SplitSequent} {strat : Strategy coalgebraGame Prover} (g 
     simp [builder_RuleApp] at pos
     simp [coalgebraGame, nrep, pos, builder_RuleApp]
   have still_winning_next : winning strat next := by
-    have g_winning := in_cone_winning g.2.1 h
-    exact @winning_of_whatever_other_move coalgebraGame Prover strat g.1 g.2.2 g_winning ⟨next, next_in_moves⟩
+    have g_winning := winning_of_in_cone_winning g.2.1 h
+    exact @winning_of_whatever_other_move Prover coalgebraGame strat g.1 g.2.2 g_winning ⟨next, next_in_moves⟩
   have P_has_moves_next : (coalgebraGame.moves next).Nonempty := winning_has_moves P_next still_winning_next
   let next_next := strat next P_next P_has_moves_next
   have B_next_next : coalgebraGame.turn next_next.1 = Builder := by
@@ -131,8 +120,8 @@ theorem next_next_cor {Γ Δ : SplitSequent} {strat : Strategy coalgebraGame Pro
     simp [builder_RuleApp] at pos
     simp [coalgebraGame, nrep, pos, builder_RuleApp]
   have still_winning_next : winning strat next := by
-    have g_winning := in_cone_winning g.2.1 h
-    exact @winning_of_whatever_other_move coalgebraGame Prover strat g.1 g.2.2 g_winning ⟨next, next_in_moves⟩
+    have g_winning := winning_of_in_cone_winning g.2.1 h
+    exact @winning_of_whatever_other_move Prover coalgebraGame strat g.1 g.2.2 g_winning ⟨next, next_in_moves⟩
   have P_has_moves_next : (coalgebraGame.moves next).Nonempty := winning_has_moves P_next still_winning_next
   let next_next' := strat next P_next P_has_moves_next
   have B_next_next : coalgebraGame.turn next_next'.1 = Builder := by

@@ -1,5 +1,5 @@
 /- GL interpolation, using everything so far! -/
-import GL.AxiomBlame
+import Pdl.AxiomBlame
 import GL.Logic
 import GL.Semantics
 import GL.Completeness2

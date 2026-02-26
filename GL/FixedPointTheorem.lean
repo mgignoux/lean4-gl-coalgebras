@@ -1,5 +1,4 @@
 import GL.Semantics
-import GL.AxiomBlame
 
 theorem not_in_single_voc (n : Nat) (φ ψ : Formula) : n ∉ φ.vocab → (single n ψ φ) = φ := by
   intro h

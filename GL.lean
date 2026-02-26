@@ -1,4 +1,3 @@
-import GL.AxiomBlame
 import GL.Logic
 import GL.CoalgebraProof
 import GL.SplitCoalgebraProof
@@ -6,7 +5,6 @@ import GL.SplitCutCoalgebraProof
 import GL.Interpolants
 import GL.Semantics
 import GL.Soundness
-import GL.Game
 import GL.CoalgebraGame
 import GL.Completeness1
 import GL.Completeness2

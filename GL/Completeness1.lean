@@ -1,8 +1,7 @@
 import GL.Logic
 import GL.Semantics
 import GL.CoalgebraProof
-import GL.AxiomBlame
-import GL.Game
+import Pdl.Game
 import GL.CoalgebraGame
 
 def rewind_history_one_step
@@ -66,59 +65,12 @@ theorem rewind_history_in_cone {Γ} (g : coalgebraGame.Pos) (n : Fin ((if coalge
 lemma rewind_history_zero (g : coalgebraGame.Pos) : rewind_history g 0 = g := by
   simp [rewind_history]
 
--- def rewind_in_cone (Γ : Sequent) (g : coalgebraGame.Pos)
---   (strat : Strategy coalgebraGame Prover)
---   : Prop :=
---   let in_cone := @inMyCone Prover coalgebraGame strat ⟨Sum.inl Γ, [], []⟩
---   ∀ n, in_cone (rewind_history g n)
-
--- theorem rewind_in_cone_of_step (Γ : Sequent) (g : coalgebraGame.Pos)
---   (strat : Strategy coalgebraGame Prover) (rw_g : rewind_in_cone Γ g strat)
---   (g' : coalgebraGame.Pos) (g_g' : move g g') (g'_in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g') :
---   rewind_in_cone Γ g' strat := by
---   rcases g_g'
---   case prover R Rs Γ Γs R_Γ =>
---     intro ⟨n, n_prop⟩
---     cases n
---     case zero => simp [g'_in_cone]
---     case succ k =>
---       unfold rewind_history
---       simp [rewind_history_one_step]
---       refine rw_g ⟨k, ?_⟩ -- what??????????????
---   case builder R Rs Γ Γs R_Γ =>
---     intro ⟨n, n_prop⟩
---     cases n
---     case zero => simp [g'_in_cone]
---     case succ k =>
---       unfold rewind_history
---       simp [rewind_history_one_step]
---       refine rw_g ⟨k, ?_⟩
-
--- theorem in_cone_of_rewind_in_cone (Γ : Sequent) (g : coalgebraGame.Pos)
---   (strat : Strategy coalgebraGame Prover) --(h : winning strat ⟨Sum.inl Γ, [], []⟩)
---   : rewind_in_cone Γ g strat → inMyCone strat ⟨Sum.inl Γ, [], []⟩ g := by
---   simp [rewind_in_cone]
---   intro hyp
---   have := hyp ⟨0, by simp⟩
---   convert this
---   simp
-
 def btype (Γ : Sequent) (strat : Strategy coalgebraGame Prover) :=
  {g // inMyCone strat ⟨Sum.inl Γ, [], []⟩ g ∧ coalgebraGame.turn g = Builder}
 
 def builder_RuleApp (g : coalgebraGame.Pos) (h : coalgebraGame.turn g = Builder) : RuleApp := match g with
   | ⟨Sum.inr R, _, _⟩ => R
   | ⟨Sum.inl _, _, _⟩ => False.elim (by simp_all [coalgebraGame])
-
-theorem in_cone_winning {G : Game} {i : Player} {g g' : G.Pos} {strat : Strategy G i}
-  (in_cone : inMyCone strat g g') (h : winning strat g) : winning strat g' := by
-  induction in_cone
-  case nil => exact h
-  case myStep q q_in_cone has_moves my_turn ih =>
-    apply winning_of_winning_move
-    exact ih
-  case oStep q q' q_in_cone o_turn in_moves ih =>
-    exact @winning_of_whatever_other_move G i strat q o_turn ih ⟨q', in_moves⟩
 
 /- Defining next move without a repeat -/
 def next_next {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (g : btype Γ strat)
@@ -132,8 +84,8 @@ def next_next {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (g : bty
     simp [builder_RuleApp] at pos
     simp [coalgebraGame, nrep, pos, builder_RuleApp]
   have still_winning_next : winning strat next := by
-    have g_winning := in_cone_winning g.2.1 h
-    exact @winning_of_whatever_other_move coalgebraGame Prover strat g.1 g.2.2 g_winning ⟨next, next_in_moves⟩
+    have g_winning := winning_of_in_cone_winning g.2.1 h
+    exact @winning_of_whatever_other_move Prover coalgebraGame strat g.1 g.2.2 g_winning ⟨next, next_in_moves⟩
   have P_has_moves_next : (coalgebraGame.moves next).Nonempty := winning_has_moves P_next still_winning_next
   let next_next := strat next P_next P_has_moves_next
   have B_next_next : coalgebraGame.turn next_next.1 = Builder := by
@@ -166,8 +118,8 @@ theorem next_next_cor {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} 
     simp [builder_RuleApp] at pos
     simp [coalgebraGame, nrep, pos, builder_RuleApp]
   have still_winning_next : winning strat next := by
-    have g_winning := in_cone_winning g.2.1 h
-    exact @winning_of_whatever_other_move coalgebraGame Prover strat g.1 g.2.2 g_winning ⟨next, next_in_moves⟩
+    have g_winning := winning_of_in_cone_winning g.2.1 h
+    exact @winning_of_whatever_other_move Prover coalgebraGame strat g.1 g.2.2 g_winning ⟨next, next_in_moves⟩
   have P_has_moves_next : (coalgebraGame.moves next).Nonempty := winning_has_moves P_next still_winning_next
   let next_next' := strat next P_next P_has_moves_next
   have B_next_next : coalgebraGame.turn next_next'.1 = Builder := by

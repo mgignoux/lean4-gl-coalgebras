@@ -8,7 +8,6 @@ import GL.Logic
 import GL.Semantics
 import GL.SplitCoalgebraProof
 import GL.SplitCutCoalgebraProof
-import GL.AxiomBlame
 
 namespace SplitCut
 

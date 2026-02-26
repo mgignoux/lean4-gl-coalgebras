@@ -395,10 +395,6 @@ lemma chain_model_prop {𝕏 : Proof}
     rcases chain prop w_prop n with ⟨x_ih, w_ih, w_ih_prop⟩ -- when you do split directly after this it 'redoes' this
     simp
     split <;> try grind [RuleApp.isBox]
-    all_goals
-    intro mp
-    simp
-    split <;> grind [Exists.choose_spec]
 
 theorem has_children_of_chain_model {𝕏 : Proof}
   {x : 𝕏.X}

@@ -1,5 +1,3 @@
-import Mathlib.Data.Stream.Init
-
 import GL.Logic
 import GL.SplitCoalgebraProof
 import Mathlib.Data.Fintype.Defs
@@ -59,7 +57,7 @@ theorem Split_to_CutPre_fₙ {𝕏 : Split.Proof} {x : 𝕏.X} {τ} (r : Split.R
 noncomputable def PartialLeft_topₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topₗ Δ in_Δ)
   : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) where
     X := Unit
-    α u := ⟨CutPre.RuleApp.topₗ (leftEquationSequent x) (by simp [leftEquationSequent, rule_def, f, in_Δ]), {}⟩
+    α u := ⟨CutPre.RuleApp.topₗ (leftEquationSequent x) (by simp [leftEquationSequent, rule_def, f]; exact in_Δ), {}⟩
     h u := by simp [CutPre.r, CutPre.p]
     root := ()
     path u f := by exfalso; simp [CutPre.edge, CutPre.p] at f; exact f.2
@@ -174,7 +172,7 @@ noncomputable def PartialLeft_orᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x :
     | [] => by have := 𝕏.h x; simp [rule_def] at this; simp_all
     | _ :: _ :: _ => by have := 𝕏.h x; simp [rule_def] at this; simp_all
 
-set_option maxHeartbeats 300000 in
+set_option maxHeartbeats 400000 in
 noncomputable def PartialLeft_andₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.andₗ Δ φ ψ in_Δ)
   : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
@@ -320,207 +318,273 @@ noncomputable def PartialInterpolationLeft_eq {𝕏 : Proof} [fin_X : Fintype �
     | .boxₗ _ _ _ => PartialLeft_boxₗ x rule_def
     | .boxᵣ _ _ _ => PartialLeft_boxᵣ x rule_def
 
-def ProofTranslationMap {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) : (y : 𝕏.X) × (PartialProof y).X → SplitCut.T.obj ((y : 𝕏.X) × (PartialProof y).X) :=
-  fun ⟨y, z_y⟩ ↦
-  match (@CutPre.r _ _ _ _ (PartialProof y).α z_y) with
-  | .pre z _ => ⟨SplitCut.RuleApp.skp (σ z), [⟨z, (PartialProof z).root⟩]⟩ -- map to the root
-  | .cutₗ Δ A => ⟨SplitCut.RuleApp.cutₗ Δ A, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .cutᵣ Δ A => ⟨SplitCut.RuleApp.cutᵣ Δ A, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .wkₗ Δ A in_Δ => ⟨SplitCut.RuleApp.wkₗ Δ A in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .wkᵣ Δ A in_Δ => ⟨SplitCut.RuleApp.wkᵣ Δ A in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .topₗ Δ in_Δ => ⟨SplitCut.RuleApp.topₗ Δ in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .topᵣ Δ in_Δ => ⟨SplitCut.RuleApp.topᵣ Δ in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .axₗₗ Δ n in_Δ => ⟨SplitCut.RuleApp.axₗₗ Δ n in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .axₗᵣ Δ n in_Δ => ⟨SplitCut.RuleApp.axₗᵣ Δ n in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .axᵣₗ Δ n in_Δ => ⟨SplitCut.RuleApp.axᵣₗ Δ n in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .axᵣᵣ Δ n in_Δ => ⟨SplitCut.RuleApp.axᵣᵣ Δ n in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .andₗ Δ A B in_Δ => ⟨SplitCut.RuleApp.andₗ Δ A B in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .andᵣ Δ A B in_Δ => ⟨SplitCut.RuleApp.andᵣ Δ A B in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .orₗ Δ A B in_Δ => ⟨SplitCut.RuleApp.orₗ Δ A B in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .orᵣ Δ A B in_Δ => ⟨SplitCut.RuleApp.orᵣ Δ A B in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .boxₗ Δ A in_Δ => ⟨SplitCut.RuleApp.boxₗ Δ A in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
-  | .boxᵣ Δ A in_Δ => ⟨SplitCut.RuleApp.boxᵣ Δ A in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
+lemma PartialInterpolationLeft_eq_proves_eq {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
+  CutPre.Proves x (PartialInterpolationLeft_eq x) (leftEquationSequent x) := by
+    have 𝕏_h := 𝕏.h x
+    unfold PartialInterpolationLeft_eq
+    split <;> simp_all [CutPre.Proves, CutPre.r, List.map_eq_cons_iff]
+    · simp [PartialLeft_topₗ, CutPre.f]
+    · simp [PartialLeft_topᵣ, CutPre.f]
+    · simp [PartialLeft_axₗₗ, CutPre.f]
+    · simp [PartialLeft_axₗᵣ, CutPre.f]
+    · simp [PartialLeft_axᵣₗ, CutPre.f]
+    · simp [PartialLeft_axᵣᵣ, CutPre.f]
+    · simp [PartialLeft_orₗ]
+      split <;> simp_all [CutPre.f]
+    · rename_i rule_def
+      simp [PartialLeft_orᵣ]
+      have ⟨y, p_def, prop⟩ := 𝕏_h
+      split <;> simp_all [CutPre.f]
+      simp [leftInterpolantSequent, leftEquationSequent, prop, rule_def]
+      apply congrArg₂
+      · simp [equation]; split <;> simp_all
+      · simp [f, fₙ, fₚ]
+        aesop
+    · rename_i rule_def
+      have ⟨y, z, p_def, prop⟩ := 𝕏_h
+      simp [PartialLeft_andₗ]
+      split <;> simp_all
+      have ⟨eq₁, eq₂⟩ := p_def
+      by_cases eq : Interpolant 𝕏 (at encodeVar y) = Interpolant 𝕏 (at encodeVar z) <;> subst eq₁ eq₂
+      · rw [dif_pos eq]
+        simp [CutPre.f]
+      · rw [dif_neg eq]
+        simp [CutPre.f]
+    · simp [PartialLeft_andᵣ]
+      split <;> simp_all [CutPre.f]
+    · simp [PartialLeft_boxₗ]
+      split <;> simp_all [CutPre.f]
+    · simp [PartialLeft_boxᵣ]
+      split <;> simp_all [CutPre.f]
 
-@[simp]
-theorem ProofTranslation_f {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
-  SplitCut.f (SplitCut.r (ProofTranslationMap PartialProof) ⟨y, z_in_Cy⟩) = CutPre.f (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) := by
-    cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.f, CutPre.f]
-
-@[simp]
-theorem ProofTranslation_fₚ {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
-  SplitCut.fₚ (SplitCut.r (ProofTranslationMap PartialProof) ⟨y, z_in_Cy⟩) = CutPre.fₚ (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) := by
-    cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.fₚ, CutPre.fₚ]
-
-@[simp]
-theorem ProofTranslation_fₙ {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
-  SplitCut.fₙ (SplitCut.r (ProofTranslationMap PartialProof) ⟨y, z_in_Cy⟩) = CutPre.fₙ (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) := by
-    cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.fₙ_alternate, CutPre.fₙ_alternate]
-
-theorem ProofTranslation_isBox {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
-  (SplitCut.r (ProofTranslationMap PartialProof) ⟨y, z_in_Cy⟩).isBox ↔ (CutPre.r (PartialProof y).α z_in_Cy).isBox := by
-  cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.RuleApp.isBox, CutPre.RuleApp.isBox]
-
-def Stream'.map_fst {α : Type} {β : α → Type} (a : Stream' ((x : α) × β x)) :
-    Stream' α := Stream'.map (fun xy => xy.1) a
-
-def Stream'.destutter_with_map {α : Type} (f : Stream' α) (h : ∀ n, ∃ m ≥ n, f m ≠ f n) :
-    (Stream' α) × (ℕ → ℕ) :=
-  sorry
-
-lemma Stream'.destutter_with_map_snd_ge {α} (f : Stream' α) (h : ∀ n, ∃ m ≥ n, f m ≠ f n) n :
-    (Stream'.destutter_with_map f h).2 n ≥ n := by
-  sorry
-
-theorem Stream'.destutter_with_map_spec {α} (f : Stream' α) h k :
-    (Stream'.destutter_with_map f h).1 k = f ((Stream'.destutter_with_map f h).2 k) := by
-  sorry
-
-noncomputable def ProofTranslation {𝕏 : Proof} {σ}
-(PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ)
-  : SplitCut.Proof := by exact -- ∀ x : 𝕏.X, 𝕐 ⊢ leftInterpolant x
-  { X := (y : 𝕏.X) × (PartialProof y).X
-    α := ProofTranslationMap PartialProof
-    h := by -- this is a lot of repetition! but I find that not using the intermediate 'ptm_eq' steps causes lean to oversimplify down to something harder to work from
-          intro y_zy
-          have h2 := (PartialProof y_zy.1).h y_zy.2
-          cases r_def : (@CutPre.r _ _ _ _ (PartialProof y_zy.1).α y_zy.2) <;> simp [r_def, CutPre.fₙ_alternate] at h2
-          case pre z _ =>
-            have root_prop := (PartialProof z).root_prop
-            have ptm_r_eq : SplitCut.r (ProofTranslationMap PartialProof) y_zy = SplitCut.RuleApp.skp (σ z) := by simp [SplitCut.r, ProofTranslationMap, r_def]
-            have ptm_p_eq : SplitCut.p (ProofTranslationMap PartialProof) y_zy = [⟨z, (PartialProof z).root⟩] := by simp [SplitCut.p, ProofTranslationMap, r_def]
-            simp [ptm_r_eq, ptm_p_eq, ProofTranslation_f]
-            simp [SplitCut.f, root_prop]
-          case cutₗ Δ φ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.cutₗ Δ φ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, SplitCut.fₙ_alternate, ←h2]
-          case cutᵣ Δ φ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.cutᵣ Δ φ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, SplitCut.fₙ_alternate, ←h2]
-          case wkₗ Δ φ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.wkₗ Δ φ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, SplitCut.fₙ_alternate, h2]
-          case wkᵣ Δ φ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.wkᵣ Δ φ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, SplitCut.fₙ_alternate, h2]
-          case topₗ Δ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.topₗ Δ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, ←h2]
-          case topᵣ Δ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.topᵣ Δ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, ←h2]
-          case axₗₗ Δ n in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.axₗₗ Δ n in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, ←h2]
-          case axₗᵣ Δ n in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.axₗᵣ Δ n in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, ←h2]
-          case axᵣₗ Δ n in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.axᵣₗ Δ n in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, ←h2]
-          case axᵣᵣ Δ n in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.axᵣᵣ Δ n in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, ←h2]
-          case orₗ Δ φ ψ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.orₗ Δ φ ψ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, SplitCut.fₙ_alternate, h2]
-          case orᵣ Δ φ ψ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.orᵣ Δ φ ψ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, SplitCut.fₙ_alternate, h2]
-          case andₗ Δ φ ψ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.andₗ Δ φ ψ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, SplitCut.fₙ_alternate, ←h2]
-          case andᵣ Δ φ ψ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.andᵣ Δ φ ψ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, SplitCut.fₙ_alternate, ←h2]
-          case boxₗ Δ φ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.boxₗ Δ φ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, SplitCut.fₙ_alternate, h2]
-          case boxᵣ Δ φ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.boxᵣ Δ φ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
-            rw [SplitCut.r]
-            simp [ptm_eq, SplitCut.fₙ_alternate, h2]
-    path := by
-      intro ⟨y, z_y⟩ ⟨f, ⟨f_zero, f_succ⟩⟩ l
-      -- infinite path in translation induces a path in the original proof
-
-      by_cases ∃ (y : 𝕏.X), ∃ n, ∀ m ≥ n, (f m).1 = y
-      case pos loop =>
-        have ⟨y, n, n_prop⟩ := loop
-        let g : ℕ → (PartialProof y).X := fun m ↦ (n_prop (m + n) (by simp)) ▸ (f (m + n)).2
-        have ⟨n₂, n₂_prop⟩ := (PartialProof y).path ((n_prop n (by simp)) ▸ (f n).2) ⟨g, by sorry, by sorry⟩ l
-        use n₂ + n
-        unfold g at n₂_prop
-        simp_all
-        convert n₂_prop
-        convert ProofTranslation_isBox PartialProof (f (l + n₂ + n)).fst (f (l + n₂ + n)).snd using 4
-        · linarith
-        · exact Eq.symm $ n_prop (l + n₂ + n) (by simp)
-        · grind
-      case neg path =>
-        simp at path
-
-        let g := (Stream'.map_fst f)
-        --
-
-        let f' := Stream'.destutter_with_map g (by sorry /- h -/)
-
-        have f'_claim : ∀ n, edge 𝕏.α (f'.1 n) (f'.1 (n + 1)) := sorry
-
-        have ge_claim := Stream'.destutter_with_map_snd_ge g (by sorry /- h -/) l
-
-        have := @inf_path_has_inf_boxes 𝕏 f'.1 f'_claim l -- hacky :-)
-
-        rcases this with ⟨m, m_h⟩
-
-        use f'.2 m + 1 + (Stream'.destutter_with_map g (by sorry /- h -/)).2 l - l
-        -- + 1 for cut case or even more because □ may be inside the interval
-
-        have : (l + (f'.2 m + 1 + (Stream'.destutter_with_map g sorry).2 l - l)) = ((f'.2 m + 1 + (Stream'.destutter_with_map g sorry).2 l)) := by omega
-        rw [this]; clear this
-
-        rw [ProofTranslation_isBox]
-
-        have map_same := Stream'.destutter_with_map_spec g (by sorry /- h -/) m
-
-        have g_same_f : ∀ k, g k = (f k).1 := by unfold g Stream'.map_fst; aesop
-        rw [g_same_f] at map_same
-
-        unfold f'
-        -- simp
-        -- rw [← map_same]
-
-        sorry
+set_option maxHeartbeats 1000000 in
+noncomputable def PartialInterpolationLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : CutPre.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
+  if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
+  then PartialInterpolationLeft_eq x
+  else
+    have equiv : Interpolant 𝕏 (at (encodeVar x)) ≅ Interpolant 𝕏 (equation x) := by
+      have := (Interpolant_prop x ).1
+      simp_all
+    let 𝕐₁ := PartialInterpolationLeft_eq x
+    let y₁ := 𝕐₁.root
+    have y₁_prop := PartialInterpolationLeft_eq_proves_eq x
+    let 𝕐₂ := equiv.1.choose
+    let y₂ := equiv.1.choose_spec.choose
+    have y₂_prop := equiv.1.choose_spec.choose_spec
+    { X := Unit ⊕ 𝕐₁.X ⊕ 𝕐₂.X
+      α | Sum.inl u => ⟨CutPre.RuleApp.cutᵣ (leftInterpolantSequent x) (Interpolant 𝕏 (equation x)), [Sum.inr (Sum.inl y₁), Sum.inr (Sum.inr y₂)]⟩
+        | Sum.inr (Sum.inl z₁) => ⟨CutPre.r 𝕐₁.α z₁, List.map (Sum.inr ∘ Sum.inl) (CutPre.p 𝕐₁.α z₁)⟩
+        | Sum.inr (Sum.inr z₂) => ⟨Split_to_CutPre (r 𝕐₂.α z₂), List.map (Sum.inr ∘ Sum.inr) (p 𝕐₂.α z₂)⟩
+      h | Sum.inl u => by
+          simp only [CutPre.r, CutPre.T, CutPre.p, List.map_cons, Split_to_CutPre_f, List.map_nil, CutPre.fₙ_alternate, List.cons.injEq, and_true]
+          constructor
+          · convert y₁_prop
+            simp [leftEquationSequent, leftInterpolantSequent]
+            aesop
+          · convert y₂_prop using 1
+            simp [leftInterpolantSequent]
+            aesop
+        | Sum.inr (Sum.inl z₁) => by
+          have 𝕐₁_h := 𝕐₁.h z₁
+          convert 𝕐₁_h <;> simp [CutPre.p, CutPre.r]
+        | Sum.inr (Sum.inr z₂) => by
+          have 𝕐₂_h := 𝕐₂.h z₂
+          split
+          all_goals
+            rename_i eq
+            cases r_def : r 𝕐₂.α z₂ <;> simp [CutPre.r, r_def, Split_to_CutPre] at eq
+            all_goals
+              simp [r_def] at 𝕐₂_h
+              simp [CutPre.p, 𝕐₂_h]
+              all_goals
+                convert 𝕐₂_h
+                all_goals
+                  try simp [r_def, CutPre.r, Split_to_CutPre_f, Split_to_CutPre_fₙ]
+                  try tauto
+      root := Sum.inl ()
+      path | Sum.inl u, f => by
+              have := f.2.2 0
+              simp [CutPre.edge, CutPre.p, f.2.1] at this
+              rcases this with f1_def | f1_def
+              · have isRight : ∀ n, (f.1 (n + 1)).isRight := by
+                  intro n
+                  induction n
+                  case zero => rw [f1_def]; simp
+                  case succ k ih =>
+                    have step := f.2.2 (k + 1)
+                    rcases fk_def : f.1 (k + 1) with l | r <;> simp [fk_def] at ih
+                    simp [CutPre.edge, CutPre.p, fk_def] at step
+                    grind
+                have isLeft : ∀ n, ((f.1 (n + 1)).getRight (isRight n)).isLeft := by
+                  intro n
+                  induction n
+                  case zero => simp [f1_def]
+                  case succ k ih =>
+                    have step := f.2.2 (k + 1)
+                    rcases fk_def : f.1 (k + 1) with _ | l | r
+                    · have := isRight k
+                      simp [fk_def] at this
+                    · simp [CutPre.edge, CutPre.p, fk_def] at step
+                      grind
+                    · simp [fk_def] at ih
+                let g : ℕ → 𝕐₁.X := fun n ↦ Sum.getLeft (Sum.getRight (f.1 (n + 1)) (isRight n)) (isLeft n)
+                have g_zero : g 0 = y₁ := by unfold g; simp [f1_def]
+                have g_succ : ∀ n, CutPre.edge 𝕐₁.α (g n) (g (n + 1)) := by
+                  intro n
+                  have step := f.2.2 (n + 1)
+                  rcases fn_def : f.1 (n + 1) with _ | _ | gn_def
+                  · have := isRight n
+                    simp [fn_def] at this
+                  · simp [CutPre.edge, CutPre.p, fn_def] at step
+                    simp [CutPre.edge, CutPre.p]
+                    grind
+                  · have := isLeft n
+                    simp [fn_def] at this
+                intro n
+                have ⟨m, m_prop⟩ := 𝕐₁.path y₁ ⟨g, g_zero, g_succ⟩ n
+                use m + 1
+                convert m_prop
+                unfold g
+                simp [CutPre.r]
+                grind
+              · have isRight : ∀ n, (f.1 (n + 1)).isRight := by
+                  intro n
+                  induction n
+                  case zero => rw [f1_def]; simp
+                  case succ k ih =>
+                    have step := f.2.2 (k + 1)
+                    rcases fk_def : f.1 (k + 1) with l | r <;> simp [fk_def] at ih
+                    simp [CutPre.edge, CutPre.p, fk_def] at step
+                    grind
+                have isRight' : ∀ n, ((f.1 (n + 1)).getRight (isRight n)).isRight := by
+                  intro n
+                  induction n
+                  case zero => simp [f1_def]
+                  case succ k ih =>
+                    have step := f.2.2 (k + 1)
+                    rcases fk_def : f.1 (k + 1) with _ | l | r
+                    · have := isRight k
+                      simp [fk_def] at this
+                    · simp [fk_def] at ih
+                    · simp [CutPre.edge, CutPre.p, fk_def] at step
+                      grind
+                let g : ℕ → 𝕐₂.X := fun n ↦ Sum.getRight (Sum.getRight (f.1 (n + 1)) (isRight n)) (isRight' n)
+                have g_zero : g 0 = y₂ := by unfold g; simp [f1_def]
+                have g_succ : ∀ n, edge 𝕐₂.α (g n) (g (n + 1)) := by
+                  intro n
+                  have step := f.2.2 (n + 1)
+                  rcases fn_def : f.1 (n + 1) with _ | _ | gn_def
+                  · have := isRight n
+                    simp [fn_def] at this
+                  · have := isRight' n
+                    simp [fn_def] at this
+                  · simp [CutPre.edge, CutPre.p, fn_def] at step
+                    simp [edge]
+                    grind
+                intro n
+                have ⟨m, m_prop⟩ := inf_path_has_inf_boxes g g_succ n
+                use m + 1
+                simp [CutPre.r]
+                rcases fn_def : f.1 (n + m + 1) with _ | _ | gn_def
+                · have := isRight (n + m)
+                  simp [fn_def] at this
+                · have := isRight' (n + m)
+                  simp [fn_def] at this
+                · simp [←add_assoc, fn_def]
+                  apply Split_to_CutPre_isBox
+                  convert m_prop
+                  unfold g
+                  simp [fn_def]
+           | Sum.inr (Sum.inl z), f => by
+              have isRight : ∀ n, (f.1 n).isRight := by
+                intro n
+                induction n
+                case zero => rw [f.2.1]; simp
+                case succ k ih =>
+                  have step := f.2.2 k
+                  rcases fk_def : f.1 k with l | r <;> simp [fk_def] at ih
+                  simp [CutPre.edge, CutPre.p, fk_def] at step
+                  grind
+              have isLeft : ∀ n, ((f.1 n).getRight (isRight n)).isLeft := by
+                intro n
+                induction n
+                case zero => simp [f.2.1]
+                case succ k ih =>
+                  have step := f.2.2 k
+                  rcases fk_def : f.1 k with _ | l | r
+                  · have := isRight k
+                    simp [fk_def] at this
+                  · simp [CutPre.edge, CutPre.p, fk_def] at step
+                    grind
+                  · simp [fk_def] at ih
+              let g : ℕ → 𝕐₁.X := fun n ↦ Sum.getLeft (Sum.getRight (f.1 n) (isRight n)) (isLeft n)
+              have g_zero : g 0 = z := by unfold g; simp [f.2.1]
+              have g_succ : ∀ n, CutPre.edge 𝕐₁.α (g n) (g (n + 1)) := by
+                intro n
+                have step := f.2.2 n
+                rcases fn_def : f.1 n with _ | _ | gn_def
+                · have := isRight n
+                  simp [fn_def] at this
+                · simp [CutPre.edge, CutPre.p, fn_def] at step
+                  simp [CutPre.edge, CutPre.p]
+                  grind
+                · have := isLeft n
+                  simp [fn_def] at this
+              intro n
+              have ⟨m, m_prop⟩ := 𝕐₁.path z ⟨g, g_zero, g_succ⟩ n
+              use m
+              convert m_prop
+              unfold g
+              simp [CutPre.r]
+              grind
+           | Sum.inr (Sum.inr z), f => by
+              have isRight : ∀ n, (f.1 n).isRight := by
+                intro n
+                induction n
+                case zero => rw [f.2.1]; simp
+                case succ k ih =>
+                  have step := f.2.2 k
+                  rcases fk_def : f.1 k with l | r <;> simp [fk_def] at ih
+                  simp [CutPre.edge, CutPre.p, fk_def] at step
+                  grind
+              have isRight' : ∀ n, ((f.1 n).getRight (isRight n)).isRight := by
+                intro n
+                induction n
+                case zero => simp [f.2.1]
+                case succ k ih =>
+                  have step := f.2.2 k
+                  rcases fk_def : f.1 k with _ | l | r
+                  · have := isRight k
+                    simp [fk_def] at this
+                  · simp [fk_def] at ih
+                  · simp [CutPre.edge, CutPre.p, fk_def] at step
+                    grind
+              let g : ℕ → 𝕐₂.X := fun n ↦ Sum.getRight (Sum.getRight (f.1 n) (isRight n)) (isRight' n)
+              have g_zero : g 0 = z := by unfold g; simp [f.2.1]
+              have g_succ : ∀ n, edge 𝕐₂.α (g n) (g (n + 1)) := by
+                intro n
+                have step := f.2.2 n
+                rcases fn_def : f.1 n with _ | _ | gn_def
+                · have := isRight n
+                  simp [fn_def] at this
+                · have := isRight' n
+                  simp [fn_def] at this
+                · simp [CutPre.edge, CutPre.p, fn_def] at step
+                  simp [edge]
+                  grind
+              intro n
+              have ⟨m, m_prop⟩ := inf_path_has_inf_boxes g g_succ n
+              use m
+              simp [CutPre.r]
+              rcases fn_def : f.1 (n + m) with _ | _ | gn_def
+              · have := isRight (n + m)
+                simp [fn_def] at this
+              · have := isRight' (n + m)
+                simp [fn_def] at this
+              · apply Split_to_CutPre_isBox
+                convert m_prop
+                unfold g
+                simp [fn_def]}
 
 lemma PartialInterpolationLeft_proves_int {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
   CutPre.Proves x (PartialInterpolationLeft x) (leftInterpolantSequent x) :=
@@ -696,7 +760,7 @@ noncomputable def PartialRight_topₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
 noncomputable def PartialRight_topᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topᵣ Δ in_Δ)
   : CutPre.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) where
       X := Unit
-      α u := ⟨CutPre.RuleApp.topᵣ (rightEquationSequent x) (by simp [rightEquationSequent, rule_def, f, in_Δ]), {}⟩
+      α u := ⟨CutPre.RuleApp.topᵣ (rightEquationSequent x) (by simp [rightEquationSequent, rule_def, f]; exact in_Δ), {}⟩
       h u := by simp [CutPre.r, CutPre.p]
       root := ()
       path u f := by exfalso; simp [CutPre.edge, CutPre.p] at f; exact f.2
@@ -990,7 +1054,7 @@ lemma PartialInterpolationRight_eq_proves_eq {𝕏 : Proof} [fin_X : Fintype �
     · simp [PartialRight_boxᵣ]
       split <;> simp_all [CutPre.f]
 
-set_option maxHeartbeats 300000
+set_option maxHeartbeats 1000000
 noncomputable def PartialInterpolationRight {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : CutPre.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
   then PartialInterpolationRight_eq x

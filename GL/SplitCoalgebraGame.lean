@@ -9,6 +9,7 @@ namespace Split
 abbrev Builder := Player.A
 abbrev Prover := Player.B
 
+set_option maxHeartbeats 300000
 def SplitSequent.RuleApps (Γ : SplitSequent) : Finset RuleApp :=
   let f : SplitFormula → Option RuleApp := fun φ ↦
     if φ_in : φ ∈ Γ then match φ with
@@ -32,7 +33,7 @@ def SplitSequent.RuleApps (Γ : SplitSequent) : Finset RuleApp :=
   intro φ ψ r φ_f ψ_f
   rcases φ with φ | φ <;> rcases ψ with ψ | ψ
   all_goals
-  cases φ <;> cases ψ <;> grind [f])
+    cases φ <;> cases ψ <;> grind [f])
 
 def RuleApp.SplitSequents (R : RuleApp) : Finset SplitSequent := match R with
   | RuleApp.topₗ _ _ => ∅
@@ -88,13 +89,13 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
           · exact ⟨Sum.inl (φ v ψ), in_Δ, by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
           · exact ⟨Sum.inl (φ v ψ), in_Δ, by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
         · have ⟨φ, φ_in, h⟩ := R'_Γ
-          rcases φ <;> simp at h <;> try grind
+          rcases φ <;> simp at h; grind
       case orᵣ Δ φ ψ in_Δ =>
         subst Γ''_R'
         simp [SplitSequent.RuleApps] at R'_Γ
         rcases R'_Γ with R'_Γ | R'_Γ
         · have ⟨φ, φ_in, h⟩ := R'_Γ
-          rcases φ <;> simp at h <;> try grind
+          rcases φ <;> simp at h; grind
         · have ⟨φ, φ_in, h⟩ := R'_Γ
           rcases φ <;> simp at h <;> try grind
           simp only [h.1, SplitSequent.FL, Finset.subset_iff,
@@ -112,26 +113,26 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
           · have ⟨φ, φ_in, h⟩ := R'_Γ
             rcases φ <;> simp at h <;> try grind
             simp only [h.1, SplitSequent.FL, Finset.subset_iff,
-              Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion, Finset.mem_sdiff, Finset.mem_singleton, Finset.mem_insert]
+              Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion, Finset.mem_sdiff, Finset.mem_singleton]
             intro χ χ_cases
-            rcases χ_cases with h|h <;> subst_eqs
+            rcases χ_cases with h | h <;> subst_eqs
             · exact ⟨χ, h.1, SplitFormula.FL_refl⟩
             · exact ⟨Sum.inl (φ & ψ), in_Δ, by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
           · have ⟨φ, φ_in, h⟩ := R'_Γ
-            rcases φ <;> simp at h <;> try grind
+            rcases φ <;> simp at h; grind
       case andᵣ Δ φ ψ in_Δ =>
         rcases Γ''_R' with l | l <;> subst l
         all_goals
           simp [SplitSequent.RuleApps] at R'_Γ
           rcases R'_Γ with R'_Γ | R'_Γ
           · have ⟨φ, φ_in, h⟩ := R'_Γ
-            rcases φ <;> simp at h <;> try grind
+            rcases φ <;> simp at h; grind
           · have ⟨φ, φ_in, h⟩ := R'_Γ
-            rcases φ <;> simp at h <;> try grind
+            rcases φ <;> simp at h; grind
             simp only [h.1, SplitSequent.FL, Finset.subset_iff,
-              Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion, Finset.mem_sdiff, Finset.mem_singleton, Finset.mem_insert]
+              Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion, Finset.mem_sdiff, Finset.mem_singleton]
             intro χ χ_cases
-            rcases χ_cases with h|h <;> subst_eqs
+            rcases χ_cases with h | h <;> subst_eqs
             · exact ⟨χ, h.1, SplitFormula.FL_refl⟩
             · exact ⟨Sum.inr (φ & ψ), in_Δ, by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
       case boxₗ Δ φ in_Δ =>
@@ -149,19 +150,19 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
             · left
               exact ⟨◇ χ, h, by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
           · intro χ χ_cases
-            rcases χ_cases with h|h <;> subst_eqs
+            rcases χ_cases with h | h <;> subst_eqs
             · right
               exact ⟨χ, h.1, SplitFormula.FL_refl⟩
             · right
               exact ⟨◇ χ, h, by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
         · have ⟨φ, φ_in, h⟩ := R'_Γ
-          rcases φ <;> simp at h <;> try grind
+          rcases φ <;> simp at h; grind
       case boxᵣ Δ φ in_Δ =>
         subst Γ''_R'
         simp [SplitSequent.RuleApps] at R'_Γ
         rcases R'_Γ with R'_Γ | R'_Γ
         · have ⟨φ, φ_in, h⟩ := R'_Γ
-          rcases φ <;> simp at h <;> try grind
+          rcases φ <;> simp at h; grind
         · have ⟨φ, φ_in, h⟩ := R'_Γ
           rcases φ <;> simp at h <;> try grind
           simp [SplitSequent.D, Finset.subset_iff, SplitSequent.FL, h.1]

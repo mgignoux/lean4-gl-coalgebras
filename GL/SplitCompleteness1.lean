@@ -68,43 +68,6 @@ theorem rewind_history_in_cone {Γ} (g : coalgebraGame.Pos) (n : Fin ((if coalge
 lemma rewind_history_zero (g : coalgebraGame.Pos) : rewind_history g 0 = g := by
   simp [rewind_history]
 
--- def rewind_in_cone (Γ : Sequent) (g : coalgebraGame.Pos)
---   (strat : Strategy coalgebraGame Prover)
---   : Prop :=
---   let in_cone := @inMyCone Prover coalgebraGame strat ⟨Sum.inl Γ, [], []⟩
---   ∀ n, in_cone (rewind_history g n)
-
--- theorem rewind_in_cone_of_step (Γ : Sequent) (g : coalgebraGame.Pos)
---   (strat : Strategy coalgebraGame Prover) (rw_g : rewind_in_cone Γ g strat)
---   (g' : coalgebraGame.Pos) (g_g' : move g g') (g'_in_cone : inMyCone strat ⟨Sum.inl Γ, [], []⟩ g') :
---   rewind_in_cone Γ g' strat := by
---   rcases g_g'
---   case prover R Rs Γ Γs R_Γ =>
---     intro ⟨n, n_prop⟩
---     cases n
---     case zero => simp [g'_in_cone]
---     case succ k =>
---       unfold rewind_history
---       simp [rewind_history_one_step]
---       refine rw_g ⟨k, ?_⟩ -- what??????????????
---   case builder R Rs Γ Γs R_Γ =>
---     intro ⟨n, n_prop⟩
---     cases n
---     case zero => simp [g'_in_cone]
---     case succ k =>
---       unfold rewind_history
---       simp [rewind_history_one_step]
---       refine rw_g ⟨k, ?_⟩
-
--- theorem in_cone_of_rewind_in_cone (Γ : Sequent) (g : coalgebraGame.Pos)
---   (strat : Strategy coalgebraGame Prover) --(h : winning strat ⟨Sum.inl Γ, [], []⟩)
---   : rewind_in_cone Γ g strat → inMyCone strat ⟨Sum.inl Γ, [], []⟩ g := by
---   simp [rewind_in_cone]
---   intro hyp
---   have := hyp ⟨0, by simp⟩
---   convert this
---   simp
-
 def btype (Γ : SplitSequent) (strat : Strategy coalgebraGame Prover) :=
  {g // inMyCone strat ⟨Sum.inl Γ, [], []⟩ g ∧ coalgebraGame.turn g = Builder}
 
@@ -406,11 +369,10 @@ theorem rep_next_cor {Γ Δ : SplitSequent} {strat : Strategy coalgebraGame Prov
   let n := (List.mem_iff_get.1 rep).choose
   simp [rep_next, rep_pos]
   convert (rewind_history_correspondence Γ g.1 strat (List.mem_iff_get.1 rep).choose.1 _ _ _ _ g.2.1).1 _  <;> try grind
-  · have length := history_length_in_cone strat g.1 g.2.1
-    simp [g.2.2] at *
-    have := (List.mem_iff_get.1 rep).choose.2
-    grind
-  · exact g.2.2
+  have length := history_length_in_cone strat g.1 g.2.1
+  simp [g.2.2] at *
+  have := (List.mem_iff_get.1 rep).choose.2
+  grind
 
 noncomputable
 def builder_children {Γ : SplitSequent} {strat : Strategy coalgebraGame Prover} (g : btype Γ strat)

@@ -44,7 +44,7 @@ noncomputable def chain
               ⟨y, w_ih, by
                 have := 𝕏.h x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at this
-                simp [Evaluate_seq, this.1, w_ih_nφ₁, fₙ_alternate, -Evaluate_neg]
+                simp [Evaluate_seq, this.1, w_ih_nφ₁, fₙ_alternate]
                 intro χ χ_in χ_not con
                 apply w_ih_prop
                 exact ⟨χ, r_def ▸ χ_in, con⟩
@@ -54,7 +54,7 @@ noncomputable def chain
                 have w_ih_nφ₂ : ¬Evaluate (M, w_ih) φ₂ := by simp_all
                 have := 𝕏.h x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at this
-                simp [Evaluate_seq, this.2, w_ih_nφ₂, fₙ_alternate, -Evaluate_neg]
+                simp [Evaluate_seq, this.2, w_ih_nφ₂, fₙ_alternate]
                 intro χ χ_in χ_not con
                 apply w_ih_prop
                 exact ⟨χ, r_def ▸ χ_in, con⟩
@@ -69,7 +69,7 @@ noncomputable def chain
             have h : ¬Evaluate_seq (M, w_ih) (f (r 𝕏.α y)) := by
               have 𝕏h_x_ih := 𝕏.h x_ih
               simp [r_def, p_def, -Finset.union_singleton] at 𝕏h_x_ih
-              simp [Evaluate_seq, 𝕏h_x_ih, fₙ_alternate, this, -Evaluate_neg]
+              simp [Evaluate_seq, 𝕏h_x_ih, fₙ_alternate, this]
               intro χ χ_in χ_not con
               apply w_ih_prop
               exact ⟨χ, r_def ▸ χ_in, con⟩
@@ -87,11 +87,11 @@ noncomputable def chain
               have h : ¬Evaluate_seq (M, w_next) (f (r 𝕏.α y)) := by
                 have 𝕏h_x_ih := 𝕏.h x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at 𝕏h_x_ih
-                simp [Evaluate_seq, 𝕏h_x_ih, fₙ_alternate, -Evaluate_neg]
+                simp [Evaluate_seq, 𝕏h_x_ih, fₙ_alternate]
                 constructor
                 · exact w_next_prop.2
-                · simp [Sequent.D, -Evaluate_neg]
-                  simp [Evaluate_seq, r_def, f, -Evaluate_neg] at w_ih_prop
+                · simp [Sequent.D]
+                  simp [Evaluate_seq, r_def, f] at w_ih_prop
                   intro χ χ_in con
                   rcases χ_in with ⟨⟨χ_in, χ_not_box_φ⟩, χ_di⟩ | diχ_Δ
                   · apply w_ih_prop _ χ_in
@@ -158,14 +158,6 @@ lemma chain_model_prop {𝕏 : Proof}
     rcases chain prop w_prop n with ⟨x_ih, w_ih, w_ih_prop⟩ -- when you do split directly after this it 'redoes' this
     simp
     split <;> try grind [RuleApp.isBox]
-    intro mp
-    simp
-    split <;> try grind
-    simp [-Evaluate_neg]
-    rename_i Δ φ ih_Δ r_def y p_def
-    have := (funext fun x ↦ Classical.not_imp._simp_1) ▸
-    chain._proof_14 x_ih w_ih w_ih_prop Δ φ ih_Δ (Eq.trans r_def (Eq.refl (RuleApp.box Δ φ ih_Δ)))
-    exact this.choose_spec.1
 
 theorem has_children_of_chain_model {𝕏 : Proof}
   {x : 𝕏.X}

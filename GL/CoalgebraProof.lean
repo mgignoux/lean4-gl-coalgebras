@@ -23,7 +23,7 @@ inductive RuleApp
 
 @[simp]
 def T : (CategoryTheory.Functor (Type u) (Type u)) :=
-  ⟨λ X ↦ ((RuleApp × List X) : Type u), by rintro X Y f ⟨r, A⟩; exact ⟨r, A.map f⟩, by aesop_cat, by aesop_cat⟩
+  ⟨λ X ↦ ((RuleApp × List X) : Type u), fun f ⟨r, A⟩ ↦ ⟨r, A.map f⟩, by aesop_cat, by aesop_cat⟩
 
 def Sequent.D (Γ : Sequent) : Sequent := Finset.filter Formula.isDiamond Γ ∪ Finset.filterMap Formula.opUnDi Γ (by
   intro A B C C_in_A C_in_B
@@ -56,6 +56,7 @@ theorem fₙ_alternate (r : RuleApp) : fₙ r = match r with
 
 theorem fₚ_sub_f {r : RuleApp} : fₚ r ⊆ f r := by
   cases r <;> simp_all [fₚ, f]
+  · simp_all -- ask Malvin about this
   · simp_all [Finset.subset_iff, Finset.mem_insert]
 
 theorem fₙ_sub_f {r : RuleApp} : fₙ r ⊆ f r := by
@@ -225,7 +226,7 @@ theorem finite_proof_of_proof (𝕏 : Proof) (Δ : Sequent) : (𝕏 ⊢ Δ) → 
     simp [Function.Injective]
     intro z1 z2 f_z_eq
     simp [PointGeneratedProof, Filtration, r] at f_z_eq
-    apply Subtype.eq
+    apply Subtype.ext
     apply Quotient.out_equiv_out.1
     exact f_z_eq
   · use ⟨Quotient.mk (instSetoidX 𝕏) x, Relation.ReflTransGen.refl⟩
@@ -282,6 +283,5 @@ theorem not_prove_empty : ¬ ∃ 𝕏, 𝕏 ⊢ {} := by
   have ⟨𝕏, x, x_em⟩ := con
   cases rule : r 𝕏.α x <;> simp_all [f, r] <;> aesop
 
-lemma form_in_seq_size_le {A : Formula} {Δ : Sequent} : A ∈ Δ → A.size ≤ Δ.size := by
-  intro A_in
-  exact (Finset.sum_le_sum_of_subset_of_nonneg (Finset.singleton_subset_iff.2 A_in) (by simp) : A.size ≤ Δ.size)
+lemma form_in_seq_size_le {A : Formula} {Δ : Sequent} : A ∈ Δ → A.size ≤ Δ.size :=
+  fun A_in ↦ (Finset.sum_le_sum_of_subset_of_nonneg (Finset.singleton_subset_iff.2 A_in) (by simp) : A.size ≤ Δ.size)

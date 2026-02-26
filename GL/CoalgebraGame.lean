@@ -72,7 +72,7 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
           have ⟨φ, φ_in, h⟩ := R'_Γ
           rcases φ <;> simp at h
           simp only [h.1, Sequent.FL, Finset.subset_iff,
-            Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion, Finset.mem_sdiff, Finset.mem_singleton, Finset.mem_insert]
+            Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion, Finset.mem_sdiff, Finset.mem_singleton]
           intro χ χ_cases
           rcases χ_cases with h|h <;> subst_eqs
           · exact ⟨χ, h.1, Formula.FL_refl⟩

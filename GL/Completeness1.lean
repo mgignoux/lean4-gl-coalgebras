@@ -425,7 +425,6 @@ theorem rep_next_cor {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (
     simp [g.2.2] at *
     have := (List.mem_iff_get.1 rep).choose.2
     grind
-  · exact g.2.2
 
 noncomputable
 def builder_children {Γ : Sequent} {strat : Strategy coalgebraGame Prover} (g : btype Γ strat)

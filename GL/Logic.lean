@@ -31,8 +31,11 @@ prefix:70 "◇" => diamond
 infixr:6 "&" => and
 infixr:6 "v" => or
 
-instance : Bot (Formula) where bot := Formula.bottom
-instance : Top (Formula) where top := Formula.top
+@[simp]
+instance instBot : Bot (Formula) where bot := Formula.bottom
+
+@[simp]
+instance instTop : Top (Formula) where top := Formula.top
 
 def isAtomic : Formula -> Prop
   | at _ => true
@@ -144,7 +147,7 @@ theorem neg_eq {φ ψ : Formula} : (~φ) = (~ψ) → φ = ψ := by
     grind
 
 @[simp]
-theorem neg_neg_eq (φ : Formula) : (~~φ) = φ := by induction φ <;> simp [Formula.instBot, Formula.instTop] <;> grind
+theorem neg_neg_eq (φ : Formula) : (~~φ) = φ := by induction φ <;> simp_all
 
 def P := at 0
 def Q := at 1
@@ -212,7 +215,7 @@ def FL : Formula → Sequent
 
 /- Lemmas about FL closure -/
 
-theorem FL_refl {φ : Formula} : φ ∈ FL φ := by cases φ <;> simp [FL, instBot, instTop]
+theorem FL_refl {φ : Formula} : φ ∈ FL φ := by cases φ <;> simp [FL]
 
 theorem FL_mon {φ ψ : Formula} (ψ_sub_φ : ψ ∈ FL φ) : FL ψ ⊆ FL φ := by
   cases φ <;> simp_all [FL]
@@ -394,7 +397,7 @@ theorem in_FL_of_in_FL_SplitFormula_right {φ : Formula} {ψ : SplitFormula} (ψ
 
 /- Lemmas about FL closure -/
 
-theorem FL_refl {φ : SplitFormula} : φ ∈ FL φ := by rcases φ with φ | φ <;> cases φ <;> simp [FL, Formula.instBot, Formula.instTop]
+theorem FL_refl {φ : SplitFormula} : φ ∈ FL φ := by rcases φ with φ | φ <;> cases φ <;> simp [FL]
 
 theorem FL_mon {φ ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL φ) : FL ψ ⊆ FL φ := by
   rcases φ with φ | φ
@@ -518,5 +521,4 @@ instance {α} [DecidableEq α] (Γ : Finset α) : Union {x // x ∈ Γ.powerset}
     intro x h
     rcases (Finset.mem_union.1 h) with h | h
     · apply Finset.mem_of_subset (Finset.mem_powerset.1 A.2) h
-    · apply Finset.mem_of_subset (Finset.mem_powerset.1 B.2) h
-    ⟩
+    · apply Finset.mem_of_subset (Finset.mem_powerset.1 B.2) h⟩

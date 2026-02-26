@@ -3,11 +3,11 @@ import GL.AxiomBlame
 
 theorem not_in_single_voc (n : Nat) (φ ψ : Formula) : n ∉ φ.vocab → (single n ψ φ) = φ := by
   intro h
-  induction φ <;> simp_all [single, Formula.instBot, Formula.instTop, Formula.vocab] <;> aesop
+  induction φ <;> simp_all [single, Formula.vocab] <;> aesop
 
 @[simp]
 theorem single_identity (n : ℕ) (φ : Formula) : (single n (at n) φ) = φ := by
-  induction φ <;> simp_all [single, Formula.instBot, Formula.instTop]
+  induction φ <;> simp_all [single]
 
 theorem Semantic_Substitution_Lemma {α : Type} (M : Model α) (u : α) (n : ℕ) (φ ψ χ : Formula)  :
   Evaluate ⟨M, u⟩ (⊡ (φ ⟷ ψ)) → Evaluate ⟨M, u⟩ ((single n φ χ) ⟷ (single n ψ χ)) := by
@@ -243,9 +243,3 @@ theorem FixedPointTheorem_simple (φ : Formula) (n : ℕ) (box_or_dia : φ.isBox
     case diamond φ =>
       have FPT_diamond_prop := FPT_diamond_vocab φ n
       exact ⟨single n ⊥ (◇ φ), FPT_diamond_prop.1, FPT_diamond φ n, FPT_diamond_prop.2⟩
-
-
-
-
--- #axiom_blame FPT_box_helper
--- #axiom_blame FPT_diamond_helper

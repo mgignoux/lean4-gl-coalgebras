@@ -280,7 +280,7 @@ theorem finite_proof_of_proof (𝕏 : Proof) (Δ : SplitSequent) : (𝕏 ⊢ Δ)
     simp [Function.Injective]
     intro z1 z2 f_z_eq
     simp [PointGeneratedProof, Filtration, r] at f_z_eq
-    apply Subtype.eq
+    apply Subtype.ext
     apply Quotient.out_equiv_out.1
     exact f_z_eq
   · use ⟨Quotient.mk (instSetoidXSplit 𝕏) x, Relation.ReflTransGen.refl⟩
@@ -303,7 +303,7 @@ lemma lt_if_not_box_edge {𝕏 : Proof} {x y : 𝕏.X} : (x_y : nb_edge 𝕏.α 
     all_goals
     · rw [c]
       simp [fₙ, f, fₚ, SplitSequent.size, -Finset.union_singleton]
-      apply helper and_in (by simp [SplitFormula.size, Formula.size]; linarith)
+      apply helper and_in (by simp [SplitFormula.size, Formula.size])
   case andᵣ Δ A B and_in =>
     have := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) x_y
     simp [h, -Finset.union_singleton] at this
@@ -311,7 +311,7 @@ lemma lt_if_not_box_edge {𝕏 : Proof} {x y : 𝕏.X} : (x_y : nb_edge 𝕏.α 
     all_goals
     · rw [c]
       simp [fₙ, f, fₚ, SplitSequent.size, -Finset.union_singleton]
-      apply helper and_in (by simp [SplitFormula.size, Formula.size]; linarith)
+      apply helper and_in (by simp [SplitFormula.size, Formula.size])
   case orₗ Δ A B or_in =>
     have := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) x_y
     simp only [h, List.mem_singleton] at this
@@ -321,7 +321,6 @@ lemma lt_if_not_box_edge {𝕏 : Proof} {x y : 𝕏.X} : (x_y : nb_edge 𝕏.α 
       by_cases A = B
       · subst_eqs
         simp [SplitFormula.size, Formula.size]
-        linarith
       · have := @Finset.sum_union _ _ {Sum.inl A} {Sum.inl B} _ SplitFormula.size _ (by aesop)
         simp_all [SplitFormula.size, Formula.size])
   case orᵣ Δ A B or_in =>
@@ -333,7 +332,6 @@ lemma lt_if_not_box_edge {𝕏 : Proof} {x y : 𝕏.X} : (x_y : nb_edge 𝕏.α 
       by_cases A = B
       · subst_eqs
         simp [SplitFormula.size, Formula.size]
-        linarith
       · have := @Finset.sum_union _ _ {Sum.inr A} {Sum.inr B} _ SplitFormula.size _ (by aesop)
         simp_all [SplitFormula.size, Formula.size])
   all_goals

@@ -12,3 +12,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: leanprover/lean-action@v1
+      - name: Build documentation
+        if: github.ref_name == 'main'
+        run: make doc
+      - name: Copy documentation to `home_page/docs`
+        if: github.ref_name == 'main'
+        run: |
+          rm -rf home_page
+          mkdir -p home_page
+          cp -r docbuild/.lake/build/doc home_page/docs
+          cp dependencies.svg home_page/docs/
+      - name: Remove unnecessary lake files from documentation in `home_page/docs`
+        if: github.ref_name == 'main'
+        run: |
+          find home_page/docs -name "*.trace" -delete
+          find home_page/docs -name "*.hash" -delete
+      - name: List website content
+        if: github.ref_name == 'main'
+        run: find home_page
+      - name: Upload website
+        if: github.ref_name == 'main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'home_page/'
+      - name: Deploy to GitHub Pages
+        if: github.ref_name == 'main'
+        id: deployment
+        uses: actions/deploy-pages@v4
+

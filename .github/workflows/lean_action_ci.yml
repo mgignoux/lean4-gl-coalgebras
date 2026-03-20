@@ -21,7 +21,6 @@ jobs:
           rm -rf home_page
           mkdir -p home_page
           cp -r docbuild/.lake/build/doc home_page/docs
-          cp dependencies.svg home_page/docs/
       - name: Remove unnecessary lake files from documentation in `home_page/docs`
         if: github.ref_name == 'main'
         run: |

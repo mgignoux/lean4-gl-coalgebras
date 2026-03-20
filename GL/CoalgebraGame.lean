@@ -6,7 +6,16 @@ import GL.CoalgebraProof
 abbrev Builder := Player.A
 abbrev Prover := Player.B
 
-def Sequent.RuleApps (Γ : Sequent) : Finset RuleApp :=
+/-! ## The GL-proof game.
+
+Builder-Prover game for constructive counter-models/proofs. Builder gets a rule application `R` and
+plays an applicable sequent `Γ` in order to construct a counter-model. Prover get a sequent `Γ` and
+plays rule applications `R` in order to construct a proof.
+-/
+
+
+/-- The available rule applications for a sequent `Γ`. -/
+def Sequent.ruleApps (Γ : Sequent) : Finset RuleApp :=
   let f : Formula → Option RuleApp := fun φ ↦
     if φ_in : φ ∈ Γ then match φ with
     | ⊤ => RuleApp.top Γ φ_in
@@ -20,21 +29,24 @@ def Sequent.RuleApps (Γ : Sequent) : Finset RuleApp :=
   intro φ ψ r φ_f ψ_f
   cases φ <;> cases ψ <;> grind [f])
 
-def RuleApp.Sequents (R : RuleApp) : Finset Sequent := match R with
+/-- The sequents possible after a rule application `R`. -/
+def RuleApp.sequents (R : RuleApp) : Finset Sequent := match R with
   | RuleApp.top _ _ => ∅
   | RuleApp.ax _ _ _ => ∅
   | RuleApp.and Δ φ ψ _ => {(Δ \ {φ & ψ}) ∪ {φ}, (Δ \ {φ & ψ}) ∪ {ψ}}
   | RuleApp.or Δ φ ψ _ => {(Δ \ {φ v ψ}) ∪ {φ, ψ}}
   | RuleApp.box Δ φ _ => {(Δ \ {□ φ}).D ∪ {φ}}
 
-abbrev gamePos := (Sequent ⊕ RuleApp) × List Sequent × List RuleApp
+/-- Note: the game stores the history of which rule applications have come prior. -/
+abbrev GamePos := (Sequent ⊕ RuleApp) × List Sequent × List RuleApp
 
-inductive move : gamePos → gamePos → Prop
-  | prover  {R Rs Γ Γs} : R ∈ Γ.RuleApps → move ⟨Sum.inl Γ, Γs, Rs⟩ ⟨Sum.inr R, Γ :: Γs, Rs⟩
-  | builder {R Rs Γ Γs} : Γ ∈ R.Sequents → Γ ∉ Γs → move ⟨Sum.inr R, Γs, Rs⟩ ⟨Sum.inl Γ, Γs, R :: Rs⟩
+inductive Move : GamePos → GamePos → Prop
+  | prover  {R Rs Γ Γs} : R ∈ Γ.ruleApps → Move ⟨Sum.inl Γ, Γs, Rs⟩ ⟨Sum.inr R, Γ :: Γs, Rs⟩
+  | builder {R Rs Γ Γs} : Γ ∈ R.sequents → Γ ∉ Γs → Move ⟨Sum.inr R, Γs, Rs⟩ ⟨Sum.inl Γ, Γs, R :: Rs⟩ -- no repeat sequents allowed!
 
-theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLeft))
-(g1_g2 : Relation.ReflTransGen (Relation.Comp move move) g1 g2): g2.1.getLeft h3 ∈ (g1.1.getLeft h1).FL.powerset := by
+/-- Given two consecutive Prover moves, the latter move is in the FL closure of the prior. -/
+theorem move_move_in_FL {g1 g2 : GamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLeft))
+(g1_g2 : Relation.ReflTransGen (Relation.Comp Move Move) g1 g2): g2.1.getLeft h3 ∈ (g1.1.getLeft h1).FL.powerset := by
   simp
   induction g1_g2
   case refl => exact Sequent.FL_refl
@@ -48,13 +60,13 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
       rcases g2 with ⟨Γ | R, Γs, Rs⟩ <;> cases g2_g
       simp_all
       rename_i Γ''_R' R'_Γ _
-      have ih := Sequent.FL_subset ih
+      have ih := Sequent.FL_mon ih
       simp [Sequent.FL_idem] at ih
       apply trans ?_ ih
-      rcases R' <;> simp only [RuleApp.Sequents, Finset.mem_singleton, Finset.notMem_empty, Finset.mem_insert] at Γ''_R'
+      rcases R' <;> simp only [RuleApp.sequents, Finset.mem_singleton, Finset.notMem_empty, Finset.mem_insert] at Γ''_R'
       case or Δ φ ψ in_Δ =>
         subst Γ''_R'
-        simp [Sequent.RuleApps] at R'_Γ
+        simp [Sequent.ruleApps] at R'_Γ
         have ⟨φ, φ_in, h⟩ := R'_Γ
         rcases φ <;> simp at h
         simp only [h.1, Sequent.FL, Finset.subset_iff,
@@ -67,7 +79,7 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
       case and Δ φ ψ in_Δ=>
         rcases Γ''_R' with l | l <;> subst l
         all_goals
-          simp [Sequent.RuleApps] at R'_Γ
+          simp [Sequent.ruleApps] at R'_Γ
           have ⟨φ, φ_in, h⟩ := R'_Γ
           rcases φ <;> simp at h
           simp only [h.1, Sequent.FL, Finset.subset_iff,
@@ -78,7 +90,7 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
           · exact ⟨φ & ψ, in_Δ, by simp [Formula.FL, Formula.FL_refl]⟩
       case box Δ φ in_Δ =>
         subst Γ''_R'
-        simp [Sequent.RuleApps] at R'_Γ
+        simp [Sequent.ruleApps] at R'_Γ
         have ⟨φ, φ_in, h⟩ := R'_Γ
         rcases φ <;> simp at h
         simp [Sequent.D, Finset.subset_iff, Sequent.FL, h.1]
@@ -88,11 +100,11 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
         · exact ⟨χ, h.1.1, Formula.FL_refl⟩
         · exact ⟨◇ χ, h, by simp [Formula.FL, Formula.FL_refl]⟩
 
-/- This is the main helper for showing there is no infinite chain, we do it 'from prover'
-because that is where the FL properties are more readily available, but in fact it could
-be from prover or builder. -/
-lemma no_inf_chain_from_prover (g : ℕ → gamePos)
-  (g_rel : ∀ (n : ℕ), Function.swap move (g (n + 1)) (g n)) (h : (g 0).1.isLeft) : False := by
+/- This is the main helper for showing there is no infinite chain in the game, we do it 'from
+   Prover's perspective' because that is where the FL properties are more readily available, but in
+  fact it could be Builder's RuleApp `r` using `f r`. -/
+lemma no_inf_chain_from_prover (g : ℕ → GamePos)
+  (g_rel : ∀ (n : ℕ), Function.swap Move (g (n + 1)) (g n)) (h : (g 0).1.isLeft) : False := by
   rcases g0_def : g 0 with ⟨Γ | R, Γs, Rs⟩ <;> simp [g0_def] at h
   have f_helper : ∀ n, (g (2 * n)).1.isLeft = true := by
     intro n
@@ -116,7 +128,7 @@ lemma no_inf_chain_from_prover (g : ℕ → gamePos)
 
   let f : ℕ → Sequent := fun n ↦ (g (2 * n)).1.getLeft (f_helper n)
 
-  have g0_gn : ∀ n, Relation.ReflTransGen move (g 0) (g n) := by
+  have g0_gn : ∀ n, Relation.ReflTransGen Move (g 0) (g n) := by
     intro n
     induction n
     case zero => exact Relation.ReflTransGen.refl
@@ -221,7 +233,8 @@ lemma no_inf_chain_from_prover (g : ℕ → gamePos)
   apply Set.finite_coe_iff.1
   apply Finset.finite_toSet
 
-lemma matchesFinite : WellFounded (Function.swap move) := by
+/-- The game is converse well-founded. -/
+lemma matches_finite : WellFounded (Function.swap Move) := by
   rw [wellFounded_iff_isEmpty_descending_chain]
   by_contra hyp
   simp at hyp
@@ -238,14 +251,14 @@ lemma matchesFinite : WellFounded (Function.swap move) := by
       cases this
 
 def coalgebraGame : Game where
-  Pos := gamePos --  (Sequent ⊕ RuleApp) × List Sequent × List RuleApp
+  Pos := GamePos -- = (Sequent ⊕ RuleApp) × List Sequent × List RuleApp
   turn
-    | ⟨Sum.inl _, _, _⟩ => Prover -- picks rule
-    | ⟨Sum.inr _, _, _⟩ => Builder -- picks sequent
+    | ⟨Sum.inl _, _, _⟩ => Prover -- Prover gets a sequent and picks a rule application
+    | ⟨Sum.inr _, _, _⟩ => Builder -- Builder gets a rule application and picks a sequent
   moves
-    | ⟨Sum.inl Γ, Γs, Rs⟩ => Finset.map ⟨fun R ↦ ⟨Sum.inr R, Γ :: Γs, Rs⟩, by intro r1 r2; simp⟩ Γ.RuleApps
-    | ⟨Sum.inr R, Γs, Rs⟩ => Finset.filterMap (fun Γ ↦ if Γ ∈ Γs then none else some ⟨Sum.inl Γ, Γs, R :: Rs⟩) R.Sequents (by grind)
-  wf := ⟨fun x y ↦ move y x, matchesFinite⟩
+    | ⟨Sum.inl Γ, Γs, Rs⟩ => Finset.map ⟨fun R ↦ ⟨Sum.inr R, Γ :: Γs, Rs⟩, by intro r1 r2; simp⟩ Γ.ruleApps
+    | ⟨Sum.inr R, Γs, Rs⟩ => Finset.filterMap (fun Γ ↦ if Γ ∈ Γs then none else some ⟨Sum.inl Γ, Γs, R :: Rs⟩) R.sequents (by grind)
+  wf := ⟨fun x y ↦ Move y x, matches_finite⟩
   move_rel := by
     intro ⟨info, Γs, Rs⟩ ⟨info', Γs', Rs'⟩ hyp
     rcases info with Γ | R
@@ -253,14 +266,15 @@ def coalgebraGame : Game where
       have ⟨R, R_prop, eq1, eq2, eq3⟩ := hyp
       subst_eqs
       simp
-      apply move.prover R_prop
+      exact Move.prover R_prop
     · simp at hyp
       have ⟨Γ, Γ_prop, nin, eq1, eq2, eq3⟩ := hyp
       subst_eqs
       simp
-      apply move.builder Γ_prop nin
+      exact Move.builder Γ_prop nin
 
-theorem move_iff_in_moves {g g' : coalgebraGame.Pos} : move g g' ↔ g' ∈ coalgebraGame.moves g := by
+/-- Move relation and being in the set of game moves are equivalant. -/
+theorem move_iff_in_moves {g g' : coalgebraGame.Pos} : Move g g' ↔ g' ∈ coalgebraGame.moves g := by
   constructor
   · intro g_g'
     unfold Game.moves
@@ -268,3 +282,6 @@ theorem move_iff_in_moves {g g' : coalgebraGame.Pos} : move g g' ↔ g' ∈ coal
     cases g_g' <;> simp_all
   · intro in_moves
     exact @coalgebraGame.move_rel g g' in_moves
+
+/-- We will always start the game from a sequent `Γ` and no history. -/
+abbrev startPos (Γ : Sequent) : GamePos := ⟨Sum.inl Γ, [], []⟩

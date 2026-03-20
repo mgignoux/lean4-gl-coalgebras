@@ -9,11 +9,17 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Nat.Basic
 import Mathlib.Tactic
 
+/-! ## Syntax of Basic Modal Logic
+
+Here we supply basic definitions, abbreviations, and lemmas about the syntax of BML.
+-/
+
+/-- Type of BML Formulas. -/
 inductive Formula : Type
   | bottom : Formula
   | top : Formula
   | atom : Nat → Formula
-  | neg_atom : Nat → Formula
+  | negAtom : Nat → Formula
   | and : Formula → Formula → Formula
   | or : Formula → Formula → Formula
   | box : Formula → Formula
@@ -25,108 +31,84 @@ abbrev Sequent := Finset Formula
 namespace Formula
 
 prefix:70 "at" => atom
-prefix:70 "na" => neg_atom
+prefix:70 "na" => negAtom
 prefix:70 "□" => box
 prefix:70 "◇" => diamond
 infixr:6 "&" => and
 infixr:6 "v" => or
 
-@[simp]
-instance instBot : Bot (Formula) where bot := Formula.bottom
+@[simp] instance instBot : Bot (Formula) where bot := Formula.bottom
+@[simp] instance instTop : Top (Formula) where top := Formula.top
 
-@[simp]
-instance instTop : Top (Formula) where top := Formula.top
-
-def isAtomic : Formula -> Prop
-  | at _ => true
-  | _ => false
-
-def isNegAtomic : Formula -> Prop
-  | na _ => true
-  | _ => false
-
-def isDiamond : Formula -> Prop
-  | ◇_ => true
-  | _ => false
-
-def opUnDi (A : Formula) : Option Formula := match A with
-  | ◇ B => Option.some B
-  | _ => none
-
-@[simp]
-theorem opUnDi_eq {φ ψ : Formula} : φ.opUnDi = some ψ ↔ φ = ◇ ψ := by
-  cases φ <;> simp [Formula.opUnDi]
-
-def unDi (A : Formula) (h : A.isDiamond) : Formula := match A with
-  | ◇ B => B
-
-def isBox : Formula -> Prop
-  | □_ => true
-  | _ => false
-
-instance : DecidablePred Formula.isAtomic := by
-  intro A
-  cases A <;> simp [isAtomic]
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isTrue;  simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-
-instance : DecidablePred isNegAtomic := by
-  intro A
-  cases A <;> simp [isNegAtomic]
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isTrue;  simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-
-instance : DecidablePred isDiamond := by
-  intro A
-  cases A <;> simp [isDiamond]
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isTrue;  simp
-
-instance : DecidablePred isBox := by
-  intro A
-  cases A <;> simp [isBox]
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isTrue;  simp
-  · apply Decidable.isFalse; simp
-
+/-- Negation of a BML Formula. -/
 @[simp] def neg : Formula → Formula
   | ⊥ => ⊤
   | ⊤ => ⊥
   | at n => na n
   | na n => at n
-  | A & B => (neg A) v (neg B)
-  | A v B => (neg A) & (neg B)
-  | □ A => ◇ (neg A)
-  | ◇ A => □ (neg A)
+  | φ & ψ => (neg φ) v (neg ψ)
+  | φ v ψ => (neg φ) & (neg ψ)
+  | □ φ => ◇ (neg φ)
+  | ◇ φ => □ (neg φ)
 
 prefix:50 "~" => Formula.neg
 notation:55 φ:56 " ↣ " ψ:55 => (~ φ) v ψ
 notation:55 φ:56 " ⟷ " ψ:55 => (φ ↣ ψ) & (ψ ↣ φ)
 prefix:50 " ⊡ " => fun φ ↦ φ & (□ φ)
 
+/-! # Basic operations and simp lemmas for Formulas -/
+
+def isAtomic : Formula → Bool
+  | at _ => true
+  | _ => false
+
+def isNegAtomic : Formula → Bool
+  | na _ => true
+  | _ => false
+
+def isDiamond : Formula → Bool
+  | ◇ _ => true
+  | _ => false
+
+def opUnDi (φ : Formula) : Option Formula := match φ with
+  | ◇ φ => Option.some φ
+  | _ => none
+
+@[simp] lemma opUnDi_eq {φ ψ : Formula} : φ.opUnDi = some ψ ↔ φ = ◇ ψ := by
+  cases φ <;> simp [Formula.opUnDi]
+
+def unDi (φ : Formula) (h : φ.isDiamond) : Formula := match φ with
+  | ◇ φ => φ
+
+def isBox : Formula → Bool
+  | □ _ => true
+  | _ => false
+
+-- instance : DecidablePred Formula.isAtomic := by
+--   intro φ
+--   cases φ <;> simp [isAtomic]
+--   all_goals
+--     infer_instance
+
+-- instance : DecidablePred isNegAtomic := by
+--   intro φ
+--   cases φ <;> simp [isNegAtomic]
+--   all_goals
+--     infer_instance
+
+-- instance : DecidablePred isDiamond := by
+--   intro φ
+--   cases φ <;> simp [isDiamond]
+--   all_goals
+--     infer_instance
+
+-- instance : DecidablePred isBox := by
+--   intro φ
+--   cases φ <;> simp [isBox]
+--   all_goals
+--     infer_instance
+
+/-- Negation is injective. -/
 @[simp]
 theorem neg_eq {φ ψ : Formula} : (~φ) = (~ψ) → φ = ψ := by
   intro mpp
@@ -146,63 +128,76 @@ theorem neg_eq {φ ψ : Formula} : (~φ) = (~ψ) → φ = ψ := by
     have := neg_eq mpp
     grind
 
+/-- Negation is involutive. -/
 @[simp]
 theorem neg_neg_eq (φ : Formula) : (~~φ) = φ := by induction φ <;> simp_all
 
-def P := at 0
-def Q := at 1
-
-def size : Formula → Nat
+/-- Length of a BML Formula. -/
+def length : Formula → Nat
   | ⊥ => 0
   | ⊤ => 0
   | at _ => 1
   | na _ => 1
-  | A & B => size A + size B + 1
-  | A v B => size A + size B + 1
-  | □ A => size A + 1
-  | ◇ A => size A + 1
+  | φ & ψ => length φ + length ψ + 1
+  | φ v ψ => length φ + length ψ + 1
+  | □ φ => length φ + 1
+  | ◇ φ => length φ + 1
 
-def pp_form : Formula → String
-  | ⊥ => "⊥"
-  | ⊤ => "⊤"
-  | at n => "P" ++ Nat.toSubscriptString n
-  | na n => "¬P" ++ Nat.toSubscriptString n
-  | A & B => "(" ++ pp_form A ++ "∧" ++ pp_form B ++ ")"
-  | A v B => "(" ++ pp_form A ++ "∨" ++ pp_form B ++ ")"
-  | □ A => "□" ++ pp_form A
-  | ◇ A => "◇" ++ pp_form A
+-- def pp_form : Formula → String
+--   | ⊥ => "⊥"
+--   | ⊤ => "⊤"
+--   | at n => "P" ++ Nat.toSubscriptString n
+--   | na n => "¬P" ++ Nat.toSubscriptString n
+--   | φ & ψ => "(" ++ pp_form φ ++ "∧" ++ pp_form ψ ++ ")"
+--   | φ v ψ => "(" ++ pp_form φ ++ "∨" ++ pp_form ψ ++ ")"
+--   | □ φ => "□" ++ pp_form φ
+--   | ◇ φ => "◇" ++ pp_form φ
 
+/-- Vocab of a BML Formula. Expressed as underlying natural numbers -/
 def vocab : Formula → Finset Nat
   | ⊥ => ∅
   | ⊤ => ∅
   | at n => {n}
   | na n => {n}
-  | A & B => vocab A ∪ vocab B
-  | A v B => vocab A ∪ vocab B
-  | □ A => vocab A
-  | ◇ A => vocab A
+  | φ & ψ => vocab φ ∪ vocab ψ
+  | φ v ψ => vocab φ ∪ vocab ψ
+  | □ φ => vocab φ
+  | ◇ φ => vocab φ
 
+/-- φtoms of a BML Formula. Expressed as underlying natural numbers -/
 def atoms : Formula → Finset Nat
   | ⊥ => ∅
   | ⊤ => ∅
   | at n => {n}
   | na _ => ∅
-  | A & B => vocab A ∪ vocab B
-  | A v B => vocab A ∪ vocab B
-  | □ A => vocab A
-  | ◇ A => vocab A
+  | φ & ψ => vocab φ ∪ vocab ψ
+  | φ v ψ => vocab φ ∪ vocab ψ
+  | □ φ => vocab φ
+  | ◇ φ => vocab φ
 
-  /-- Get a fresh atomic proposition `x` not occuring in `A`. -/
+/-- Literals of a BML Formula. Expressed as underlying natural numbers -/
+def lit : Formula → Finset (Nat ⊕ Nat)
+  | ⊥ => ∅
+  | ⊤ => ∅
+  | at n => {Sum.inl n}
+  | na n => {Sum.inr n}
+  | φ & ψ => lit φ ∪ lit ψ
+  | φ v ψ => lit φ ∪ lit ψ
+  | □ φ => lit φ
+  | ◇ φ => lit φ
+
+/-- Get a fresh variable not occuring in a BML Formula. -/
 def freshVar : Formula → Nat
   | ⊤  => 0
   | ⊥  => 0
   | at n  => n + 1
   | na n  => n + 1
-  | A & B  => max (freshVar A) (freshVar B)
-  | A v B  =>  max (freshVar A) (freshVar B)
-  | □ A  => freshVar A
-  | ◇ A  => freshVar A
+  | φ & ψ  => max (freshVar φ) (freshVar ψ)
+  | φ v ψ  =>  max (freshVar φ) (freshVar ψ)
+  | □ φ  => freshVar φ
+  | ◇ φ  => freshVar φ
 
+/-- Fischer-Ladner closure of a BML Formula. -/
 def FL : Formula → Sequent
   | ⊥ => {⊥}
   | ⊤ => {⊤}
@@ -213,10 +208,12 @@ def FL : Formula → Sequent
   | □ φ => {□ φ} ∪ FL φ
   | ◇ φ => {◇ φ} ∪ FL φ
 
-/- Lemmas about FL closure -/
+/-! # Lemmas about FL Closure of BML Formulas -/
 
+/-- Fischer-Ladner closure is reflexive. -/
 theorem FL_refl {φ : Formula} : φ ∈ FL φ := by cases φ <;> simp [FL]
 
+/-- Fischer-Ladner closure is monotone. -/
 theorem FL_mon {φ ψ : Formula} (ψ_sub_φ : ψ ∈ FL φ) : FL ψ ⊆ FL φ := by
   cases φ <;> simp_all [FL]
   · rcases ψ_sub_φ with _|ψ_sub|ψ_sub <;> subst_eqs
@@ -246,119 +243,135 @@ theorem FL_mon {φ ψ : Formula} (ψ_sub_φ : ψ ∈ FL φ) : FL ψ ⊆ FL φ :=
       intro x x_in
       simp; right; exact this x_in
 
-
 end Formula
 
 namespace Sequent
 
-def size (Γ : Sequent) : Nat := Finset.sum Γ Formula.size
+/-! # Basic operations and simp lemmas for Sequents -/
+/-- Length of a sequent. -/
+def length (Γ : Sequent) : Nat := Finset.sum Γ Formula.length
 
-unsafe def pp_form (Γ : Sequent) : String := String.intercalate "," ((Quot.unquot Γ.val).map Formula.pp_form)
+-- unsafe def pp_form (Γ : Sequent) : String := String.intercalate "," ((Quot.unquot Γ.val).map Formula.pp_form)
 
+/- Vocabulary of a sequent. -/
+def vocab (Γ : Sequent) : Finset Nat := Finset.biUnion Γ Formula.vocab
+
+/- Given a sequent `Γ`, finds a variable not in `Γ`-/
+def freshVar (Γ : Finset Formula) : Nat :=
+  if h : Γ = {} then 0 else Finset.max' (Γ.image (Formula.freshVar)) (by
+    by_contra con
+    simp_all)
+
+def D (Γ : Sequent) : Sequent := Finset.filter (
+  fun x => decide (Formula.isDiamond x)) Γ
+       ∪ Finset.filterMap Formula.opUnDi Γ (by
+  intro A B C C_in_A C_in_B
+  cases A <;> cases B
+  all_goals
+  simp_all [Formula.opUnDi])
+
+lemma form_in_seq_size_le {A : Formula} {Δ : Sequent} : A ∈ Δ → A.length ≤ Δ.length :=
+  fun A_in ↦ Finset.sum_le_sum_of_subset_of_nonneg (Finset.singleton_subset_iff.2 A_in) (by simp)
+
+/-- Fischer-Ladner closure of a sequent. -/
 def FL : Sequent → Sequent := fun Δ ↦ Finset.biUnion Δ Formula.FL
 
-/- Lemmas about FL Closure of Sequents -/
+/-! # Lemmas about FL Closure of Sequents -/
 
+/- Fischer-Ladner closure is reflexive. -/
 theorem FL_refl {Δ : Sequent} : Δ ⊆ FL Δ := by
   simp [Finset.subset_iff, FL]
   intro x x_in
   exact ⟨x, x_in, Formula.FL_refl⟩
 
-theorem FL_subset {Δ Γ : Sequent} (Δ_sub_Γ : Δ ⊆ Γ) : FL Δ ⊆ FL Γ := by
+/- Fischer-Ladner closure is monotone. -/
+theorem FL_mon {Δ Γ : Sequent} (Δ_sub_Γ : Δ ⊆ Γ) : FL Δ ⊆ FL Γ := by
   simp_all [Finset.subset_iff, FL]
   intro φ ψ ψ_in_Δ φ_sub_ψ
   exact ⟨ψ, Δ_sub_Γ ψ_in_Δ, φ_sub_ψ⟩
 
+/- Fischer-Ladner closure is idempotent. -/
 theorem FL_idem {Δ : Sequent} : FL (FL Δ) = FL Δ := by
   simp [Finset.Subset.antisymm_iff]
   constructor
   · simp [Finset.subset_iff, FL]
     intro φ ψ χ χ_in_Δ φ_sub_χ φ_sub_ψ
     exact ⟨χ, χ_in_Δ, by apply Formula.FL_mon φ_sub_χ; simp_all⟩
-  · exact FL_subset (FL_refl)
+  · exact FL_mon (FL_refl)
 
 
-/- Helper Lemmas about Finset -/
+-- /- Helper Lemmas about Finset -/
 
-def size_without_diamond (Γ : Sequent) : Nat := Finset.sum (Γ.filter (λ A ↦ ¬ (Formula.isDiamond A))) Formula.size
+-- def size_without_diamond (Γ : Sequent) : Nat := Finset.sum (Γ.filter (λ φ ↦ ¬ (Formula.isDiamond φ))) Formula.length
 
-/-- Delete me! -/
-lemma jfef {n m l : Nat} : n + m = l → n = l - m := by
-intro a
-subst a
-simp_all only [add_tsub_cancel_right]
+-- /-- I should be in Mathlib! -/
+-- lemma Finset.filter_sdiff {Γ Δ : Sequent} : (Γ \ Δ).filter (λ φ ↦ ¬ (Formula.isDiamond φ)) = Γ.filter (λ φ ↦ ¬ (Formula.isDiamond φ)) \ Δ.filter (λ φ ↦ ¬ (Formula.isDiamond φ)) := by
+--   apply Finset.ext
+--   intro φ
+--   simp
+--   constructor
+--   · intro ⟨⟨A_in_Γ, φ_ni_Δ⟩, φ_di⟩
+--     exact ⟨⟨A_in_Γ, φ_di⟩, fun x ↦ by exfalso; exact φ_ni_Δ x⟩
+--   · intro ⟨⟨A_in_Γ, φ_di⟩, mp⟩
+--     refine ⟨⟨A_in_Γ, fun x ↦ by exfalso; exact φ_di (mp x)⟩, φ_di⟩
 
-/-- I should be in Mathlib! -/
-lemma Finset.filter_sdiff {Γ Δ : Sequent} : (Γ \ Δ).filter (λ A ↦ ¬ (Formula.isDiamond A)) = Γ.filter (λ A ↦ ¬ (Formula.isDiamond A)) \ Δ.filter (λ A ↦ ¬ (Formula.isDiamond A)) := by
-  apply Finset.ext
-  intro A
-  simp
-  constructor
-  · intro ⟨⟨A_in_Γ, A_ni_Δ⟩, A_di⟩
-    exact ⟨⟨A_in_Γ, A_di⟩, fun x ↦ by exfalso; exact A_ni_Δ x⟩
-  · intro ⟨⟨A_in_Γ, A_di⟩, mp⟩
-    refine ⟨⟨A_in_Γ, fun x ↦ by exfalso; exact A_di (mp x)⟩, A_di⟩
+-- theorem size_wod_sdiff {Γ Δ : Sequent} (h : Δ ⊆ Γ) : size_without_diamond (Γ \ Δ) = size_without_diamond Γ - size_without_diamond Δ := by
+--   have this := @Finset.sum_sdiff _ _ _ _ _ Formula.length _ (Finset.filter_subset_filter (λ φ ↦ ¬ (Formula.isDiamond φ)) h)
+--   have := jfef this
+--   simp only [size_without_diamond]
+--   rw [←this]
+--   have := @ Finset.filter_sdiff Γ Δ
+--   simp [this]
 
-theorem size_wod_sdiff {Γ Δ : Sequent} (h : Δ ⊆ Γ) : size_without_diamond (Γ \ Δ) = size_without_diamond Γ - size_without_diamond Δ := by
-  have this := @Finset.sum_sdiff _ _ _ _ _ Formula.size _ (Finset.filter_subset_filter (λ A ↦ ¬ (Formula.isDiamond A)) h)
-  have := jfef this
-  simp only [size_without_diamond]
-  rw [←this]
-  have := @ Finset.filter_sdiff Γ Δ
-  simp [this]
-
-theorem size_wod_disjoint {Γ Δ : Sequent} :
-  Disjoint Γ Δ → size_without_diamond (Γ ∪ Δ)
-        = size_without_diamond Γ + size_without_diamond Δ := by
-  intro dis
-  have dis_diamond : Disjoint (Γ.filter (λ A ↦ ¬ (Formula.isDiamond A))) (Δ.filter (λ A ↦ ¬ (Formula.isDiamond A))):= by
-    simp_all [Disjoint]
-    intro Τ Τ_Γ' Τ_Δ'
-    exact @dis Τ (Finset.Subset.trans Τ_Γ' (Finset.filter_subset _ _)) (Finset.Subset.trans Τ_Δ' (Finset.filter_subset _ _))
-  simp only [size_without_diamond, Finset.filter_union (λ A ↦ ¬ (Formula.isDiamond A)) Γ Δ]
-  exact Finset.sum_union dis_diamond
-
-def vocab (Γ : Sequent) : Finset Nat := Finset.biUnion Γ Formula.vocab
-
-def freshVar (Γ : Finset Formula) : Nat :=
-  if h : Γ = {} then 0 else Finset.max' (Γ.image (Formula.freshVar)) (by
-    by_contra con
-    simp_all)
+-- theorem size_wod_disjoint {Γ Δ : Sequent} :
+--   Disjoint Γ Δ → size_without_diamond (Γ ∪ Δ)
+--         = size_without_diamond Γ + size_without_diamond Δ := by
+--   intro dis
+--   have dis_diamond : Disjoint (Γ.filter (λ φ ↦ ¬ (Formula.isDiamond φ))) (Δ.filter (λ φ ↦ ¬ (Formula.isDiamond φ))):= by
+--     simp_all [Disjoint]
+--     intro Τ Τ_Γ' Τ_Δ'
+--     exact @dis Τ (Finset.Subset.trans Τ_Γ' (Finset.filter_subset _ _)) (Finset.Subset.trans Τ_Δ' (Finset.filter_subset _ _))
+--   simp only [size_without_diamond, Finset.filter_union (λ φ ↦ ¬ (Formula.isDiamond φ)) Γ Δ]
+--   exact Finset.sum_union dis_diamond
 
 end Sequent
 
 abbrev SplitFormula := Formula ⊕ Formula
 abbrev SplitSequent := Finset SplitFormula
 
+/-! # Basic operations and simp lemmas for Split Sequents -/
+
 namespace SplitFormula
-def isDiamond : SplitFormula -> Prop
-  | Sum.inl (◇_) => true
-  | Sum.inr (◇_) => true
+def isDiamond : SplitFormula → Bool
+  | Sum.inl (◇ _) => true
+  | Sum.inr (◇ _) => true
   | _ => false
 
-def opUnDi (A : SplitFormula) : Option SplitFormula := match A with
-  | Sum.inl (◇B) => Option.some (Sum.inl B)
-  | Sum.inr (◇B) => Option.some (Sum.inr B)
+def opUnDi (φ : SplitFormula) : Option SplitFormula := match φ with
+  | Sum.inl (◇ ψ) => Option.some (Sum.inl ψ)
+  | Sum.inr (◇ ψ) => Option.some (Sum.inr ψ)
   | _ => none
 
-instance : DecidablePred isDiamond := by
-  intro A
-  rcases A with A | A
-  all_goals
-  cases A <;> simp [isDiamond]
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isTrue;  simp
+-- instance : DecidablePred isDiamond := by
+--   intro φ
+--   rcases φ with φ | φ
+--   all_goals
+--   cases φ <;> simp [isDiamond]
+--   · apply Decidable.isFalse; simp
+--   · apply Decidable.isFalse; simp
+--   · apply Decidable.isFalse; simp
+--   · apply Decidable.isFalse; simp
+--   · apply Decidable.isFalse; simp
+--   · apply Decidable.isFalse; simp
+--   · apply Decidable.isFalse; simp
+--   · apply Decidable.isTrue;  simp
 
-def size : (Formula ⊕ Formula) → Nat
-  | Sum.inl A => A.size
-  | Sum.inr A => A.size
+/- Length of a Split Formula (i.e. length of underlying BML Fornula). -/
+def length : (Formula ⊕ Formula) → Nat
+  | Sum.inl φ => φ.length
+  | Sum.inr φ => φ.length
 
+/- Fischer-Ladner closure of a Split Formula (preserving the formula annotation). -/
 def FL : SplitFormula → SplitSequent
   | Sum.inl ⊥ => {Sum.inl ⊥}
   | Sum.inr ⊥ => {Sum.inr ⊥}
@@ -377,29 +390,37 @@ def FL : SplitFormula → SplitSequent
   | Sum.inl (◇ φ) => {Sum.inl (◇ φ)} ∪ FL (Sum.inl φ)
   | Sum.inr (◇ φ) => {Sum.inr (◇ φ)} ∪ FL (Sum.inr φ)
 
-theorem FL_SplitFormula_left_eq_FL_Formula_map (φ : Formula) : FL (Sum.inl φ) = φ.FL.map ⟨Sum.inl, by intro x; grind⟩ := by
+/-! # Lemmas about FL Closure of Split Formulas -/
+
+lemma FL_SplitFormula_left_eq_FL_Formula_map (φ : Formula) :
+  FL (Sum.inl φ) = φ.FL.map ⟨Sum.inl, Sum.inl_injective⟩ := by
   induction φ <;> simp_all [FL, Formula.FL, Finset.map_union]
 
-theorem FL_SplitFormula_right_eq_FL_Formula_map (φ : Formula) : FL (Sum.inr φ) = φ.FL.map ⟨Sum.inr, by intro x; grind⟩ := by
+lemma FL_SplitFormula_right_eq_FL_Formula_map (φ : Formula) :
+  FL (Sum.inr φ) = φ.FL.map ⟨Sum.inr, Sum.inr_injective⟩ := by
   induction φ <;> simp_all [FL, Formula.FL, Finset.map_union]
 
-theorem in_FL_SplitFormula_left {φ : Formula} {ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL (Sum.inl φ)) : ψ.isLeft := by
+lemma in_FL_SplitFormula_left {φ : Formula} {ψ : SplitFormula}
+  (ψ_sub_φ : ψ ∈ FL (Sum.inl φ)) : ψ.isLeft := by
   induction φ <;> simp_all [FL] <;> grind
 
-theorem in_FL_SplitFormula_right {φ : Formula} {ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL (Sum.inr φ)) : ψ.isRight := by
+lemma in_FL_SplitFormula_right {φ : Formula} {ψ : SplitFormula}
+  (ψ_sub_φ : ψ ∈ FL (Sum.inr φ)) : ψ.isRight := by
   induction φ <;> simp_all [FL] <;> grind
 
-theorem in_FL_of_in_FL_SplitFormula_left {φ : Formula} {ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL (Sum.inl φ)) : ψ.elim id id ∈ φ.FL := by
+lemma in_FL_of_in_FL_SplitFormula_left {φ : Formula} {ψ : SplitFormula}
+  (ψ_sub_φ : ψ ∈ FL (Sum.inl φ)) : ψ.elim id id ∈ φ.FL := by
   rcases ψ with ψ | ψ <;> induction φ <;> simp_all [FL, Formula.FL] <;> grind
 
-theorem in_FL_of_in_FL_SplitFormula_right {φ : Formula} {ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL (Sum.inr φ)) : ψ.elim id id ∈ φ.FL := by
+lemma in_FL_of_in_FL_SplitFormula_right {φ : Formula} {ψ : SplitFormula}
+  (ψ_sub_φ : ψ ∈ FL (Sum.inr φ)) : ψ.elim id id ∈ φ.FL := by
   rcases ψ with ψ | ψ <;> induction φ <;> simp_all [FL, Formula.FL] <;> grind
 
-/- Lemmas about FL closure -/
+/-- Fischer-Ladner Closure is reflexive. -/
+lemma FL_refl {φ : SplitFormula} : φ ∈ FL φ := by rcases φ with φ | φ <;> cases φ <;> simp [FL]
 
-theorem FL_refl {φ : SplitFormula} : φ ∈ FL φ := by rcases φ with φ | φ <;> cases φ <;> simp [FL]
-
-theorem FL_mon {φ ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL φ) : FL ψ ⊆ FL φ := by
+/-- Fischer-Ladner Closure is monotone. -/
+lemma FL_mon {φ ψ : SplitFormula} (ψ_sub_φ : ψ ∈ FL φ) : FL ψ ⊆ FL φ := by
   rcases φ with φ | φ
   · simp [FL_SplitFormula_left_eq_FL_Formula_map φ]
     have is_left := in_FL_SplitFormula_left ψ_sub_φ
@@ -418,34 +439,29 @@ end SplitFormula
 
 namespace SplitSequent
 
+/-! # Lemmas about FL Closure of Split Sequents -/
 def FL : SplitSequent → SplitSequent := fun Δ ↦ Finset.biUnion Δ SplitFormula.FL
 
-/- Lemmas about FL Closure of Sequents -/
-
+/-- Fischer-Ladner Closure is reflexive. -/
 theorem FL_refl {Δ : SplitSequent} : Δ ⊆ FL Δ := by
   simp [Finset.subset_iff, FL]
   constructor
-  · intro x x_in
-    left
-    exact ⟨x, x_in, SplitFormula.FL_refl⟩
-  · intro x x_in
-    right
-    exact ⟨x, x_in, SplitFormula.FL_refl⟩
+  · exact fun x x_in ↦ Or.inl ⟨x, x_in, SplitFormula.FL_refl⟩
+  · exact fun x x_in ↦ Or.inr ⟨x, x_in, SplitFormula.FL_refl⟩
 
-theorem FL_subset {Δ Γ : SplitSequent} (Δ_sub_Γ : Δ ⊆ Γ) : FL Δ ⊆ FL Γ := by
+/-- Fischer-Ladner Closure is monotone. -/
+theorem FL_mon {Δ Γ : SplitSequent} (Δ_sub_Γ : Δ ⊆ Γ) : FL Δ ⊆ FL Γ := by
   simp_all [Finset.subset_iff, FL]
   constructor
   all_goals
     intro φ h
     rcases h with h | h
     · have ⟨ψ, ψ_in_Δ, φ_sub_ψ⟩ := h
-      left
-      refine ⟨ψ, Δ_sub_Γ.1 _ ψ_in_Δ, φ_sub_ψ⟩
+      exact Or.inl ⟨ψ, Δ_sub_Γ.1 _ ψ_in_Δ, φ_sub_ψ⟩
     · have ⟨ψ, ψ_in_Δ, φ_sub_ψ⟩ := h
-      right
-      refine ⟨ψ, Δ_sub_Γ.2 _ ψ_in_Δ, φ_sub_ψ⟩
+      exact Or.inr ⟨ψ, Δ_sub_Γ.2 _ ψ_in_Δ, φ_sub_ψ⟩
 
-
+/-- Fischer-Ladner Closure is idempotent. -/
 theorem FL_idem {Δ : SplitSequent} : FL (FL Δ) = FL Δ := by
   simp [Finset.Subset.antisymm_iff]
   constructor
@@ -453,72 +469,188 @@ theorem FL_idem {Δ : SplitSequent} : FL (FL Δ) = FL Δ := by
     constructor
     all_goals
     intro φ h
-    · rcases h with ⟨ψ, ⟨χ, χ_in_Δ, ψ_sub_χ⟩ | ⟨χ, χ_in_Δ, ψ_sub_χ⟩, φ_sub_ψ⟩ | ⟨ψ, ⟨χ, χ_in_Δ, ψ_sub_χ⟩ | ⟨χ, χ_in_Δ, ψ_sub_χ⟩, φ_sub_ψ⟩
-      · left
-        exact ⟨χ, χ_in_Δ, by apply SplitFormula.FL_mon ψ_sub_χ; simp_all⟩
-      · right
-        exact ⟨χ, χ_in_Δ, by apply SplitFormula.FL_mon ψ_sub_χ; simp_all⟩
-      · left
-        exact ⟨χ, χ_in_Δ, by apply SplitFormula.FL_mon ψ_sub_χ; simp_all⟩
-      · right
-        exact ⟨χ, χ_in_Δ, by apply SplitFormula.FL_mon ψ_sub_χ; simp_all⟩
-  · exact FL_subset (FL_refl)
+    · rcases h with ⟨ψ, ⟨χ, χ_in_Δ, ψ_sub_χ⟩ | ⟨χ, χ_in_Δ, ψ_sub_χ⟩, φ_sub_ψ⟩
+                  | ⟨ψ, ⟨χ, χ_in_Δ, ψ_sub_χ⟩ | ⟨χ, χ_in_Δ, ψ_sub_χ⟩, φ_sub_ψ⟩
+      · exact Or.inl ⟨χ, χ_in_Δ, by apply SplitFormula.FL_mon ψ_sub_χ; simp_all⟩
+      · exact Or.inr ⟨χ, χ_in_Δ, by apply SplitFormula.FL_mon ψ_sub_χ; simp_all⟩
+      · exact Or.inl ⟨χ, χ_in_Δ, by apply SplitFormula.FL_mon ψ_sub_χ; simp_all⟩
+      · exact Or.inr ⟨χ, χ_in_Δ, by apply SplitFormula.FL_mon ψ_sub_χ; simp_all⟩
+  · exact FL_mon FL_refl
 
+/-- □₄⁻¹ operator for Split Sequents -/
 def D (Γ : SplitSequent) : SplitSequent
-  := Finset.filter SplitFormula.isDiamond Γ ∪ Finset.filterMap SplitFormula.opUnDi Γ (by
-  intro A B C C_in_A C_in_B
-  rcases A with A | A <;> rcases B with B | B <;> rcases C with C | C
+  := Finset.filter (fun x => decide (SplitFormula.isDiamond x)) Γ
+                         ∪ Finset.filterMap SplitFormula.opUnDi Γ (by
+  intro φ ψ C C_in_A C_in_B
+  rcases φ with φ | φ <;> rcases ψ with ψ | ψ <;> rcases C with C | C
   all_goals
-  simp_all
-  cases A <;> cases B
-  all_goals
-    simp_all [SplitFormula.opUnDi])
+    simp_all
+    cases φ <;> cases ψ
+    all_goals
+      simp_all [SplitFormula.opUnDi])
 
-@[simp]
-theorem opUnDi_eqₗₗ {φ ψ : Formula} : SplitFormula.opUnDi (Sum.inl φ) = some (Sum.inl ψ) ↔ φ = ◇ ψ := by
-  cases φ <;> simp [SplitFormula.opUnDi]
+/-! # Basic operations and simp lemmas for Split Sequents -/
 
-@[simp]
-theorem opUnDi_eqᵣᵣ {φ ψ : Formula} : SplitFormula.opUnDi (Sum.inr φ) = some (Sum.inr ψ) ↔ φ = ◇ ψ := by
-  cases φ <;> simp [SplitFormula.opUnDi]
-
-@[simp]
-theorem opUnDi_eqₗᵣ {φ ψ : Formula} : ¬ (SplitFormula.opUnDi (Sum.inl φ) = some (Sum.inr ψ)) := by
-  cases φ <;> simp [SplitFormula.opUnDi]
-
-@[simp]
-theorem opUnDi_eqᵣₗ {φ ψ : Formula} : ¬ (SplitFormula.opUnDi (Sum.inr φ) = some (Sum.inl ψ)) := by
-  cases φ <;> simp [SplitFormula.opUnDi]
-
+/-- Find underlying Sequent of a Split Sequent. -/
 def toSequent (Δ : SplitSequent) : Sequent := Finset.image (Sum.elim id id) Δ
-def size (Δ : SplitSequent) : Nat := Finset.sum Δ (SplitFormula.size)
+
+/-- Length of a Split Sequent. -/
+def length (Δ : SplitSequent) : Nat := Finset.sum Δ (SplitFormula.length)
+
+@[simp]
+lemma opUnDi_eqₗₗ {φ ψ : Formula} : SplitFormula.opUnDi (Sum.inl φ) = some (Sum.inl ψ) ↔ φ = ◇ ψ := by
+  cases φ <;> simp [SplitFormula.opUnDi]
+
+@[simp]
+lemma opUnDi_eqᵣᵣ {φ ψ : Formula} : SplitFormula.opUnDi (Sum.inr φ) = some (Sum.inr ψ) ↔ φ = ◇ ψ := by
+  cases φ <;> simp [SplitFormula.opUnDi]
+
+@[simp]
+lemma opUnDi_eqₗᵣ {φ ψ : Formula} : ¬ (SplitFormula.opUnDi (Sum.inl φ) = some (Sum.inr ψ)) := by
+  cases φ <;> simp [SplitFormula.opUnDi]
+
+@[simp]
+lemma opUnDi_eqᵣₗ {φ ψ : Formula} : ¬ (SplitFormula.opUnDi (Sum.inr φ) = some (Sum.inl ψ)) := by
+  cases φ <;> simp [SplitFormula.opUnDi]
+
+@[simp]
+noncomputable def filterLeft : SplitSequent → SplitSequent := @Finset.filter _
+  (fun | Sum.inl _ => true | Sum.inr _ => false)
+  (fun | Sum.inl _ => isTrue (by simp) | Sum.inr _ => isFalse (by simp))
+
+@[simp]
+noncomputable def filterRight : SplitSequent → SplitSequent := @Finset.filter _
+  (fun | Sum.inl _ => false | Sum.inr _ => true)
+  (fun | Sum.inl _ => isFalse (by simp) | Sum.inr _ => isTrue (by simp))
+
+def left (Γ : SplitSequent) : Sequent := Γ.filterMap (Sum.getLeft?) (by aesop)
+def right (Γ : SplitSequent) : Sequent := Γ.filterMap (Sum.getRight?) (by aesop)
 
 end SplitSequent
 
+/-! # Properties of Substitutions -/
+
+/-- Substiting `p` with `ψ` in `φ` (`φ[ψ/p]`). --/
+def single (n : Nat) (ψ : Formula) : Formula → Formula
+  | ⊥ => ⊥
+  | ⊤ => ⊤
+  | at k => if k == n then ψ else at k
+  | na k => if k == n then ~ ψ else na k
+  | φ₁ & φ₂ => (single n ψ φ₁) & (single n ψ φ₂)
+  | φ₁ v φ₂ => (single n ψ φ₁) v (single n ψ φ₂)
+  | □ φ => □ (single n ψ φ)
+  | ◇ φ => ◇ (single n ψ φ)
+
+/- Single substitution preserves negation. -/
+theorem single_neg (n : Nat) (φ ψ : Formula) : single n ψ (~φ) = (~ (single n ψ φ)) := by
+  induction φ <;> simp [Formula.neg, single] <;> aesop
+
+/- Single substitution preserves implication. -/
+theorem single_imp (n : Nat) (C D E : Formula) : single n C (D ↣ E) = (single n C D) ↣ (single n C E) := by
+  simp [single, single_neg]
+
+/- Single substitution preserves bi-implication. -/
+theorem single_iff (n : Nat) (C D E : Formula) : single n C (D ⟷ E) = (single n C D) ⟷ (single n C E) := by
+  simp [single, single_neg]
+
+@[simp]
+theorem single_identity (n : ℕ) (φ : Formula) : (single n (at n) φ) = φ := by
+  induction φ <;> simp_all [single]
+
+/-- Simultaneous substitution for `p` meeting criteria `c`. --/
+def partial_ {c : Nat → Prop} [DecidablePred c] (σ : Subtype c → Formula) : Formula → Formula
+  | ⊥ => ⊥
+  | ⊤ => ⊤
+  | at n => if h : c n then σ ⟨n, h⟩ else at n
+  | na n => if h : c n then ~ σ ⟨n, h⟩ else na n
+  | A & B => (partial_ σ A) & (partial_ σ B)
+  | A v B => (partial_ σ A) v (partial_ σ B)
+  | □ A => □ (partial_ σ A)
+  | ◇ A => ◇ (partial_ σ A)
+
+/-- Full substitution of all `p`. -/
+def full (σ : Nat → Formula) (A : Formula) : Formula := match A with
+  | ⊥ => ⊥
+  | ⊤ => ⊤
+  | at n => σ n
+  | na n => ~ (σ n)
+  | A & B => (full σ A) & (full σ B)
+  | A v B => (full σ A) v (full σ B)
+  | □ A => □ (full σ A)
+  | ◇ A => ◇ (full σ A)
+termination_by Formula.length A
+decreasing_by
+  all_goals
+  simp [Formula.length]
+  try linarith
+
+/-! # Properties of Vocab -/
+
+/- `p` is in the vocabulary of `φ` if and only if `p` is in the vocabulary of `~φ`. -/
+@[simp] theorem in_neg_voc_iff {n : Nat} {φ : Formula} : n ∈ (~φ).vocab ↔ n ∈ φ.vocab := by
+  induction φ <;> simp_all [Formula.vocab]
+
+theorem in_single_voc (m n : Nat) (φ ψ : Formula) :
+  m ∉ φ.vocab → (m ≠ n → m ∉ ψ.vocab) → n ∉ φ.vocab → m ∉ (single n φ ψ).vocab
+  := by
+    intro mp
+    induction ψ <;> simp_all [single, Formula.vocab]
+    case atom k =>
+      by_cases k = n <;> simp_all [Formula.vocab]; aesop
+    case negAtom k =>
+      by_cases k = n <;> simp_all [Formula.vocab]
+      aesop
+
+theorem not_in_single_voc (n : Nat) (φ ψ : Formula) :
+  n ∉ φ.vocab → (single n ψ φ) = φ := by
+  intro h
+  induction φ <;> simp_all [single, Formula.vocab] <;> aesop
+
+lemma not_in_single_top_voc (n : ℕ) (φ : Formula) : n ∉ (single n ⊤ φ).vocab := by
+  induction φ <;> simp_all [single, Formula.vocab]
+  all_goals
+  rename_i k
+  by_cases k = n <;> simp_all [Formula.vocab]; grind
+
+lemma not_in_single_bot_voc (n : ℕ) (φ : Formula) :  n ∉ (single n ⊥ φ).vocab := by
+  induction φ <;> simp_all [single, Formula.vocab]
+  all_goals
+  rename_i k
+  by_cases k = n <;> simp_all [Formula.vocab]; grind
+
+theorem in_single_voc' {m n : ℕ} {φ ψ : Formula} : m ∈ (single n φ ψ).vocab → (m ∈ φ.vocab ∧ n ∈ ψ.vocab) ∨ (m ∈ ψ.vocab ∧ m ≠ n) := by
+  intro m_in
+  induction ψ <;> simp_all [single] <;> try grind [Formula.vocab, in_neg_voc_iff, Formula.instTop, Formula.instBot]
 
 
+/-! # Some very specific lemmas about Finset.sum
 
-/- needs a new home -/
-lemma hm {a b c : ℕ} : b ≤ a → (c < b) → (a - b) + c < a := by grind only [cases Or]
+Ideally grind or aesop or some other tactic could sort out these simple helper lemmas, but I could
+not figure out how.
+-/
 
-lemma helper {α : Type} [DecidableEq α] {A C : Finset α} {b : α} {f : α → Nat}
+lemma sub_add_left {n m l : Nat} : n + m = l → n = l - m := by omega
+
+lemma lt_and_le_imp_add_lt {a b c : ℕ} : b ≤ a → c < b → (a - b) + c < a := by omega
+
+lemma Finset.sum_diff_singleton_lt {α : Type} [DecidableEq α] {A C : Finset α} {b : α} {f : α → Nat}
   : b ∈ A → C.sum f < f b → Finset.sum ((A \ {b}) ∪ C) f < Finset.sum A f := by
   intro b_in_A C_lt_B
   calc
     _ ≤ Finset.sum (A \ {b}) f + Finset.sum C f := by
-     simp [Sequent.jfef $ @Finset.sum_union_inter _ _ (A \ {b}) C _ f _]
+     simp [sub_add_left $ @Finset.sum_union_inter _ _ (A \ {b}) C _ f _]
     _ = Finset.sum A f - Finset.sum {b} f + Finset.sum C f := by
-      simp [Sequent.jfef $ @Finset.sum_sdiff α Nat {b} A _ f _ (Finset.singleton_subset_iff.2 b_in_A)]
+      simp [sub_add_left $ @Finset.sum_sdiff α Nat {b} A _ f _ (Finset.singleton_subset_iff.2 b_in_A)]
     _ < Finset.sum A f := by
-      apply hm
+      apply lt_and_le_imp_add_lt
       · exact (Finset.sum_le_sum_of_subset_of_nonneg (Finset.singleton_subset_iff.2 b_in_A) (by simp))
       · exact C_lt_B
-
-instance {α} [DecidableEq α] (Γ : Finset α) : Union {x // x ∈ Γ.powerset} where -- mathlib ????
-  union A B := ⟨A ∪ B, by
-    apply Finset.mem_powerset.2
-    apply Finset.subset_iff.2
-    intro x h
-    rcases (Finset.mem_union.1 h) with h | h
-    · apply Finset.mem_of_subset (Finset.mem_powerset.1 A.2) h
-    · apply Finset.mem_of_subset (Finset.mem_powerset.1 B.2) h⟩
+--
+-- instance {α} [DecidableEq α] (Γ : Finset α) : Union {x // x ∈ Γ.powerset} where -- mathlib ????
+--   union φ ψ := ⟨A ∪ ψ, by
+--     apply Finset.mem_powerset.2
+--     apply Finset.subset_iff.2
+--     intro x h
+--     rcases (Finset.mem_union.1 h) with h | h
+--     · apply Finset.mem_of_subset (Finset.mem_powerset.1 φ.2) h
+--     · apply Finset.mem_of_subset (Finset.mem_powerset.1 ψ.2) h⟩

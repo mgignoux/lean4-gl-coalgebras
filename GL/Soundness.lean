@@ -6,7 +6,11 @@ import GL.Logic
 import GL.Semantics
 import GL.CoalgebraProof
 
-open Classical
+/-! ## Soundness of GL-proof system. -/
+
+open Classical in
+/-- Helper for soundness, Given a proof of `Γ` and a countermodel of `Γ`, find a path in the proof
+    and the model -/
 noncomputable def chain
   {𝕏 : Proof}
   {x : 𝕏.X}
@@ -15,8 +19,8 @@ noncomputable def chain
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate_seq (M, w) Γ)
-  (n : Nat) : (y : 𝕏.X) × {u : W // ¬ Evaluate_seq ⟨M, u⟩ (f (r 𝕏.α y))}
+  (w_prop : ¬ evaluateSeq (M, w) Γ)
+  (n : Nat) : (y : 𝕏.X) × {u : W // ¬ evaluateSeq ⟨M, u⟩ (f (r 𝕏.α y))}
     := match n with
        | 0 => ⟨x, ⟨w, by simp_all⟩⟩
        | n + 1 =>
@@ -26,7 +30,7 @@ noncomputable def chain
         | .top Δ in_Δ => False.elim (by simp [r_def, f] at w_ih_prop; have := w_ih_prop ⊤ in_Δ; simp_all)
         | .ax Δ n in_Δ =>
           False.elim (by
-            by_cases Evaluate ⟨M, w_ih⟩ (at n)
+            by_cases evaluate ⟨M, w_ih⟩ (at n)
             case pos w_n =>
               simp [r_def, f] at w_ih_prop
               have := w_ih_prop (at n) in_Δ.1
@@ -38,59 +42,54 @@ noncomputable def chain
         | .and Δ φ₁ φ₂ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y,z] =>
             have := not_and_or.1 $ fun x ↦ (not_exists.1 w_ih_prop) (φ₁ & φ₂) ⟨(r_def ▸ in_Δ), x⟩
-            if w_ih_nφ₁ : ¬Evaluate (M, w_ih) φ₁
+            if w_ih_nφ₁ : ¬evaluate (M, w_ih) φ₁
             then
               ⟨y, w_ih, by
-                have := 𝕏.h x_ih
+                have := 𝕏.step x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at this
-                simp [Evaluate_seq, this.1, w_ih_nφ₁, fₙ_alternate]
+                simp [evaluateSeq, this.1, w_ih_nφ₁, fₙ_alternate]
                 intro χ χ_in χ_not con
                 apply w_ih_prop
                 exact ⟨χ, r_def ▸ χ_in, con⟩
               ⟩
             else
               ⟨z, w_ih, by
-                have w_ih_nφ₂ : ¬Evaluate (M, w_ih) φ₂ := by simp_all
-                have := 𝕏.h x_ih
+                have w_ih_nφ₂ : ¬evaluate (M, w_ih) φ₂ := by simp_all
+                have := 𝕏.step x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at this
-                simp [Evaluate_seq, this.2, w_ih_nφ₂, fₙ_alternate]
+                simp [evaluateSeq, this.2, w_ih_nφ₂, fₙ_alternate]
                 intro χ χ_in χ_not con
                 apply w_ih_prop
-                exact ⟨χ, r_def ▸ χ_in, con⟩
-              ⟩
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | [y] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | x::y::z::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-
+                exact ⟨χ, r_def ▸ χ_in, con⟩⟩
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | [y] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | x::y::z::l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
         | .or Δ φ₁ φ₂ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y] =>
             have := not_or.1 $ fun x ↦ (not_exists.1 w_ih_prop) (φ₁ v φ₂) ⟨(r_def ▸ in_Δ), x⟩
-            have h : ¬Evaluate_seq (M, w_ih) (f (r 𝕏.α y)) := by
-              have 𝕏h_x_ih := 𝕏.h x_ih
+            have h : ¬evaluateSeq (M, w_ih) (f (r 𝕏.α y)) := by
+              have 𝕏h_x_ih := 𝕏.step x_ih
               simp [r_def, p_def, -Finset.union_singleton] at 𝕏h_x_ih
-              simp [Evaluate_seq, 𝕏h_x_ih, fₙ_alternate, this]
+              simp [evaluateSeq, 𝕏h_x_ih, fₙ_alternate, this]
               intro χ χ_in χ_not con
               apply w_ih_prop
               exact ⟨χ, r_def ▸ χ_in, con⟩
               ⟨y, w_ih, h⟩
-
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | x::y::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | x::y::l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
         | .box Δ φ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y] =>
               have := not_forall.1 $ fun x ↦ (not_exists.1 w_ih_prop) (□ φ) ⟨(r_def ▸ in_Δ), x⟩
               let w_next := this.choose
               have w_next_prop := Classical.not_imp.1 this.choose_spec
-
-              have h : ¬Evaluate_seq (M, w_next) (f (r 𝕏.α y)) := by
-                have 𝕏h_x_ih := 𝕏.h x_ih
+              have h : ¬evaluateSeq (M, w_next) (f (r 𝕏.α y)) := by
+                have 𝕏h_x_ih := 𝕏.step x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at 𝕏h_x_ih
-                simp [Evaluate_seq, 𝕏h_x_ih, fₙ_alternate]
+                simp [evaluateSeq, 𝕏h_x_ih, fₙ_alternate]
                 constructor
                 · exact w_next_prop.2
                 · simp [Sequent.D]
-                  simp [Evaluate_seq, r_def, f] at w_ih_prop
+                  simp [evaluateSeq, r_def, f] at w_ih_prop
                   intro χ χ_in con
                   rcases χ_in with ⟨⟨χ_in, χ_not_box_φ⟩, χ_di⟩ | diχ_Δ
                   · apply w_ih_prop _ χ_in
@@ -100,17 +99,19 @@ noncomputable def chain
                       exact ⟨u, M.trans w_next_prop.1 w_next_u, u_χ'⟩
                   · exact w_ih_prop _ diχ_Δ ⟨w_next, w_next_prop.1, con⟩
               ⟨y, w_next, h⟩
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | x::y::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | x::y::l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
 
-lemma chain_proof_prop   {𝕏 : Proof}
+/-- The left projection of `chain` is a chain in the proof. -/
+lemma chain_proof_prop
+  {𝕏 : Proof}
   {x : 𝕏.X}
   {Γ : Sequent}
   (prop : f (r 𝕏.α x) = Γ)
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate_seq (M, w) Γ)
+  (w_prop : ¬evaluateSeq (M, w) Γ)
   : ∀ n, edge 𝕏.α (chain prop w_prop n).1 (chain prop w_prop (n + 1)).1 := by
     intro n
     conv =>
@@ -123,6 +124,7 @@ lemma chain_proof_prop   {𝕏 : Proof}
     all_goals
       grind [edge]
 
+/-- The right projection of `chain` makes progress in the model on box nodes. -/
 lemma chain_model_prop {𝕏 : Proof}
   {x : 𝕏.X}
   {Γ : Sequent}
@@ -130,7 +132,7 @@ lemma chain_model_prop {𝕏 : Proof}
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate_seq (M, w) Γ)
+  (w_prop : ¬evaluateSeq (M, w) Γ)
   : ∀ n, (¬ (r 𝕏.α (chain prop w_prop n).1).isBox → (chain prop w_prop n).2.1 = (chain prop w_prop (n + 1)).2.1)
        ∧ (  (r 𝕏.α (chain prop w_prop n).1).isBox → M.R (chain prop w_prop n).2.1 (chain prop w_prop (n + 1)).2.1)
   := by
@@ -142,8 +144,8 @@ lemma chain_model_prop {𝕏 : Proof}
       · conv =>
           congr
           · skip
-          · rw [chain] -- I think Subtype.val might be preventing from unfolding chain
-    rcases chain prop w_prop n with ⟨x_ih, w_ih, w_ih_prop⟩ -- when you do split directly after this it 'redoes' this
+          · rw [chain]
+    rcases chain prop w_prop n with ⟨x_ih, w_ih, w_ih_prop⟩
     simp
     split <;> grind [RuleApp.isBox]
   · conv =>
@@ -153,11 +155,12 @@ lemma chain_model_prop {𝕏 : Proof}
           congr
           · skip
           · skip
-          · rw [chain] -- I think Subtype.val might be preventing from unfolding chain
-    rcases chain prop w_prop n with ⟨x_ih, w_ih, w_ih_prop⟩ -- when you do split directly after this it 'redoes' this
+          · rw [chain]
+    rcases chain prop w_prop n with ⟨x_ih, w_ih, w_ih_prop⟩
     simp
     split <;> try grind [RuleApp.isBox]
 
+/-- The right projection of `chain` eventually progresses. -/
 theorem has_children_of_chain_model {𝕏 : Proof}
   {x : 𝕏.X}
   {Γ : Sequent}
@@ -165,7 +168,7 @@ theorem has_children_of_chain_model {𝕏 : Proof}
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate_seq (M, w) Γ) :
+  (w_prop : ¬evaluateSeq (M, w) Γ) :
   ∀ n, ∃ m, M.R (chain prop w_prop n).2.1 (chain prop w_prop (n + m)).2.1 := by
   intro n
   by_contra h
@@ -198,8 +201,8 @@ theorem has_children_of_chain_model {𝕏 : Proof}
   have ⟨k, k_prop⟩ := inf_path_has_inf_boxes (fun n ↦ (chain prop w_prop n).1) (chain_proof_prop prop w_prop) n
   apply g2 k k_prop
 
-noncomputable
-def inc_chain_eventual_inc_chain {β}
+/-- Progressing subchain of an eventually increasing chain -/
+noncomputable def incChainEventualIncChain {β}
   {Q : β → β → Prop}
   {g : ℕ → β}
   (Q_prop : ∀ n, ∃ m, Q (g n) (g m))
@@ -207,46 +210,47 @@ def inc_chain_eventual_inc_chain {β}
   match n with
    | 0 => ⟨g (Q_prop 0).choose, by simp⟩
    | n + 1 =>
-      match inc_chain_eventual_inc_chain Q_prop n with
+      match incChainEventualIncChain Q_prop n with
         | ⟨ih, ih_prop⟩ => ⟨g (Q_prop ih_prop.choose).choose, by simp⟩
 
-theorem inc_chain_eventual_inc_chain_prop {β}
+/-- An eventually progressing chain has an progressing subchain. -/
+theorem incChainEventualIncChain_prop {β}
   {Q : β → β → Prop} {g : ℕ → β}
   (Q_prop : ∀ n, ∃ m, Q (g n) (g m)) :
-  ∀ n, Q (inc_chain_eventual_inc_chain Q_prop n).1
-         (inc_chain_eventual_inc_chain Q_prop (n + 1)).1
+  ∀ n, Q (incChainEventualIncChain Q_prop n).1
+         (incChainEventualIncChain Q_prop (n + 1)).1
    := by
     intro n
     conv =>
       congr
       · skip
-      · unfold inc_chain_eventual_inc_chain
-    rcases inc_chain_eventual_inc_chain Q_prop n with ⟨ih, ih_prop⟩
+      · unfold incChainEventualIncChain
+    rcases incChainEventualIncChain Q_prop n with ⟨ih, ih_prop⟩
     simp
     have := (Q_prop ih_prop.choose).choose_spec
     convert this
     · exact ih_prop.choose_spec
 
-
-theorem Soundness_seq (Γ : Sequent) : ⊢ Γ → ⊨ Γ := by
+/-- Soundness theorem for the GL-proof system. -/
+theorem soundness_seq (Γ : Sequent) : ⊢ Γ → ⊨ Γ := by
   intro mp
   have ⟨𝕏, x, prop⟩ := mp
   by_contra h
   simp only [Sequent.isValid, not_forall] at h
   have ⟨W, M, w, w_prop⟩ := h
   apply (wellFounded_iff_isEmpty_descending_chain.1 M.con_wf).false
-  use fun k ↦ (@inc_chain_eventual_inc_chain _ M.R (fun n ↦ (chain prop w_prop n).2.1)
+  use fun k ↦ (@incChainEventualIncChain _ M.R (fun n ↦ (chain prop w_prop n).2.1)
     (by
       intro n
       have ⟨m, m_prop⟩ := has_children_of_chain_model prop w_prop n
       use n + m) k).1
-  exact fun k ↦ @inc_chain_eventual_inc_chain_prop _ M.R (fun n ↦ (chain prop w_prop n).2.1)
+  exact fun k ↦ @incChainEventualIncChain_prop _ M.R (fun n ↦ (chain prop w_prop n).2.1)
     (by
       intro n
       have ⟨m, m_prop⟩ := has_children_of_chain_model prop w_prop n
       use n + m) k
 
-theorem Soundness (φ : Formula) : ⊢ φ → ⊨ φ := by
-  intro mp
-  convert Soundness_seq {φ} mp
-  simp [Sequent.isValid, Formula.isValid]
+-- theorem Soundness (φ : Formula) : ⊢ φ → ⊨ φ := by
+--   intro mp
+--   convert soundness_seq {φ} mp
+--   simp [Sequent.isValid, Formula.isValid]

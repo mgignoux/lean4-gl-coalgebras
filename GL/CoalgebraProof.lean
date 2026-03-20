@@ -12,25 +12,29 @@ import Mathlib.Tactic
 import Mathlib.Data.Setoid.Partition
 import Mathlib.Data.Finset.Lattice.Basic
 
-universe u
+/-! ## Defining GL-proof systems.
 
+Here we define the GL-proof system along with finitization and basic properties.
+-/
+
+/-! # Basic components of the GL-proof system.-/
+
+/-- Rule applications for the GL-proof system. -/
 inductive RuleApp
   | top : (Δ : Sequent) → ⊤ ∈ Δ → RuleApp
   | ax : (Δ : Sequent) → (n : Nat) → (at n ∈ Δ ∧ na n ∈ Δ) → RuleApp
-  | and : (Δ : Sequent) → (A : Formula) → (B : Formula) → (A & B) ∈ Δ → RuleApp
-  | or : (Δ : Sequent) → (A : Formula) → (B : Formula) → (A v B) ∈ Δ → RuleApp
-  | box : (Δ : Sequent) → (A : Formula) → (□ A) ∈ Δ → RuleApp
+  | and : (Δ : Sequent) → (φ : Formula) → (ψ : Formula) → (φ & ψ) ∈ Δ → RuleApp
+  | or : (Δ : Sequent) → (φ : Formula) → (ψ : Formula) → (φ v ψ) ∈ Δ → RuleApp
+  | box : (Δ : Sequent) → (φ : Formula) → (□ φ) ∈ Δ → RuleApp
 
-@[simp]
-def T : (CategoryTheory.Functor (Type u) (Type u)) :=
-  ⟨λ X ↦ ((RuleApp × List X) : Type u), fun f ⟨r, A⟩ ↦ ⟨r, A.map f⟩, by aesop_cat, by aesop_cat⟩
+/-- Endofunctor for the GL-proof system. -/
+@[simp] def T : (CategoryTheory.Functor Type Type) where
+  obj := λ X ↦ (RuleApp × List X)
+  map := fun f ⟨r, A⟩ ↦ ⟨r, A.map f⟩
+  map_id := by aesop_cat
+  map_comp := by aesop_cat
 
-def Sequent.D (Γ : Sequent) : Sequent := Finset.filter Formula.isDiamond Γ ∪ Finset.filterMap Formula.opUnDi Γ (by
-  intro A B C C_in_A C_in_B
-  cases A <;> cases B
-  all_goals
-  simp_all [Formula.opUnDi])
-
+/-- Given a RuleApp, obtain the principal formulas. -/
 def fₚ : RuleApp → Sequent
   | RuleApp.top _ _ => {⊤}
   | RuleApp.ax _ n _ => {at n, na n}
@@ -38,6 +42,7 @@ def fₚ : RuleApp → Sequent
   | RuleApp.or _ A B _ => {A v B}
   | RuleApp.box _ A _ => {□ A}
 
+/-- Given a RuleApp, obtain the sequent. -/
 def f : RuleApp → Sequent
   | RuleApp.top Δ _ => Δ
   | RuleApp.ax Δ _ _ => Δ
@@ -45,59 +50,80 @@ def f : RuleApp → Sequent
   | RuleApp.or Δ _ _ _ => Δ
   | RuleApp.box Δ _ _ => Δ
 
+/-- Given a RuleApp, obtain the non-principal formulas. -/
 def fₙ : RuleApp → Sequent := fun r ↦ f r \ fₚ r
 
-theorem fₙ_alternate (r : RuleApp) : fₙ r = match r with
+/-- Relating principal formulas, non-principal formulas, and sequent. -/
+lemma fₙ_alternate (r : RuleApp) : fₙ r = match r with
   | RuleApp.top Δ _ => Δ \ {⊤}
   | RuleApp.ax Δ n _ => Δ \ {at n, na n}
   | RuleApp.and Δ A B _ => Δ \ {A & B}
   | RuleApp.or Δ A B _ => Δ \ {A v B}
   | RuleApp.box Δ A _ => Δ \ {□ A} := by cases r <;> simp [fₙ, f, fₚ]
 
-theorem fₚ_sub_f {r : RuleApp} : fₚ r ⊆ f r := by
-  cases r <;> simp_all [fₚ, f]
-  · simp_all -- ask Malvin about this
-  · simp_all [Finset.subset_iff, Finset.mem_insert]
+lemma fₚ_sub_f {r : RuleApp} : fₚ r ⊆ f r := by
+  cases r <;> grind [fₚ, f]
 
-theorem fₙ_sub_f {r : RuleApp} : fₙ r ⊆ f r := by
+lemma fₙ_sub_f {r : RuleApp} : fₙ r ⊆ f r := by
   cases r <;> simp_all [fₙ, f]
 
-def RuleApp.isBox : RuleApp → Prop
-  | RuleApp.box _ _ _ => True
-  | _ => False
+def RuleApp.isBox : RuleApp → Bool
+  | RuleApp.box _ _ _ => true
+  | _ => false
 
-instance : DecidablePred RuleApp.isBox := by
-  intro r
-  cases r <;> simp [RuleApp.isBox]
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isFalse; simp
-  · apply Decidable.isTrue; simp
+-- instance : DecidablePred RuleApp.isBox := by
+--   intro r
+--   cases r <;> simp [RuleApp.isBox]
+--   · apply Decidable.isFalse; simp
+--   · apply Decidable.isFalse; simp
+--   · apply Decidable.isFalse; simp
+--   · apply Decidable.isFalse; simp
+--   · apply Decidable.isTrue; simp
 
-def r {X : Type u} (α : X → T.obj X) (x : X) := (α x).1
-def p {X : Type u} (α : X → T.obj X) (x : X) := (α x).2
-def edge  {X : Type u} (α : X → T.obj X) (x y : X) : Prop := y ∈ p α x
+/-- Get RuleApp of a node (first projection). -/
+def r {X : Type} (α : X → T.obj X) (x : X) := (α x).1
 
+/-- Get premises of a node (second projection). -/
+def p {X : Type} (α : X → T.obj X) (x : X) := (α x).2
+
+/-- Edge relation induced by `p`. -/
+def edge  {X : Type} (α : X → T.obj X) (x y : X) : Prop := y ∈ p α x
+
+/-- Defininion of GL-proof. -/
 structure Proof where
   X : Type
   α : X → T.obj X
-  h : ∀ (x : X), match r α x with
+  step : ∀ (x : X), match r α x with
     | RuleApp.top _ _ => p α x = []
     | RuleApp.ax _ _ _ => p α x = []
     | RuleApp.and _ φ ψ _ => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {φ}, (fₙ (r α x)) ∪ {ψ}]
     | RuleApp.or _ φ ψ _ => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {φ, ψ}]
     | RuleApp.box _ φ _ => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {φ}]
 
+/-- GL-proofs are coalgebras. Note: we can do this the other way around, i.e. Proof extends
+    CategoryTheory.Endofunctor.Coalgebra T, however I find X and α more explicative than V and str
+-/
 instance (𝕏 : Proof) : CategoryTheory.Endofunctor.Coalgebra T where
   V := 𝕏.X
   str := 𝕏.α
 
-/- LEMMAS -/
+def proves (𝕏 : Proof) (Δ : Sequent) : Prop := ∃ x : 𝕏.X, f (r 𝕏.α x) = Δ
+def Sequent.isTrue (Δ : Sequent) : Prop := ∃ 𝕏 : Proof, proves 𝕏 Δ
 
+infixr:6 "⊢" => proves
+prefix:40 "⊢" => Sequent.isTrue
+
+lemma not_prove_empty : ¬ ∃ 𝕏, 𝕏 ⊢ {} := by
+  by_contra con
+  have ⟨𝕏, x, x_em⟩ := con
+  cases rule : r 𝕏.α x <;> simp_all [f, r] <;> aesop
+
+/-! # Fischer-Ladner properties of GL-proofs -/
+
+/-- Every edge is contained in FL closure. -/
 theorem edge_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : (edge 𝕏.α) x y) : f (r 𝕏.α y) ⊆ Sequent.FL (f (r 𝕏.α x)) := by
   unfold edge at x_y
-  have := 𝕏.h x
+  have := 𝕏.step x
   cases rule : r 𝕏.α x <;> simp only [rule] at this
   · exfalso; simp_all
   · exfalso; simp_all
@@ -141,147 +167,133 @@ theorem edge_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : (edge 𝕏.α) x y) : f 
         exact fₙ_sub_f h
     · exact ⟨□ φ, by simp [f, in_Δ], by simp [Formula.FL, Formula.FL_refl]⟩
 
+/-- Every path is contained in FL closure. -/
 theorem path_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y) : f (r 𝕏.α y) ⊆ Sequent.FL (f (r 𝕏.α x)) := by
   induction x_y
   case refl => exact Sequent.FL_refl
   case tail y z x_y y_z fy_fx =>
     apply Finset.Subset.trans (edge_in_FL y_z)
-    apply Sequent.FL_subset at fy_fx
+    apply Sequent.FL_mon at fy_fx
     simp only [Sequent.FL_idem] at fy_fx
     exact fy_fx
 
-/- POINT GENERATION -/
 
-@[simp] def α_point (𝕐 : Proof) (x : 𝕐.X) : {y : 𝕐.X // Relation.ReflTransGen (edge 𝕐.α) x y} → T.obj {y : 𝕐.X // Relation.ReflTransGen (edge 𝕐.α) x y} :=
+/-! # Point Generated GL-Proofs -/
+
+/-- Structure morphism for Point Generation. -/
+@[simp] def αPoint (𝕐 : Proof) (x : 𝕐.X) :
+  {y : 𝕐.X // Relation.ReflTransGen (edge 𝕐.α) x y} → T.obj {y : 𝕐.X // Relation.ReflTransGen (edge 𝕐.α) x y} :=
   fun y ↦ ⟨(𝕐.α y.1).1,
-          List.pmap (fun x y ↦ ⟨x, y⟩) (𝕐.α y.1).2 (fun _ z_in ↦ Relation.ReflTransGen.tail y.2 z_in)⟩
+    List.pmap (fun x y ↦ ⟨x, y⟩) (𝕐.α y.1).2 (fun _ z_in ↦ Relation.ReflTransGen.tail y.2 z_in)⟩
 
-def PointGeneratedProof (𝕐 : Proof) (x : 𝕐.X) : Proof where
+/-- Point Generated Proof. -/
+def pointGeneratedProof (𝕐 : Proof) (x : 𝕐.X) : Proof where
   X := {y : 𝕐.X // Relation.ReflTransGen (edge 𝕐.α) x y }
-  α := α_point 𝕐 x
-  h := by
+  α := αPoint 𝕐 x
+  step := by
     intro ⟨y, y_in⟩
-    have h := 𝕐.h y
-    simp_all only [r, α_point]
-    cases r_def : (𝕐.α y).1 <;> simp_all only [p, α_point, List.pmap, List.map_pmap, List.pmap_eq_map]
+    have h := 𝕐.step y
+    simp_all only [r, αPoint]
+    cases r_def : (𝕐.α y).1 <;> simp_all only [p, αPoint, List.pmap, List.map_pmap, List.pmap_eq_map]
 
-lemma node_in_pg_sequent_in_FL (𝕏 : Proof) (x : 𝕏.X) : ∀ y : (PointGeneratedProof 𝕏 x).X, f (r (α_point 𝕏 x) y) ⊆ Sequent.FL (f (r 𝕏.α x)) := by
-  simp [PointGeneratedProof, r]
-  intro y x_y
-  exact path_in_FL x_y
+lemma node_in_pg_sequent_in_FL (𝕏 : Proof) (x : 𝕏.X) :
+  ∀ y : (pointGeneratedProof 𝕏 x).X, f (r (αPoint 𝕏 x) y) ⊆ Sequent.FL (f (r 𝕏.α x)) := by
+  simp [pointGeneratedProof, r]
+  exact fun y x_y ↦ path_in_FL x_y
 
-/- FILTRATIONS -/
+/-! # Filtration of GL-Proofs -/
 
+/-- Equivelance relation used for Filtration. -/
 instance instSetoidX (𝕏 : Proof) : Setoid 𝕏.X where
   r x y := f (r 𝕏.α x) = f (r 𝕏.α y)
   iseqv := ⟨by intro x; exact rfl,
             by intro x y h; exact Eq.symm h,
             by intro x y z h1 h2; exact Eq.trans h1 h2⟩
 
-@[simp] noncomputable def α_quot 𝕐 (x : Quotient (instSetoidX 𝕐)) :=
+/-- Structure morphism for Filtration. -/
+@[simp] noncomputable def αQuot 𝕐 (x : Quotient (instSetoidX 𝕐)) :=
   T.map (Quotient.mk (instSetoidX 𝕐)) (𝕐.α (Quotient.out x))
 
-noncomputable def Filtration (𝕐 : Proof) : Proof where
+/-- Filtration of a GL-Proof is a GL-proof. -/
+noncomputable def filtration (𝕐 : Proof) : Proof where
   X := Quotient (instSetoidX 𝕐)
-  -- x := ⟦𝕐.x⟧
-  α := α_quot 𝕐
-  h := by
+  α := αQuot 𝕐
+  step := by
     intro x
     cases x using Quotient.inductionOn
     case h x =>
       have hyp := fun x ↦ @Quotient.mk_out _ (instSetoidX 𝕐) x
-      have h := 𝕐.h (@Quotient.out _ (instSetoidX 𝕐) ⟦x⟧)
-      simp only [r,p,α_quot,T] at *
+      have h := 𝕐.step (@Quotient.out _ (instSetoidX 𝕐) ⟦x⟧)
+      simp only [r,p,αQuot,T] at *
       convert h <;> simp_all
       all_goals
         intro x x_in
         exact hyp x
 
-/- SMALL MODEL PROPERTY -/
+/-! # Finite Model Property -/
 
-
-def Proves (𝕏 : Proof) (Δ : Sequent) : Prop := ∃ x : 𝕏.X, f (r 𝕏.α x) = Δ
-def Formula.isTrue (φ : Formula) : Prop := ∃ 𝕏 : Proof, Proves 𝕏 {φ}
-def Sequent.isTrue (Δ : Sequent) : Prop := ∃ 𝕏 : Proof, Proves 𝕏 Δ
-
-infixr:6 "⊢" => Proves
-prefix:40 "⊢" => Formula.isTrue
-prefix:40 "⊢" => Sequent.isTrue
-
+/-- Given a proof of `Δ` there exists a finite proof of `Δ`-/
 theorem finite_proof_of_proof (𝕏 : Proof) (Δ : Sequent) : (𝕏 ⊢ Δ) → ∃ 𝕐, Finite 𝕐.X ∧ (𝕐 ⊢ Δ) := by
   intro X_proves_Δ
   have ⟨x, f_Δ⟩ := X_proves_Δ
-  use PointGeneratedProof (Filtration 𝕏) (Quotient.mk (instSetoidX 𝕏) x)
+  use pointGeneratedProof (filtration 𝕏) (Quotient.mk (instSetoidX 𝕏) x)
   constructor
-  -- · refine ⟨?_, by simp⟩ -- just to get rid of the true thing
   · have h : Finite (Sequent.FL Δ).powerset := by
       apply Set.finite_coe_iff.1
       apply Finset.finite_toSet
-    apply @Finite.of_injective _ _ h (fun y ↦ ⟨f (r ((PointGeneratedProof (Filtration 𝕏) ⟦x⟧).α) y), by
+    apply @Finite.of_injective _ _ h (fun y ↦ ⟨f (r ((pointGeneratedProof (filtration 𝕏) ⟦x⟧).α) y), by
       simp only [Finset.mem_powerset]
-      have in_fl := node_in_pg_sequent_in_FL (Filtration 𝕏) ⟦x⟧ y
+      have in_fl := node_in_pg_sequent_in_FL (filtration 𝕏) ⟦x⟧ y
       convert in_fl
-      simp [←f_Δ, Filtration, r]
+      simp [←f_Δ, filtration, r]
       exact Eq.symm $ Quotient.mk_out x⟩)
     simp [Function.Injective]
     intro z1 z2 f_z_eq
-    simp [PointGeneratedProof, Filtration, r] at f_z_eq
+    simp [pointGeneratedProof, filtration, r] at f_z_eq
     apply Subtype.ext
     apply Quotient.out_equiv_out.1
     exact f_z_eq
   · use ⟨Quotient.mk (instSetoidX 𝕏) x, Relation.ReflTransGen.refl⟩
     rw [←f_Δ]
-    simp [r, Filtration, PointGeneratedProof]
+    simp [r, filtration, pointGeneratedProof]
     exact Quotient.mk_out x
 
-/- THEOREMS ABOUT LOOPS -/
+/-! # Properties of (infinite) paths -/
 
-def nb_edge {X : Type u} (α : X → T.obj X) (x y : X) := y ∈ p α x ∧ ¬ (r α x).isBox
+def nbEdge {X : Type} (α : X → T.obj X) (x y : X) := y ∈ p α x ∧ ¬ (r α x).isBox
 
 lemma lt_if_not_box_edge {𝕏 : Proof} {x y : 𝕏.X} :
-  (x_y : nb_edge 𝕏.α x y) → Sequent.size (f (r 𝕏.α y)) < Sequent.size (f (r 𝕏.α x)) := by
+  (x_y : nbEdge 𝕏.α x y) → Sequent.length (f (r 𝕏.α y)) < Sequent.length (f (r 𝕏.α x)) := by
   intro ⟨x_y, not_box⟩
-  have h := 𝕏.h x
-  cases r_def : (r 𝕏.α x) <;> simp_all only [RuleApp.isBox]
+  have h := 𝕏.step x
+  cases r_def : (r 𝕏.α x) <;> simp_all only [RuleApp.isBox, List.not_mem_nil, not_true_eq_false]
   case and Δ A B and_in =>
     have := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) x_y
     simp [h, -Finset.union_singleton] at this
     rcases this with l | l
     · rw [l, fₙ_alternate, f]
-      simp only [Sequent.size]
-      exact @helper _ _ Δ {A} (A & B) _ and_in (by grind [Formula.size])
+      simp only [Sequent.length]
+      exact @Finset.sum_diff_singleton_lt _ _ Δ {A} (A & B) _ and_in (by grind [Formula.length])
     · rw [l, fₙ_alternate, f]
-      simp only [Sequent.size]
-      exact @helper _ _ Δ {B} (A & B) _ and_in (by grind [Formula.size])
-
+      simp only [Sequent.length]
+      exact @Finset.sum_diff_singleton_lt _ _ Δ {B} (A & B) _ and_in (by grind [Formula.length])
   case or Δ A B or_in =>
     have l := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) x_y
     simp [h, -Finset.union_insert] at l
     · rw [l, fₙ_alternate, f]
-      simp only [Sequent.size]
-      apply @helper _ _ Δ {A, B} (A v B) _ or_in (by grind [Formula.size])
-  all_goals
-    simp_all
+      simp only [Sequent.length]
+      exact @Finset.sum_diff_singleton_lt _ _ Δ {A, B} (A v B) _ or_in (by grind [Formula.length])
 
+/-- Every infinite path has an infinite number of nodes which are box rule applications. -/
 theorem inf_path_has_inf_boxes {𝕏 : Proof} (g : ℕ → 𝕏.X) (h : ∀ n, edge 𝕏.α (g n) (g (n + 1))) :
   ∀ n, ∃ m, (r 𝕏.α (g (n + m))).isBox := by
     intro n
     by_contra h2
     simp at h2
     apply (wellFounded_iff_isEmpty_descending_chain.1 (@wellFounded_lt ℕ _ _)).false
-    use fun m ↦ Sequent.size (f (r 𝕏.α (g (n + m))))
-    intro m
-    apply lt_if_not_box_edge ⟨h (n + m), h2 m⟩
+    use fun m ↦ Sequent.length (f (r 𝕏.α (g (n + m))))
+    exact fun m ↦ lt_if_not_box_edge ⟨h (n + m), by simp_all⟩
 
-
-def equiv (A : Formula) (B : Formula) : Prop :=
-  (∃ (𝕏 : Proof), 𝕏 ⊢ {~A, B}) ∧ (∃ (𝕏 : Proof), 𝕏 ⊢ {A, ~B})
-infixr:7 "≅" => equiv
-
-theorem not_prove_empty : ¬ ∃ 𝕏, 𝕏 ⊢ {} := by
-  by_contra con
-  have ⟨𝕏, x, x_em⟩ := con
-  cases rule : r 𝕏.α x <;> simp_all [f, r] <;> aesop
-
-lemma form_in_seq_size_le {A : Formula} {Δ : Sequent} : A ∈ Δ → A.size ≤ Δ.size :=
-  fun A_in ↦ (Finset.sum_le_sum_of_subset_of_nonneg (Finset.singleton_subset_iff.2 A_in) (by simp) : A.size ≤ Δ.size)
+-- def equiv (A : Formula) (B : Formula) : Prop :=
+--   (∃ (𝕏 : Proof), 𝕏 ⊢ {~A, B}) ∧ (∃ (𝕏 : Proof), 𝕏 ⊢ {A, ~B})
+-- infixr:7 "≅" => equiv

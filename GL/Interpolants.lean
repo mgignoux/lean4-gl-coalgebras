@@ -1,16 +1,22 @@
 import GL.Logic
--- import GL.CoalgebraProof
 import GL.SplitCoalgebraProof
 import Mathlib.Data.Fintype.Defs
 import GL.Semantics
 import GL.FixedPointTheorem
 import GL.SplitCompleteness2
 
+/-! ## Finding interpolants
+
+Here we show that given a finite GL-split proof, we can always find suitable interpolants.
+-/
+
 namespace Split
 
+/-- Get the entire underlying sequent of a finite proof. -/
 def Proof.Sequent (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Sequent :=
   fin_X.elems.biUnion (fun x ↦ (f (r 𝕏.α x)).image (Sum.elim id id))
 
+/-- Find `n` such that for all `m ≥ n`, `m` is not in an the variables of the proof. -/
 def Proof.freeVar (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Nat :=
   Sequent.freshVar (Proof.Sequent 𝕏)
 
@@ -18,29 +24,35 @@ theorem at_in_lt_freeVar {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {n : Nat} (h : 
   have 𝕏_ne : 𝕏.Sequent ≠ ∅ := by aesop
   simp [Proof.freeVar, Sequent.freshVar, 𝕏_ne]
   apply Nat.lt_of_succ_le
-  · apply Finset.le_max'
-    simp
-    exact ⟨at n, h, by simp [Formula.freshVar]⟩
+  apply Finset.le_max'
+  simp
+  exact ⟨at n, h, by simp [Formula.freshVar]⟩
 
+/-- For each `x` in a finite proof, find a free variable. -/
 noncomputable def encodeVar {𝕏 : Proof} [Fintype 𝕏.X] : 𝕏.X → Nat :=
   fun x ↦ 𝕏.freeVar + Fintype.equivFin 𝕏.X x
 
+/-- Given `n` which is in the range of the free variables, unencode `n` back to its node in the proof. -/
 noncomputable def unencodeVar {𝕏 : Proof} [Fintype 𝕏.X] (n : Nat) (h1 : n - 𝕏.freeVar < Fintype.card 𝕏.X) : 𝕏.X :=
   (Fintype.equivFin 𝕏.X).symm ⟨n - 𝕏.freeVar, h1⟩
 
+/-- The encodeVar function is injective. -/
 lemma encodeVar_inj (𝕏 : Proof) [Fintype 𝕏.X] : Function.Injective (@encodeVar 𝕏 _) := by
   simp [Function.Injective]
   intro x y hyp
   simp [encodeVar, Fin.val_eq_val] at hyp
   exact hyp
 
-@[simp] -- the other version using Function.Injective does not work well with simp
-lemma encodeVar_inj' (𝕏 : Proof) [Fintype 𝕏.X] (x y : 𝕏.X) : @encodeVar 𝕏 _ x = @encodeVar 𝕏 _ y ↔ x = y := by
+/-- The encodeVar function is injective. This version works better with simp than `encodeVar_inj`. -/
+@[simp]
+lemma encodeVar_inj' (𝕏 : Proof) [Fintype 𝕏.X] (x y : 𝕏.X) : @encodeVar 𝕏 _ x = @encodeVar 𝕏 _ y ↔ x = y := by --encodeVar_inj
   simp [encodeVar, Fin.val_eq_val]
 
+/-- unencodeVar is a left inverse of encodeVar. -/
 lemma encodeVar_inv (𝕏 : Proof) [Fintype 𝕏.X] (x : 𝕏.X) : unencodeVar (encodeVar x) (by simp [encodeVar]) = x := by
   simp [unencodeVar, encodeVar]
 
+/-- encodeVar is a left inverse of unencodeVar. -/
 lemma unencodeVar_inv (𝕏 : Proof) [Fintype 𝕏.X] (n : ℕ) (h1) (h2 : n ≥ 𝕏.freeVar) : encodeVar (@unencodeVar 𝕏 _ n h1) = n := by
   simp [unencodeVar, encodeVar]
   omega
@@ -51,6 +63,16 @@ lemma at_in_not_encodeVar {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {n : Nat} (h :
   subst con
   simp_all [encodeVar]
 
+theorem encodeVar_eq {𝕏 : Proof} {Fin_X : Fintype 𝕏.X} {x : 𝕏.X} {n : ℕ} {h1} {h2 : n ≥ 𝕏.freeVar} : encodeVar x = n ↔ x = unencodeVar n h1 := by
+  constructor
+  · intro mp
+    subst mp
+    simp [encodeVar_inv]
+  · intro mpp
+    subst mpp
+    apply unencodeVar_inv
+    exact h2
+
 noncomputable def equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Formula := match r : r 𝕏.α x with
   | RuleApp.topₗ _ _ => ⊥
   | RuleApp.topᵣ _ _ => ⊤
@@ -58,30 +80,30 @@ noncomputable def equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) 
   | RuleApp.axₗᵣ _ k _ => na k
   | RuleApp.axᵣₗ _ k _ => at k
   | RuleApp.axᵣᵣ _ _ _ => ⊤
-  | RuleApp.orₗ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))
-  | RuleApp.orᵣ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))
-  | RuleApp.andₗ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map]))) v at (encodeVar ((p 𝕏.α x)[1]'(by have := 𝕏.h x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map])))
-  | RuleApp.andᵣ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map]))) & at (encodeVar ((p 𝕏.α x)[1]'(by have := 𝕏.h x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map])))
-  | RuleApp.boxₗ _ _ _ => ◇ at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))
-  | RuleApp.boxᵣ _ _ _ => □ at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.h x; simp [r] at this; aesop)))
+  | RuleApp.orₗ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.step x; simp [r] at this; aesop)))
+  | RuleApp.orᵣ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.step x; simp [r] at this; aesop)))
+  | RuleApp.andₗ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.step x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map]))) v at (encodeVar ((p 𝕏.α x)[1]'(by have := 𝕏.step x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map])))
+  | RuleApp.andᵣ _ _ _ _ => at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.step x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map]))) & at (encodeVar ((p 𝕏.α x)[1]'(by have := 𝕏.step x; simp [r] at this; apply congrArg List.length at this; simp_all [List.length_map])))
+  | RuleApp.boxₗ _ _ _ => ◇ at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.step x; simp [r] at this; aesop)))
+  | RuleApp.boxᵣ _ _ _ => □ at (encodeVar ((p 𝕏.α x)[0]'(by have := 𝕏.step x; simp [r] at this; aesop)))
 
-theorem helper_1 {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} {n : ℕ} (h : n ∈ Finset.image encodeVar Y) : n - 𝕏.freeVar < Fintype.card 𝕏.X := by
+lemma encodeVar_helper₁ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} {n : ℕ} (h : n ∈ Finset.image encodeVar Y) : n - 𝕏.freeVar < Fintype.card 𝕏.X := by
   simp [encodeVar] at h
   have ⟨y, y_in, y_eq⟩ := h
   rw [←y_eq]
   simp
 
-theorem helper_2 {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} {n : ℕ} (h : n ∈ Finset.image encodeVar Y) : unencodeVar n (helper_1 h) ∈ Y := by
+lemma encodeVar_helper₂ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} {n : ℕ} (h : n ∈ Finset.image encodeVar Y) : unencodeVar n (encodeVar_helper₁ h) ∈ Y := by
   simp [encodeVar] at h
   have ⟨y, y_in, y_eq⟩ := h
   simp [←y_eq, unencodeVar, y_in]
 
--- apply_substitution
+/-- Extend a substitution specific to encoded variables to all formulas. -/
 noncomputable def extend {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} (Y_sub : Y ⊆ fin_X.elems) (σ : {x : 𝕏.X // x ∈ Y} → Formula) : Formula → Formula
   | ⊥ => ⊥
   | ⊤ => ⊤
-  | at n => if h : n ∈ Y.image encodeVar then σ ⟨unencodeVar n (helper_1 h), helper_2 h⟩ else at n
-  | na n => if h : n ∈ Y.image encodeVar then ~ σ ⟨unencodeVar n (helper_1 h), helper_2 h⟩ else na n
+  | at n => if h : n ∈ Y.image encodeVar then σ ⟨unencodeVar n (encodeVar_helper₁ h), encodeVar_helper₂ h⟩ else at n
+  | na n => if h : n ∈ Y.image encodeVar then ~ σ ⟨unencodeVar n (encodeVar_helper₁ h), encodeVar_helper₂ h⟩ else na n
   | A & B => (extend Y_sub σ A) & (extend Y_sub σ B)
   | A v B => (extend Y_sub σ A) v (extend Y_sub σ B)
   | □ A => □ (extend Y_sub σ A)
@@ -95,7 +117,8 @@ theorem partial_const {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → F
   all_goals
     aesop
 @[simp]
-theorem Finset.doubleton_subset_iff {α : Type} [DecidableEq α] {s : Finset α} {a b : α} : {a, b} ⊆ s ↔ a ∈ s ∧ b ∈ s := by simp [Finset.subset_iff]
+
+lemma Finset.doubleton_subset_iff {α : Type} [DecidableEq α] {s : Finset α} {a b : α} : {a, b} ⊆ s ↔ a ∈ s ∧ b ∈ s := by simp [Finset.subset_iff]
 
 theorem extend_in {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} (Y_sub : Y ⊆ fin_X.elems) (σ : {x : 𝕏.X // x ∈ Y} → Formula) (A : Formula) :
   (∀ y ∈ Y, encodeVar y ∉ Formula.vocab A) → (A = extend Y_sub σ A) := by
@@ -105,6 +128,7 @@ theorem extend_in {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} (Y
   all_goals
     aesop
 
+/-- From the paper: If py ∈ χx then x ◁ y. -/
 theorem encodeVar_in_equation_imp_edge {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {x y : 𝕏.X} :
   encodeVar y ∈ (equation x).vocab → (edge 𝕏.α) x y := by
   unfold equation
@@ -126,9 +150,7 @@ theorem encodeVar_in_equation_imp_edge {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {
   all_goals
     aesop
 
-def SplitSequent.left (Γ : SplitSequent) : Sequent := Γ.filterMap (Sum.getLeft?) (by aesop)
-def SplitSequent.right (Γ : SplitSequent) : Sequent := Γ.filterMap (Sum.getRight?) (by aesop)
-
+/-- From the paper: If p ∈ χx then p ∈ Voc(fˡ(x)) ∩ Voc(fʳ(x)) or p = py and x ◁ y -/
 theorem var_in_equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {x : 𝕏.X} (n : ℕ) :
   n ∈ (equation x).vocab → n ∈ (SplitSequent.left (f (r 𝕏.α x))).vocab ∩ (SplitSequent.right (f (r 𝕏.α x))).vocab
   ∨ ∃ y, encodeVar y = n ∧ (edge 𝕏.α) x y := by
@@ -141,29 +163,7 @@ theorem var_in_equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {x : 𝕏.X} (n 
     simp [r, f, SplitSequent.left, SplitSequent.right, Sequent.vocab]
     grind [Formula.vocab]
 
-  -- induction D <;> induction E <;> simp [single] <;> try exact h
-  -- case bottom.atom n =>
-  --   have ⟨𝕏, x, x_prop⟩ := h.2
-  --   have := @_root_.fₚ_sub_f (_root_.r 𝕏.α x)
-  --   rcases r : (_root_.r 𝕏.α x) <;>
-  --     simp_all [_root_.f, Formula.neg, _root_.fₚ]
-  -- case atom.bottom n =>
-  --   have ⟨𝕏, x, x_prop⟩ := h.1
-  --   have := @_root_.fₚ_sub_f (_root_.r 𝕏.α x)
-  --   rcases r : (_root_.r 𝕏.α x) <;>
-  --     simp_all [_root_.f, Formula.neg, _root_.fₚ]
-  -- case bottom.neg_atom n =>
-  --   have ⟨𝕏, x, x_prop⟩ := h.2
-  --   have := @_root_.fₚ_sub_f (_root_.r 𝕏.α x)
-  --   rcases r : (_root_.r 𝕏.α x) <;>
-  --     simp_all [_root_.f, Formula.neg, _root_.fₚ]
-  -- case neg_atom.bottom n =>
-  --   have ⟨𝕏, x, x_prop⟩ := h.1
-  --   have := @_root_.fₚ_sub_f (_root_.r 𝕏.α x)
-  --   rcases r : (_root_.r 𝕏.α x) <;>
-  --     simp_all [_root_.f, Formula.neg, _root_.fₚ]
-  -- all_goals
-
+/-- Helper for Solution strong, gives interaction between single substitution and partial substitution. -/
 theorem Solution_strong_helper {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) (n : ℕ) {B A : Formula}
   : single n B (partial_ σ A) = @partial_ (fun m ↦ p m ∨ m = n) _ (fun m ↦ single n B (if h : p m then σ ⟨m, h⟩ else at m)) A := by
   induction A
@@ -178,7 +178,7 @@ theorem Solution_strong_helper {p : Nat → Prop} [DecidablePred p] (σ : Subtyp
       by_cases m = n
       case pos n_eq_m => simp [n_eq_m, ↓reduceDIte]
       case neg n_ne_m => simp [not_pm, n_ne_m, single]
-  case neg_atom m =>
+  case negAtom m =>
     simp only [partial_]
     by_cases p m
     case pos pm =>
@@ -195,54 +195,13 @@ theorem Solution_strong_helper {p : Nat → Prop} [DecidablePred p] (σ : Subtyp
   case box A ih => simp [partial_, single, ih]
   case diamond A ih => simp [partial_, single, ih]
 
-noncomputable section
-theorem finite_and_no_loop_implies_exists_leaf {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (h : 𝕏.X → Prop) (x : 𝕏.X) (x_sat : h x):
-(¬ ∃ y, Relation.TransGen (edge_restr h) y y)
-    → ∃ y : 𝕏.X, h y ∧ ∀ z ∈ (p 𝕏.α y), ¬ h z := by
-  intro mp
-  by_contra con
-  simp_all
-  let chain : Nat → {x : 𝕏.X // h x} := Nat.rec ⟨x, x_sat⟩ (fun n ih => ⟨(con ih.1 ih.2).choose, (con ih.1 ih.2).choose_spec.2⟩)
-  have chain_prop : ∀ n, (edge_restr h) (chain n).1 (chain (n + 1)).1 := by
-    intro n
-    induction n <;> simp [edge_restr, chain]
-    case zero =>
-      exact ⟨(Exists.choose_spec (con x x_sat)).1 , x_sat, (Exists.choose_spec (con x x_sat)).2⟩
-    case succ n ih =>
-      exact ⟨(Exists.choose_spec (con (chain (n + 1)).1 (chain (n + 1)).2)).1, ih.2.2, (Exists.choose_spec (con (chain (n + 1)) ih.2.2)).2⟩
-  -- we now have an infinite chain, so we just so it is injective
-  have ci_cj : ∀ k n, Relation.TransGen (edge_restr h) (chain k).1 (chain (k + n + 1)).1 := by
-    intro m n
-    induction n
-    case zero => exact Relation.TransGen.single (chain_prop _)
-    case succ k ih => exact Relation.TransGen.tail ih (chain_prop (m + k + 1))
-  have chain_inj : Function.Injective chain := by
-    intro i j con
-    rcases Nat.lt_trichotomy i j with lt | eq | gt
-    · exfalso
-      apply mp (chain i).1
-      have ⟨k, diff⟩ := Nat.exists_eq_add_of_lt lt
-      convert ci_cj i k
-      simp [con, diff]
-    · exact eq
-    · exfalso
-      apply mp (chain i).1
-      have ⟨k, diff⟩ := Nat.exists_eq_add_of_lt gt
-      convert ci_cj j k
-      simp [diff]
-  have inf_X := Infinite.of_injective chain chain_inj
-  apply inf_X.not_finite
-  apply Subtype.finite
-
-
-
-
 open Classical in
-def Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
+/-- Strong solution towards finding interpolants. -/
+noncomputable def Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
   {Y : Finset 𝕏.X} (Y_sub : Y ⊆ fin_X.elems) :
     {n // n ∈ Y.image encodeVar} → Formula :=
     if em_con : Y = ∅ then (fun ⟨n, n_prop⟩ ↦ False.elim (by simp_all)) else
-    if loop_con : ∃ y, Relation.TransGen (edge_restr (fun x ↦ x ∈ Y)) y y then
+    if loop_con : ∃ y, Relation.TransGen (edgeRestr (fun x ↦ x ∈ Y)) y y then
       have box_in_Y := exists_box_on_restr_loop loop_con.choose (fun x ↦ x ∈ Y) loop_con.choose_spec
       let box := box_in_Y.choose
       have τ := @Solution_strong _ _ (Y \ {box}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
@@ -256,7 +215,7 @@ def Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
         · unfold equation
           split <;> simp_all
           simp [partial_, Formula.isBox]
-      have ψ := (FixedPointTheorem_simple (partial_ τ (equation box)) (encodeVar box) box_or_dia).choose -- I think this is what we want
+      have ψ := (fixed_point_theorem_box_or_dia (partial_ τ (equation box)) (encodeVar box) box_or_dia).choose -- I think this is what we want
       fun n ↦ (single (encodeVar box) ψ) (partial_ τ (at n))
     else
       have y_in_Y : ∃ y, y ∈ Y := by by_contra h; apply em_con; apply Finset.eq_empty_of_forall_notMem; simp_all
@@ -264,7 +223,6 @@ def Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
       let leaf := leaf_in_Y.choose
       let τ := @Solution_strong _ _ (Y \ {leaf}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
       fun n ↦ (single (encodeVar leaf) (equation leaf)) (partial_ τ (at n))
-
 termination_by Finset.card Y
 decreasing_by
   · have box_in : box ∈ Y := box_in_Y.choose_spec.2.1
@@ -276,138 +234,27 @@ decreasing_by
 
 theorem equiv_help {C D E : Formula} (h : C ≅ D) (g : D = E) : (C ≅ E) := by aesop
 
--- ∀ m ∈ σ (pₓ), m ∈ (l(x)) ∩ r(x)) ∪ (X / Y) p ∈ ψ [q/φ]
-
-theorem in_single_voc' {m n : ℕ} {φ ψ : Formula} : m ∈ (single n φ ψ).vocab → (m ∈ φ.vocab ∧ n ∈ ψ.vocab) ∨ (m ∈ ψ.vocab ∧ m ≠ n) := by
-  intro m_in
-  induction ψ <;> simp_all [single] <;> try grind [Formula.vocab, in_neg_voc_iff, Formula.instTop, Formula.instBot]
-
-theorem in_vocab_of_path_left {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y) {n} (n_in : n ∈ (SplitSequent.left (f (r 𝕏.α y))).vocab)
-  : n ∈ (SplitSequent.left (f (r 𝕏.α x))).vocab := by
-  induction x_y
-  case refl => exact n_in
-  case tail y z x_y y_z ih =>
-    apply ih
-    have Xh := 𝕏.h y
-    simp [SplitSequent.left, Sequent.vocab] at n_in
-    have ⟨φ, φ_in_f, n_in_φ⟩ := n_in
-    cases r_def : r 𝕏.α y <;> simp_all [edge] <;> simp [f, SplitSequent.left, Sequent.vocab]
-    case andₗ Δ φ₁ φ₂ in_Δ =>
-      have := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) y_z
-      simp_all
-      rcases this with l | l <;> simp [l, fₙ_alternate] at φ_in_f
-      all_goals
-      · rcases φ_in_f with c1 | c2
-        · exact ⟨φ₁ & φ₂, in_Δ, by simp [Formula.vocab, c1 ▸ n_in_φ]⟩
-        · exact ⟨φ, c2.1, n_in_φ⟩
-    case andᵣ Δ φ₁ φ₂ in_Δ =>
-      have := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) y_z
-      simp_all
-      rcases this with l | l <;> simp [l, fₙ_alternate] at φ_in_f
-      all_goals
-        exact ⟨φ, φ_in_f, n_in_φ⟩
-    case orₗ Δ φ₁ φ₂ in_Δ =>
-      have ⟨z, _, f_eq⟩ := Xh
-      simp_all [fₙ_alternate]
-      subst y_z
-      rcases φ_in_f with c1 | c2 | c3
-      · exact ⟨φ₁ v φ₂, in_Δ, by simp [Formula.vocab, c1 ▸ n_in_φ]⟩
-      · exact ⟨φ₁ v φ₂, in_Δ, by simp [Formula.vocab, c2 ▸ n_in_φ]⟩
-      · exact ⟨φ, c3.1, n_in_φ⟩
-    case orᵣ Δ φ₁ φ₂ in_Δ =>
-      have ⟨z, _, f_eq⟩ := Xh
-      simp_all [fₙ_alternate]
-    case boxₗ Δ φ₁ in_Δ =>
-      have ⟨z, _, f_eq⟩ := Xh
-      simp_all [fₙ_alternate, SplitSequent.D]
-      subst y_z
-      rcases φ_in_f with c1 | c2 | c3
-      · exact ⟨□φ₁, in_Δ, by simp [Formula.vocab, c1 ▸ n_in_φ]⟩
-      · exact ⟨φ, c2.1.1, n_in_φ⟩
-      · exact ⟨◇φ, c3, by simp [Formula.vocab, n_in_φ]⟩
-    case boxᵣ Δ φ₁ in_Δ =>
-      have ⟨z, _, f_eq⟩ := Xh
-      simp_all [fₙ_alternate, SplitSequent.D]
-      rcases φ_in_f with c1 | c2
-      · exact ⟨φ, c1.1, n_in_φ⟩
-      · exact ⟨◇φ, c2, by simp [Formula.vocab, n_in_φ]⟩
-
-theorem in_vocab_of_path_right {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y) {n} (n_in : n ∈ (SplitSequent.right (f (r 𝕏.α y))).vocab)
-  : n ∈ (SplitSequent.right (f (r 𝕏.α x))).vocab := by
-  induction x_y
-  case refl => exact n_in
-  case tail y z x_y y_z ih =>
-    apply ih
-    have Xh := 𝕏.h y
-    simp [SplitSequent.right, Sequent.vocab] at n_in
-    have ⟨φ, φ_in_f, n_in_φ⟩ := n_in
-    cases r_def : r 𝕏.α y <;> simp_all [edge] <;> simp [f, SplitSequent.right, Sequent.vocab]
-    case andᵣ Δ φ₁ φ₂ in_Δ =>
-      have := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) y_z
-      simp_all
-      rcases this with l | l <;> simp [l, fₙ_alternate] at φ_in_f
-      all_goals
-      · rcases φ_in_f with c1 | c2
-        · exact ⟨φ₁ & φ₂, in_Δ, by simp [Formula.vocab, c1 ▸ n_in_φ]⟩
-        · exact ⟨φ, c2.1, n_in_φ⟩
-    case andₗ Δ φ₁ φ₂ in_Δ =>
-      have := @List.mem_map_of_mem _ _ _ _ (fun x ↦ f (r 𝕏.α x)) y_z
-      simp_all
-      rcases this with l | l <;> simp [l, fₙ_alternate] at φ_in_f
-      all_goals
-        exact ⟨φ, φ_in_f, n_in_φ⟩
-    case orᵣ Δ φ₁ φ₂ in_Δ =>
-      have ⟨z, _, f_eq⟩ := Xh
-      simp_all [fₙ_alternate]
-      subst y_z
-      rcases φ_in_f with c1 | c2 | c3
-      · exact ⟨φ₁ v φ₂, in_Δ, by simp [Formula.vocab, c1 ▸ n_in_φ]⟩
-      · exact ⟨φ₁ v φ₂, in_Δ, by simp [Formula.vocab, c2 ▸ n_in_φ]⟩
-      · exact ⟨φ, c3.1, n_in_φ⟩
-    case orₗ Δ φ₁ φ₂ in_Δ =>
-      have ⟨z, _, f_eq⟩ := Xh
-      simp_all [fₙ_alternate]
-    case boxᵣ Δ φ₁ in_Δ =>
-      have ⟨z, _, f_eq⟩ := Xh
-      simp_all [fₙ_alternate, SplitSequent.D]
-      subst y_z
-      rcases φ_in_f with c1 | c2 | c3
-      · exact ⟨□φ₁, in_Δ, by simp [Formula.vocab, c1 ▸ n_in_φ]⟩
-      · exact ⟨φ, c2.1.1, n_in_φ⟩
-      · exact ⟨◇φ, c3, by simp [Formula.vocab, n_in_φ]⟩
-    case boxₗ Δ φ₁ in_Δ =>
-      have ⟨z, _, f_eq⟩ := Xh
-      simp_all [fₙ_alternate, SplitSequent.D]
-      rcases φ_in_f with c1 | c2
-      · exact ⟨φ, c1.1, n_in_φ⟩
-      · exact ⟨◇φ, c2, by simp [Formula.vocab, n_in_φ]⟩
-
-theorem encodeVar_eq {𝕏 : Proof} {Fin_X : Fintype 𝕏.X} {x : 𝕏.X} {n : ℕ} {h1} {h2 : n ≥ 𝕏.freeVar} : encodeVar x = n ↔ x = unencodeVar n h1 := by
-  constructor
-  · intro mp
-    subst mp
-    simp [encodeVar_inv]
-  · intro mpp
-    subst mpp
-    apply unencodeVar_inv
-    exact h2
+-- theorem in_single_voc' {m n : ℕ} {φ ψ : Formula} : m ∈ (single n φ ψ).vocab → (m ∈ φ.vocab ∧ n ∈ ψ.vocab) ∨ (m ∈ ψ.vocab ∧ m ≠ n) := by
+--   intro m_in
+--   induction ψ <;> simp_all [single] <;> try grind [Formula.vocab, in_neg_voc_iff, Formula.instTop, Formula.instBot]
 
 set_option maxHeartbeats 1000000 in
 open Classical in
+/-- Proves the `Solution_strong` satisfies the necessary properties. -/
 theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
   (Y : Finset 𝕏.X) (Y_sub : Y ⊆ fin_X.elems) :
       ∀ n : {n // n ∈ Y.image encodeVar},
-          ((Solution_strong Y_sub n = partial_ (Solution_strong Y_sub) (equation (unencodeVar n (helper_1 n.2))))
-         ∨ (Solution_strong Y_sub n ≅ partial_ (Solution_strong Y_sub) (equation (unencodeVar n (helper_1 n.2)))))
-       ∧ (∀ m ∈ (Solution_strong Y_sub n).vocab, m ∈ ((SplitSequent.left (f (r 𝕏.α (unencodeVar n (helper_1 n.2))))).vocab ∩ (SplitSequent.right (f (r 𝕏.α (unencodeVar n (helper_1 n.2))))).vocab) ∪ (fin_X.elems.image encodeVar \ Y.image encodeVar))
-       ∧ (∀ y : 𝕏.X, encodeVar y ∈ (partial_ (Solution_strong Y_sub) (at n)).vocab → (Relation.ReflTransGen (edge 𝕏.α)) (unencodeVar n (helper_1 n.2)) y)
+          ((Solution_strong Y_sub n = partial_ (Solution_strong Y_sub) (equation (unencodeVar n (encodeVar_helper₁ n.2))))
+         ∨ (Solution_strong Y_sub n ≅ partial_ (Solution_strong Y_sub) (equation (unencodeVar n (encodeVar_helper₁ n.2)))))
+       ∧ (∀ m ∈ (Solution_strong Y_sub n).vocab, m ∈ ((SplitSequent.left (f (r 𝕏.α (unencodeVar n (encodeVar_helper₁ n.2))))).vocab ∩ (SplitSequent.right (f (r 𝕏.α (unencodeVar n (encodeVar_helper₁ n.2))))).vocab) ∪ (fin_X.elems.image encodeVar \ Y.image encodeVar))
+       ∧ (∀ y : 𝕏.X, encodeVar y ∈ (partial_ (Solution_strong Y_sub) (at n)).vocab → (Relation.ReflTransGen (edge 𝕏.α)) (unencodeVar n (encodeVar_helper₁ n.2)) y)
        := by
   unfold Solution_strong
   intro ⟨n, n_in⟩
   by_cases em_con : Y = ∅
   · subst em_con
     simp at n_in
-  · by_cases loop_con : ∃ y, Relation.TransGen (edge_restr (fun x ↦ x ∈ Y)) y y
+  · by_cases loop_con : ∃ y, Relation.TransGen (edgeRestr (fun x ↦ x ∈ Y)) y y
     case pos =>
       simp [em_con, loop_con]
       have box_in_Y := exists_box_on_restr_loop loop_con.choose (fun x ↦ x ∈ Y) loop_con.choose_spec
@@ -422,29 +269,29 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
         · unfold equation
           split <;> simp_all
           simp [partial_, Formula.isBox]
-      have fpt := (FixedPointTheorem_simple (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose)) (encodeVar box_in_Y.choose) box_or_dia)
+      have fpt := (fixed_point_theorem_box_or_dia (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose)) (encodeVar box_in_Y.choose) box_or_dia)
       have const := partial_const (Solution_strong Z_sub) (at (encodeVar box_in_Y.choose)) (by
         simp [Formula.vocab, Finset.mem_singleton, forall_eq])
       have ⟨z, p_eq, z_in, box_z⟩ : ∃ z, p 𝕏.α box_in_Y.choose = [z] ∧ z ∈ Y ∧ z ∈ p 𝕏.α box_in_Y.choose := by
         have is_box := box_in_Y.choose_spec.1
-        have Xh := 𝕏.h box_in_Y.choose
+        have Xh := 𝕏.step box_in_Y.choose
         cases r_def : r 𝕏.α box_in_Y.choose <;> simp [r_def] at is_box <;> simp [RuleApp.isBox] at is_box <;> simp [r_def] at Xh
         all_goals
         refine ⟨Xh.choose, Xh.choose_spec.1, ?_, ?_⟩
         · by_cases box_is_z : box_in_Y.choose = Xh.choose
           · simp [←box_is_z]
             exact box_in_Y.choose_spec.2.1
-          · have ⟨d, box_d⟩ : ∃ d, Relation.TransGen (edge_restr fun x ↦ x ∈ Y) box_in_Y.choose d := by
+          · have ⟨d, box_d⟩ : ∃ d, Relation.TransGen (edgeRestr fun x ↦ x ∈ Y) box_in_Y.choose d := by
               exact ⟨box_in_Y.choose, box_in_Y.choose_spec.2.2⟩
             cases box_d using Relation.TransGen.head_induction_on
             case neg.single box_d =>
-              unfold edge_restr edge at box_d
+              unfold edgeRestr edge at box_d
               convert box_d.2.2
               have := Xh.choose_spec.1
               rw [this] at box_d
               exact Eq.symm $ List.mem_singleton.1 box_d.1
             case neg.head box_d heq =>
-              unfold edge_restr edge at box_d
+              unfold edgeRestr edge at box_d
               convert box_d.2.2
               have := Xh.choose_spec.1
               rw [this] at box_d
@@ -459,7 +306,7 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
       case pos y_eq_box =>
         subst y_eq_box
         refine ⟨?_, ?_, ?_⟩
-        · right -- double check this
+        · right
           simp [partial_, single, encodeVar_inv]
           have h : fpt.choose ≅ (single (encodeVar box_in_Y.choose) fpt.choose (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose))) := equiv_iff_sem_equiv.1 fpt.choose_spec.2.1
           convert h using 1
@@ -513,11 +360,11 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
       case neg y_ne_box =>
         have n_in' : n ∈ Finset.image encodeVar (Y \ {box_in_Y.choose}) := by
           simp only [Finset.mem_image, Finset.mem_sdiff, Finset.mem_singleton]
-          refine ⟨unencodeVar n (helper_1 n_in), ⟨helper_2 n_in, ?_⟩, ?_⟩
+          refine ⟨unencodeVar n (encodeVar_helper₁ n_in), ⟨encodeVar_helper₂ n_in, ?_⟩, ?_⟩
           · intro con
             apply y_ne_box
             simp [←con, encodeVar, unencodeVar]
-            have := helper_1 n_in
+            have := encodeVar_helper₁ n_in
             simp at n_in
             have ⟨y, y_in, y_eq⟩ := n_in
             subst y_eq
@@ -532,7 +379,7 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
         · rcases eq_or_equiv with eq | equiv
           · left
             simp [partial_, n_in', eq]
-            convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar box_in_Y.choose) fpt.choose (equation (unencodeVar n (helper_1 n_in)))
+            convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar box_in_Y.choose) fpt.choose (equation (unencodeVar n (encodeVar_helper₁ n_in)))
             · simp
               constructor
               · intro ⟨y, y_in, y_eq⟩
@@ -581,7 +428,7 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
             have := single_preserves_equiv (encodeVar box_in_Y.choose) _ _ fpt.choose equiv
             apply equiv_help this
 
-            convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar box_in_Y.choose) fpt.choose (equation (unencodeVar n (helper_1 n_in)))
+            convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar box_in_Y.choose) fpt.choose (equation (unencodeVar n (encodeVar_helper₁ n_in)))
             · simp
               constructor
               · intro mp
@@ -641,9 +488,9 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
               simp at m_in
               rcases m_in with m_in_seq | m_in_var
               · refine Or.inl ⟨?_, ?_⟩
-                · apply @in_vocab_of_path_left 𝕏 (unencodeVar n (helper_1 n_in)) z ?_ m (by convert m_in_seq.1; simp [encodeVar_inv])
+                · apply @in_vocab_of_path_left 𝕏 (unencodeVar n (encodeVar_helper₁ n_in)) z ?_ m (by convert m_in_seq.1; simp [encodeVar_inv])
                   exact Relation.ReflTransGen.tail (path box_in_Y.choose box_in_τ) box_z
-                · apply @in_vocab_of_path_right 𝕏 (unencodeVar n (helper_1 n_in)) z ?_ m (by convert m_in_seq.2; simp [encodeVar_inv])
+                · apply @in_vocab_of_path_right 𝕏 (unencodeVar n (encodeVar_helper₁ n_in)) z ?_ m (by convert m_in_seq.2; simp [encodeVar_inv])
                   exact Relation.ReflTransGen.tail (path box_in_Y.choose box_in_τ) box_z
               · refine Or.inr ⟨m_in_var.1, ?_⟩
                 · intro x x_in con
@@ -709,7 +556,6 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
           rw [←z_prop.2] at n_in
           have y_z := encodeVar_in_equation_imp_edge n_in
           exact leaf_in_Y.choose_spec.2 _ y_z z_prop.1
-
         · simp [←const, single]
           intro m m_in_eq
           rcases var_in_equation _ m_in_eq with ax_or | desc
@@ -733,11 +579,11 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
       case neg y_ne_box =>
         have n_in' : n ∈ Finset.image encodeVar (Y \ {leaf_in_Y.choose}) := by
           simp only [Finset.mem_image, Finset.mem_sdiff, Finset.mem_singleton]
-          refine ⟨unencodeVar n (helper_1 n_in), ⟨helper_2 n_in, ?_⟩, ?_⟩
+          refine ⟨unencodeVar n (encodeVar_helper₁ n_in), ⟨encodeVar_helper₂ n_in, ?_⟩, ?_⟩
           · intro con
             apply y_ne_box
             simp [←con, encodeVar, unencodeVar]
-            have := helper_1 n_in
+            have := encodeVar_helper₁ n_in
             simp at n_in
             have ⟨y, y_in, y_eq⟩ := n_in
             subst y_eq
@@ -752,7 +598,7 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
         · rcases eq_or_equiv with eq | equiv
           · left
             simp [partial_, n_in', eq]
-            convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) (equation (unencodeVar n (helper_1 n_in)))
+            convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) (equation (unencodeVar n (encodeVar_helper₁ n_in)))
             · simp
               constructor
               · intro mp
@@ -800,7 +646,7 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
             have := single_preserves_equiv (encodeVar leaf_in_Y.choose) _ _ (equation leaf_in_Y.choose) equiv
             apply equiv_help this
 
-            convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) (equation (unencodeVar n (helper_1 n_in)))
+            convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) (equation (unencodeVar n (encodeVar_helper₁ n_in)))
             · simp
               constructor
               · intro mp

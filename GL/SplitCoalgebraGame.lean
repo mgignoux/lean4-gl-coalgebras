@@ -8,8 +8,16 @@ namespace Split
 abbrev Builder := Player.A
 abbrev Prover := Player.B
 
+/-! ## The GL-split game.
+
+Builder-Prover game for constructive counter-models/proofs. Builder gets a rule application `R` and
+plays an applicable sequent `Γ` in order to construct a counter-model. Prover get a sequent `Γ` and
+plays rule applications `R` in order to construct a proof.
+-/
+
 set_option maxHeartbeats 300000
-def SplitSequent.RuleApps (Γ : SplitSequent) : Finset RuleApp :=
+/-- The available rule applications for a sequent `Γ`. -/
+def SplitSequent.ruleApps (Γ : SplitSequent) : Finset RuleApp :=
   let f : SplitFormula → Option RuleApp := fun φ ↦
     if φ_in : φ ∈ Γ then match φ with
     | Sum.inl ⊤ => RuleApp.topₗ Γ φ_in
@@ -34,7 +42,8 @@ def SplitSequent.RuleApps (Γ : SplitSequent) : Finset RuleApp :=
   all_goals
     cases φ <;> cases ψ <;> grind [f])
 
-def RuleApp.SplitSequents (R : RuleApp) : Finset SplitSequent := match R with
+/-- The sequents possible after a rule application `R`. -/
+def RuleApp.splitSequents (R : RuleApp) : Finset SplitSequent := match R with
   | RuleApp.topₗ _ _ => ∅
   | RuleApp.topᵣ _ _ => ∅
   | RuleApp.axₗₗ _ _ _ => ∅
@@ -48,15 +57,17 @@ def RuleApp.SplitSequents (R : RuleApp) : Finset SplitSequent := match R with
   | RuleApp.boxₗ Δ φ _ => {(Δ \ {Sum.inl (□ φ)}).D ∪ {Sum.inl φ}}
   | RuleApp.boxᵣ Δ φ _ => {(Δ \ {Sum.inr (□ φ)}).D ∪ {Sum.inr φ}}
 
-abbrev gamePos := (SplitSequent ⊕ RuleApp) × List SplitSequent × List RuleApp
+/-- Note: the game stores the history of which rule applications have come prior. -/
+abbrev GamePos := (SplitSequent ⊕ RuleApp) × List SplitSequent × List RuleApp
 
-inductive move : gamePos → gamePos → Prop
-  | prover  {R Rs Γ Γs} : R ∈ SplitSequent.RuleApps Γ → move ⟨Sum.inl Γ, Γs, Rs⟩ ⟨Sum.inr R, Γ :: Γs, Rs⟩
-  | builder {R Rs Γ Γs} : Γ ∈ R.SplitSequents → Γ ∉ Γs → move ⟨Sum.inr R, Γs, Rs⟩ ⟨Sum.inl Γ, Γs, R :: Rs⟩
+inductive Move : GamePos → GamePos → Prop
+  | prover  {R Rs Γ Γs} : R ∈ SplitSequent.ruleApps Γ → Move ⟨Sum.inl Γ, Γs, Rs⟩ ⟨Sum.inr R, Γ :: Γs, Rs⟩
+  | builder {R Rs Γ Γs} : Γ ∈ R.splitSequents → Γ ∉ Γs → Move ⟨Sum.inr R, Γs, Rs⟩ ⟨Sum.inl Γ, Γs, R :: Rs⟩ -- no repeat sequents allowed!
 
-set_option maxHeartbeats 300000
-theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLeft))
-(g1_g2 : Relation.ReflTransGen (Relation.Comp move move) g1 g2) : g2.1.getLeft h3 ∈ (g1.1.getLeft h1).FL.powerset := by
+set_option maxHeartbeats 300000 in
+/-- Given two consecutive Prover moves, the latter move is in the FL closure of the prior. -/
+theorem move_move_in_FL {g1 g2 : GamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLeft))
+(g1_g2 : Relation.ReflTransGen (Relation.Comp Move Move) g1 g2) : g2.1.getLeft h3 ∈ (g1.1.getLeft h1).FL.powerset := by
   simp
   induction g1_g2
   case refl => exact SplitSequent.FL_refl
@@ -70,13 +81,13 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
       rcases g2 with ⟨Γ | R, Γs, Rs⟩ <;> cases g2_g
       simp_all
       rename_i Γ''_R' R'_Γ _
-      have ih := SplitSequent.FL_subset ih
+      have ih := SplitSequent.FL_mon ih
       simp [SplitSequent.FL_idem] at ih
       apply trans ?_ ih
-      rcases R' <;> simp only [RuleApp.SplitSequents, Finset.mem_singleton, Finset.notMem_empty, Finset.mem_insert] at Γ''_R'
+      rcases R' <;> simp only [RuleApp.splitSequents, Finset.mem_singleton, Finset.notMem_empty, Finset.mem_insert] at Γ''_R'
       case orₗ Δ φ ψ in_Δ =>
         subst Γ''_R'
-        simp [SplitSequent.RuleApps] at R'_Γ
+        simp [SplitSequent.ruleApps] at R'_Γ
         rcases R'_Γ with R'_Γ | R'_Γ
         · have ⟨φ, φ_in, h⟩ := R'_Γ
           rcases φ <;> simp at h <;> try grind
@@ -91,7 +102,7 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
           rcases φ <;> simp at h; grind
       case orᵣ Δ φ ψ in_Δ =>
         subst Γ''_R'
-        simp [SplitSequent.RuleApps] at R'_Γ
+        simp [SplitSequent.ruleApps] at R'_Γ
         rcases R'_Γ with R'_Γ | R'_Γ
         · have ⟨φ, φ_in, h⟩ := R'_Γ
           rcases φ <;> simp at h; grind
@@ -107,7 +118,7 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
       case andₗ Δ φ ψ in_Δ =>
         rcases Γ''_R' with l | l <;> subst l
         all_goals
-          simp [SplitSequent.RuleApps] at R'_Γ
+          simp [SplitSequent.ruleApps] at R'_Γ
           rcases R'_Γ with R'_Γ | R'_Γ
           · have ⟨φ, φ_in, h⟩ := R'_Γ
             rcases φ <;> simp at h <;> try grind
@@ -122,7 +133,7 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
       case andᵣ Δ φ ψ in_Δ =>
         rcases Γ''_R' with l | l <;> subst l
         all_goals
-          simp [SplitSequent.RuleApps] at R'_Γ
+          simp [SplitSequent.ruleApps] at R'_Γ
           rcases R'_Γ with R'_Γ | R'_Γ
           · have ⟨φ, φ_in, h⟩ := R'_Γ
             rcases φ <;> simp at h; grind
@@ -136,7 +147,7 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
             · exact ⟨Sum.inr (φ & ψ), in_Δ, by simp [SplitFormula.FL, SplitFormula.FL_refl]⟩
       case boxₗ Δ φ in_Δ =>
         subst Γ''_R'
-        simp [SplitSequent.RuleApps] at R'_Γ
+        simp [SplitSequent.ruleApps] at R'_Γ
         rcases R'_Γ with R'_Γ | R'_Γ
         · have ⟨φ, φ_in, h⟩ := R'_Γ
           rcases φ <;> simp at h <;> try grind
@@ -158,7 +169,7 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
           rcases φ <;> simp at h; grind
       case boxᵣ Δ φ in_Δ =>
         subst Γ''_R'
-        simp [SplitSequent.RuleApps] at R'_Γ
+        simp [SplitSequent.ruleApps] at R'_Γ
         rcases R'_Γ with R'_Γ | R'_Γ
         · have ⟨φ, φ_in, h⟩ := R'_Γ
           rcases φ <;> simp at h; grind
@@ -182,8 +193,8 @@ theorem move_move_in_FL {g1 g2 : gamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLef
 /- This is the main helper for showing there is no infinite chain, we do it 'from prover'
 because that is where the FL properties are more readily available, but in fact it could
 be from prover or builder. -/
-lemma no_inf_chain_from_prover (g : ℕ → gamePos)
-  (g_rel : ∀ (n : ℕ), Function.swap move (g (n + 1)) (g n)) (h : (g 0).1.isLeft) : False := by
+lemma no_inf_chain_from_prover (g : ℕ → GamePos)
+  (g_rel : ∀ (n : ℕ), Function.swap Move (g (n + 1)) (g n)) (h : (g 0).1.isLeft) : False := by
   rcases g0_def : g 0 with ⟨Γ | R, Γs, Rs⟩ <;> simp [g0_def] at h
   have f_helper : ∀ n, (g (2 * n)).1.isLeft = true := by
     intro n
@@ -207,7 +218,7 @@ lemma no_inf_chain_from_prover (g : ℕ → gamePos)
 
   let f : ℕ → SplitSequent := fun n ↦ (g (2 * n)).1.getLeft (f_helper n)
 
-  have g0_gn : ∀ n, Relation.ReflTransGen move (g 0) (g n) := by
+  have g0_gn : ∀ n, Relation.ReflTransGen Move (g 0) (g n) := by
     intro n
     induction n
     case zero => exact Relation.ReflTransGen.refl
@@ -312,7 +323,8 @@ lemma no_inf_chain_from_prover (g : ℕ → gamePos)
   apply Set.finite_coe_iff.1
   apply Finset.finite_toSet
 
-lemma matchesFinite : WellFounded (Function.swap move) := by
+/-- The game is converse well-founded. -/
+lemma matches_finite : WellFounded (Function.swap Move) := by
   rw [wellFounded_iff_isEmpty_descending_chain]
   by_contra hyp
   simp at hyp
@@ -329,14 +341,14 @@ lemma matchesFinite : WellFounded (Function.swap move) := by
       cases this
 
 def coalgebraGame : Game where
-  Pos := gamePos --  (Sequent ⊕ RuleApp) × List Sequent × List RuleApp
+  Pos := GamePos -- = (SplitSequent ⊕ RuleApp) × List SplitSequent × List RuleApp
   turn
-    | ⟨Sum.inl _, _, _⟩ => Prover -- picks rule
-    | ⟨Sum.inr _, _, _⟩ => Builder -- picks sequent
+    | ⟨Sum.inl _, _, _⟩ => Prover -- picks RuleApp
+    | ⟨Sum.inr _, _, _⟩ => Builder -- picks SplitSequent
   moves
-    | ⟨Sum.inl Γ, Γs, Rs⟩ => Finset.map ⟨fun R ↦ ⟨Sum.inr R, Γ :: Γs, Rs⟩, by intro r1 r2; simp⟩ (SplitSequent.RuleApps Γ)
-    | ⟨Sum.inr R, Γs, Rs⟩ => Finset.filterMap (fun Γ ↦ if Γ ∈ Γs then none else some ⟨Sum.inl Γ, Γs, R :: Rs⟩) R.SplitSequents (by grind)
-  wf := ⟨fun x y ↦ move y x, matchesFinite⟩
+    | ⟨Sum.inl Γ, Γs, Rs⟩ => Finset.map ⟨fun R ↦ ⟨Sum.inr R, Γ :: Γs, Rs⟩, by intro r1 r2; simp⟩ (SplitSequent.ruleApps Γ)
+    | ⟨Sum.inr R, Γs, Rs⟩ => Finset.filterMap (fun Γ ↦ if Γ ∈ Γs then none else some ⟨Sum.inl Γ, Γs, R :: Rs⟩) R.splitSequents (by grind)
+  wf := ⟨fun x y ↦ Move y x, matches_finite⟩
   move_rel := by
     intro ⟨info, Γs, Rs⟩ ⟨info', Γs', Rs'⟩ hyp
     rcases info with Γ | R
@@ -344,14 +356,15 @@ def coalgebraGame : Game where
       have ⟨R, R_prop, eq1, eq2, eq3⟩ := hyp
       subst_eqs
       simp
-      apply move.prover R_prop
+      exact Move.prover R_prop
     · simp at hyp
       have ⟨Γ, Γ_prop, nin, eq1, eq2, eq3⟩ := hyp
       subst_eqs
       simp
-      apply move.builder Γ_prop nin
+      exact Move.builder Γ_prop nin
 
-theorem move_iff_in_moves {g g' : coalgebraGame.Pos} : move g g' ↔ g' ∈ coalgebraGame.moves g := by
+/-- Move relation and being in the set of game moves are equivalent. -/
+theorem move_iff_in_moves {g g' : coalgebraGame.Pos} : Move g g' ↔ g' ∈ coalgebraGame.moves g := by
   constructor
   · intro g_g'
     unfold Game.moves
@@ -359,3 +372,5 @@ theorem move_iff_in_moves {g g' : coalgebraGame.Pos} : move g g' ↔ g' ∈ coal
     cases g_g' <;> simp_all
   · intro in_moves
     exact @coalgebraGame.move_rel g g' in_moves
+
+abbrev startPos (Γ : SplitSequent) : GamePos := ⟨Sum.inl Γ, [], []⟩

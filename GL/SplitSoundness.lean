@@ -1,5 +1,3 @@
--- Soundness1: Soundness of the basic split sequent system!
-
 import Mathlib.Data.Finset.Basic
 import Mathlib.Order.CompleteLattice.Basic
 import Mathlib.Order.FixedPoints
@@ -9,10 +7,14 @@ import GL.Semantics
 import GL.SplitCoalgebraProof
 import GL.SplitCutCoalgebraProof
 
+/-! ## Soundness of GL-split proof system. -/
+
 namespace SplitCut
 
 open Classical in
 set_option maxHeartbeats 300000 in
+/-- Helper for soundness, Given a proof of `Γ` and a countermodel of `Γ`, find a path in the proof
+    and the model -/
 noncomputable def chain
   {𝕏 : Proof}
   {x : 𝕏.X}
@@ -21,8 +23,8 @@ noncomputable def chain
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate_sseq (M, w) Γ)
-  (n : Nat) : (y : 𝕏.X) × {u : W // ¬ Evaluate_sseq ⟨M, u⟩ (f (r 𝕏.α y))}
+  (w_prop : ¬evaluateSSeq (M, w) Γ)
+  (n : Nat) : (y : 𝕏.X) × {u : W // ¬ evaluateSSeq ⟨M, u⟩ (f (r 𝕏.α y))}
     := match n with
        | 0 => ⟨x, ⟨w, by simp_all⟩⟩
        | n + 1 =>
@@ -31,98 +33,98 @@ noncomputable def chain
         match r_def : r 𝕏.α x_ih with
         | .skp Δ => match p_def : p 𝕏.α x_ih with
           | [y] =>
-            have h : ¬Evaluate_sseq (M, w_ih) (f (r 𝕏.α y)) := by
-              have 𝕏h_x_ih := 𝕏.h x_ih
+            have h : ¬evaluateSSeq (M, w_ih) (f (r 𝕏.α y)) := by
+              have 𝕏h_x_ih := 𝕏.step x_ih
               simp [r_def, p_def, -Finset.union_singleton] at 𝕏h_x_ih
               convert w_ih_prop using 2
               rw [𝕏h_x_ih, r_def]
               ⟨y, w_ih, h⟩
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | y :: z :: l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | y :: z :: l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
 
         | .cutₗ Δ φ => match p_def : p 𝕏.α x_ih with
           | [y,z] =>
-            if w_ih_nφ : ¬Evaluate (M, w_ih) φ
+            if w_ih_nφ : ¬evaluate (M, w_ih) φ
             then
               ⟨y, w_ih, by
-                have := 𝕏.h x_ih
+                have := 𝕏.step x_ih
                 simp [r_def, p_def, -Finset.union_singleton, fₙ_alternate] at this
-                simp [Evaluate_sseq, this.1, w_ih_nφ]
+                simp [evaluateSSeq, this.1, w_ih_nφ]
                 intro χ χ_in con
                 apply w_ih_prop
                 exact ⟨Sum.inr χ, r_def ▸ χ_in, con⟩
               ⟩
             else
               ⟨z, w_ih, by
-                have w_ih_nnφ : ¬Evaluate (M, w_ih) (~φ) := by
-                  simp [Evaluate_neg]
+                have w_ih_nnφ : ¬evaluate (M, w_ih) (~φ) := by
+                  simp [evaluate_neg]
                   tauto
-                have := 𝕏.h x_ih
+                have := 𝕏.step x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at this
-                simp [Evaluate_sseq, this.2, w_ih_nnφ, fₙ_alternate]
+                simp [evaluateSSeq, this.2, w_ih_nnφ, fₙ_alternate]
                 intro χ χ_in con
                 apply w_ih_prop
                 exact ⟨Sum.inl χ, r_def ▸ χ_in, con⟩
               ⟩
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | [y] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | x::y::z::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | [y] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | x::y::z::l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
         | .cutᵣ Δ φ => match p_def : p 𝕏.α x_ih with
           | [y,z] =>
-            if w_ih_nφ : ¬Evaluate (M, w_ih) φ
+            if w_ih_nφ : ¬evaluate (M, w_ih) φ
             then
               ⟨y, w_ih, by
-                have := 𝕏.h x_ih
+                have := 𝕏.step x_ih
                 simp [r_def, p_def, -Finset.union_singleton, fₙ_alternate] at this
-                simp [Evaluate_sseq, this.1, w_ih_nφ]
+                simp [evaluateSSeq, this.1, w_ih_nφ]
                 intro χ χ_in con
                 apply w_ih_prop
                 exact ⟨Sum.inl χ, r_def ▸ χ_in, con⟩
               ⟩
             else
               ⟨z, w_ih, by
-                have w_ih_nnφ : ¬Evaluate (M, w_ih) (~φ) := by
-                  simp [Evaluate_neg]
+                have w_ih_nnφ : ¬evaluate (M, w_ih) (~φ) := by
+                  simp [evaluate_neg]
                   tauto
-                have := 𝕏.h x_ih
+                have := 𝕏.step x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at this
-                simp [Evaluate_sseq, this.2, w_ih_nnφ, fₙ_alternate]
+                simp [evaluateSSeq, this.2, w_ih_nnφ, fₙ_alternate]
                 intro χ χ_in con
                 apply w_ih_prop
                 exact ⟨Sum.inr χ, r_def ▸ χ_in, con⟩
               ⟩
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | [y] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | x::y::z::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | [y] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | x::y::z::l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
         | .wkₗ Δ φ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y] =>
-            have h : ¬Evaluate_sseq (M, w_ih) (f (r 𝕏.α y)) := by
-              have := 𝕏.h x_ih
+            have h : ¬evaluateSSeq (M, w_ih) (f (r 𝕏.α y)) := by
+              have := 𝕏.step x_ih
               simp [r_def, p_def, -Finset.union_singleton, fₙ_alternate] at this
               simp [r_def, f] at w_ih_prop
               simp [this]
               tauto
             ⟨y, w_ih, h⟩
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | x::y::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | x::y::l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
 
         | .wkᵣ Δ φ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y] =>
-            have h : ¬Evaluate_sseq (M, w_ih) (f (r 𝕏.α y)) := by
-              have := 𝕏.h x_ih
+            have h : ¬evaluateSSeq (M, w_ih) (f (r 𝕏.α y)) := by
+              have := 𝕏.step x_ih
               simp [r_def, p_def, -Finset.union_singleton, fₙ_alternate] at this
               simp [r_def, f] at w_ih_prop
               simp [this]
               tauto
             ⟨y, w_ih, h⟩
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | x::y::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | x::y::l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
 
         | .topₗ Δ in_Δ => False.elim (by simp [r_def, f] at w_ih_prop; have := w_ih_prop.1 ⊤ in_Δ; simp_all)
         | .topᵣ Δ in_Δ => False.elim (by simp [r_def, f] at w_ih_prop; have := w_ih_prop.2 ⊤ in_Δ; simp_all)
         | .axₗₗ Δ n in_Δ =>
           False.elim (by
-            by_cases Evaluate ⟨M, w_ih⟩ (at n)
+            by_cases evaluate ⟨M, w_ih⟩ (at n)
             case pos w_n =>
               simp [r_def, f] at w_ih_prop
               have := w_ih_prop.1 (at n) in_Δ.1
@@ -133,7 +135,7 @@ noncomputable def chain
               simp_all)
         | .axₗᵣ Δ n in_Δ =>
           False.elim (by
-            by_cases Evaluate ⟨M, w_ih⟩ (at n)
+            by_cases evaluate ⟨M, w_ih⟩ (at n)
             case pos w_n =>
               simp [r_def, f] at w_ih_prop
               have := w_ih_prop.1 (at n) in_Δ.1
@@ -144,7 +146,7 @@ noncomputable def chain
               simp_all)
         | .axᵣₗ Δ n in_Δ =>
           False.elim (by
-            by_cases Evaluate ⟨M, w_ih⟩ (at n)
+            by_cases evaluate ⟨M, w_ih⟩ (at n)
             case pos w_n =>
               simp [r_def, f] at w_ih_prop
               have := w_ih_prop.2 (at n) in_Δ.1
@@ -155,7 +157,7 @@ noncomputable def chain
               simp_all)
         | .axᵣᵣ Δ n in_Δ =>
           False.elim (by
-            by_cases Evaluate ⟨M, w_ih⟩ (at n)
+            by_cases evaluate ⟨M, w_ih⟩ (at n)
             case pos w_n =>
               simp [r_def, f] at w_ih_prop
               have := w_ih_prop.2 (at n) in_Δ.1
@@ -167,12 +169,12 @@ noncomputable def chain
         | .andₗ Δ φ₁ φ₂ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y,z] =>
             have := not_and_or.1 $ fun x ↦ (not_exists.1 w_ih_prop) (Sum.inl (φ₁ & φ₂)) ⟨(r_def ▸ in_Δ), x⟩
-            if w_ih_nφ₁ : ¬Evaluate (M, w_ih) φ₁
+            if w_ih_nφ₁ : ¬evaluate (M, w_ih) φ₁
             then
               ⟨y, w_ih, by
-                have := 𝕏.h x_ih
+                have := 𝕏.step x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at this
-                simp [Evaluate_sseq, this.1, w_ih_nφ₁, fₙ_alternate]
+                simp [evaluateSSeq, this.1, w_ih_nφ₁, fₙ_alternate]
                 constructor
                 · intro χ χ_in χ_not con
                   apply w_ih_prop
@@ -183,10 +185,10 @@ noncomputable def chain
               ⟩
             else
               ⟨z, w_ih, by
-                have w_ih_nφ₂ : ¬Evaluate (M, w_ih) φ₂ := by simp_all
-                have := 𝕏.h x_ih
+                have w_ih_nφ₂ : ¬evaluate (M, w_ih) φ₂ := by simp_all
+                have := 𝕏.step x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at this
-                simp [Evaluate_sseq, this.2, w_ih_nφ₂, fₙ_alternate]
+                simp [evaluateSSeq, this.2, w_ih_nφ₂, fₙ_alternate]
                 constructor
                 · intro χ χ_in χ_not con
                   apply w_ih_prop
@@ -195,19 +197,19 @@ noncomputable def chain
                   apply w_ih_prop
                   exact ⟨Sum.inr χ, r_def ▸ χ_in, con⟩
               ⟩
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | [y] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | x::y::z::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | [y] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | x::y::z::l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
 
         | .andᵣ Δ φ₁ φ₂ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y,z] =>
             have := not_and_or.1 $ fun x ↦ (not_exists.1 w_ih_prop) (Sum.inr (φ₁ & φ₂)) ⟨(r_def ▸ in_Δ), x⟩
-            if w_ih_nφ₁ : ¬Evaluate (M, w_ih) φ₁
+            if w_ih_nφ₁ : ¬evaluate (M, w_ih) φ₁
             then
               ⟨y, w_ih, by
-                have := 𝕏.h x_ih
+                have := 𝕏.step x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at this
-                simp [Evaluate_sseq, this.1, w_ih_nφ₁, fₙ_alternate]
+                simp [evaluateSSeq, this.1, w_ih_nφ₁, fₙ_alternate]
                 constructor
                 · intro χ χ_in con
                   apply w_ih_prop
@@ -218,10 +220,10 @@ noncomputable def chain
               ⟩
             else
               ⟨z, w_ih, by
-                have w_ih_nφ₂ : ¬Evaluate (M, w_ih) φ₂ := by simp_all
-                have := 𝕏.h x_ih
+                have w_ih_nφ₂ : ¬evaluate (M, w_ih) φ₂ := by simp_all
+                have := 𝕏.step x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at this
-                simp [Evaluate_sseq, this.2, w_ih_nφ₂, fₙ_alternate]
+                simp [evaluateSSeq, this.2, w_ih_nφ₂, fₙ_alternate]
                 constructor
                 · intro χ χ_in con
                   apply w_ih_prop
@@ -230,17 +232,17 @@ noncomputable def chain
                   apply w_ih_prop
                   exact ⟨Sum.inr χ, r_def ▸ χ_in, con⟩
               ⟩
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | [y] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | x::y::z::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | [y] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | x::y::z::l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
 
         | .orₗ Δ φ₁ φ₂ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y] =>
             have := not_or.1 $ fun x ↦ (not_exists.1 w_ih_prop) (Sum.inl (φ₁ v φ₂)) ⟨(r_def ▸ in_Δ), x⟩
-            have h : ¬Evaluate_sseq (M, w_ih) (f (r 𝕏.α y)) := by
-              have 𝕏h_x_ih := 𝕏.h x_ih
+            have h : ¬evaluateSSeq (M, w_ih) (f (r 𝕏.α y)) := by
+              have 𝕏h_x_ih := 𝕏.step x_ih
               simp [r_def, p_def, -Finset.union_singleton] at 𝕏h_x_ih
-              simp [Evaluate_sseq, 𝕏h_x_ih, fₙ_alternate, this]
+              simp [evaluateSSeq, 𝕏h_x_ih, fₙ_alternate, this]
               constructor
               · intro χ χ_in _ con
                 apply w_ih_prop
@@ -249,16 +251,16 @@ noncomputable def chain
                 apply w_ih_prop
                 exact ⟨Sum.inr χ, r_def ▸ χ_in, con⟩
               ⟨y, w_ih, h⟩
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | x::y::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | x::y::l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
 
         | .orᵣ Δ φ₁ φ₂ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y] =>
             have := not_or.1 $ fun x ↦ (not_exists.1 w_ih_prop) (Sum.inr (φ₁ v φ₂)) ⟨(r_def ▸ in_Δ), x⟩
-            have h : ¬Evaluate_sseq (M, w_ih) (f (r 𝕏.α y)) := by
-              have 𝕏h_x_ih := 𝕏.h x_ih
+            have h : ¬evaluateSSeq (M, w_ih) (f (r 𝕏.α y)) := by
+              have 𝕏h_x_ih := 𝕏.step x_ih
               simp [r_def, p_def, -Finset.union_singleton] at 𝕏h_x_ih
-              simp [Evaluate_sseq, 𝕏h_x_ih, fₙ_alternate, this]
+              simp [evaluateSSeq, 𝕏h_x_ih, fₙ_alternate, this]
               constructor
               · intro χ χ_in con
                 apply w_ih_prop
@@ -267,22 +269,22 @@ noncomputable def chain
                 apply w_ih_prop
                 exact ⟨Sum.inr χ, r_def ▸ χ_in, con⟩
               ⟨y, w_ih, h⟩
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | x::y::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | x::y::l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
 
         | .boxₗ Δ φ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y] =>
               have := not_forall.1 $ fun x ↦ (not_exists.1 w_ih_prop) (Sum.inl (□ φ)) ⟨(r_def ▸ in_Δ), x⟩
               let w_next := this.choose
               have w_next_prop := Classical.not_imp.1 this.choose_spec
-              have h : ¬Evaluate_sseq (M, w_next) (f (r 𝕏.α y)) := by
-                have 𝕏h_x_ih := 𝕏.h x_ih
+              have h : ¬evaluateSSeq (M, w_next) (f (r 𝕏.α y)) := by
+                have 𝕏h_x_ih := 𝕏.step x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at 𝕏h_x_ih
-                simp [Evaluate_sseq, 𝕏h_x_ih, fₙ_alternate]
+                simp [evaluateSSeq, 𝕏h_x_ih, fₙ_alternate]
                 refine ⟨?_, ⟨?_, ?_⟩⟩
                 · exact w_next_prop.2
                 · simp [SplitSequent.D]
-                  simp [Evaluate_sseq, r_def, f] at w_ih_prop
+                  simp [evaluateSSeq, r_def, f] at w_ih_prop
                   intro χ χ_in con
                   rcases χ_in with ⟨⟨χ_in, χ_not_box_φ⟩, χ_di⟩ | diχ_Δ
                   · apply w_ih_prop.1 _ χ_in
@@ -292,7 +294,7 @@ noncomputable def chain
                       exact ⟨u, M.trans w_next_prop.1 w_next_u, u_χ'⟩
                   · exact w_ih_prop.1 _ diχ_Δ ⟨w_next, w_next_prop.1, con⟩
                 · simp [SplitSequent.D]
-                  simp [Evaluate_sseq, r_def, f] at w_ih_prop
+                  simp [evaluateSSeq, r_def, f] at w_ih_prop
                   intro χ χ_in con
                   rcases χ_in with ⟨χ_in, χ_di⟩ | diχ_Δ
                   · apply w_ih_prop.2 _ χ_in
@@ -302,22 +304,22 @@ noncomputable def chain
                       exact ⟨u, M.trans w_next_prop.1 w_next_u, u_χ'⟩
                   · exact w_ih_prop.2 _ diχ_Δ ⟨w_next, w_next_prop.1, con⟩
               ⟨y, w_next, h⟩
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | x::y::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | x::y::l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
         | .boxᵣ Δ φ in_Δ => match p_def : p 𝕏.α x_ih with
           | [y] =>
               have := not_forall.1 $ fun x ↦ (not_exists.1 w_ih_prop) (Sum.inr (□ φ)) ⟨(r_def ▸ in_Δ), x⟩
               let w_next := this.choose
               have w_next_prop := Classical.not_imp.1 this.choose_spec
 
-              have h : ¬Evaluate_sseq (M, w_next) (f (r 𝕏.α y)) := by
-                have 𝕏h_x_ih := 𝕏.h x_ih
+              have h : ¬evaluateSSeq (M, w_next) (f (r 𝕏.α y)) := by
+                have 𝕏h_x_ih := 𝕏.step x_ih
                 simp [r_def, p_def, -Finset.union_singleton] at 𝕏h_x_ih
-                simp [Evaluate_sseq, 𝕏h_x_ih, fₙ_alternate]
+                simp [evaluateSSeq, 𝕏h_x_ih, fₙ_alternate]
                 refine ⟨?_, ⟨?_, ?_⟩⟩
                 · exact w_next_prop.2
                 · simp [SplitSequent.D]
-                  simp [Evaluate_sseq, r_def, f] at w_ih_prop
+                  simp [evaluateSSeq, r_def, f] at w_ih_prop
                   intro χ χ_in con
                   rcases χ_in with ⟨χ_in, χ_di⟩ | diχ_Δ
                   · apply w_ih_prop.1 _ χ_in
@@ -327,7 +329,7 @@ noncomputable def chain
                       exact ⟨u, M.trans w_next_prop.1 w_next_u, u_χ'⟩
                   · exact w_ih_prop.1 _ diχ_Δ ⟨w_next, w_next_prop.1, con⟩
                 · simp [SplitSequent.D]
-                  simp [Evaluate_sseq, r_def, f] at w_ih_prop
+                  simp [evaluateSSeq, r_def, f] at w_ih_prop
                   intro χ χ_in con
                   rcases χ_in with ⟨⟨χ_in, χ_not_box_φ⟩, χ_di⟩ | diχ_Δ
                   · apply w_ih_prop.2 _ χ_in
@@ -337,10 +339,11 @@ noncomputable def chain
                       exact ⟨u, M.trans w_next_prop.1 w_next_u, u_χ'⟩
                   · exact w_ih_prop.2 _ diχ_Δ ⟨w_next, w_next_prop.1, con⟩
               ⟨y, w_next, h⟩
-          | [] => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
-          | x::y::l => False.elim (by have := 𝕏.h x_ih; simp [r_def, p_def] at this)
+          | [] => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
+          | x::y::l => False.elim (by have := 𝕏.step x_ih; simp [r_def, p_def] at this)
 
-set_option maxHeartbeats 40000000
+set_option maxHeartbeats 40000000 in
+/-- The left projection of `chain` is a chain in the proof. -/
 lemma chain_proof_prop
   {𝕏 : Proof}
   {x : 𝕏.X}
@@ -349,7 +352,7 @@ lemma chain_proof_prop
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate_sseq (M, w) Γ)
+  (w_prop : ¬evaluateSSeq (M, w) Γ)
   : ∀ n, edge 𝕏.α (chain prop w_prop n).1 (chain prop w_prop (n + 1)).1 := by
     intro n
     conv =>
@@ -360,6 +363,7 @@ lemma chain_proof_prop
     rcases chain prop w_prop n with ⟨x_ih, w_ih, w_ih_prop⟩
     cases r 𝕏.α (chain prop w_prop n).fst <;> grind [edge]
 
+/-- The right projection of `chain` makes progress in the model on box nodes. -/
 lemma chain_model_prop {𝕏 : Proof}
   {x : 𝕏.X}
   {Γ : SplitSequent}
@@ -367,7 +371,7 @@ lemma chain_model_prop {𝕏 : Proof}
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate_sseq (M, w) Γ)
+  (w_prop : ¬evaluateSSeq (M, w) Γ)
   : ∀ n, (¬ (r 𝕏.α (chain prop w_prop n).1).isBox →     (chain prop w_prop n).2.1 = (chain prop w_prop (n + 1)).2.1)
        ∧ (  (r 𝕏.α (chain prop w_prop n).1).isBox → M.R (chain prop w_prop n).2.1   (chain prop w_prop (n + 1)).2.1)
   := by
@@ -395,6 +399,7 @@ lemma chain_model_prop {𝕏 : Proof}
     simp
     split <;> try grind [RuleApp.isBox]
 
+/-- The right projection of `chain` eventually progresses. -/
 theorem has_children_of_chain_model {𝕏 : Proof}
   {x : 𝕏.X}
   {Γ : SplitSequent}
@@ -402,7 +407,7 @@ theorem has_children_of_chain_model {𝕏 : Proof}
   {W : Type}
   {M : Model W}
   {w : W}
-  (w_prop : ¬Evaluate_sseq (M, w) Γ) :
+  (w_prop : ¬evaluateSSeq (M, w) Γ) :
   ∀ n, ∃ m, M.R (chain prop w_prop n).2.1 (chain prop w_prop (n + m)).2.1 := by
   intro n
   by_contra h
@@ -435,9 +440,8 @@ theorem has_children_of_chain_model {𝕏 : Proof}
   have ⟨k, k_prop⟩ := 𝕏.path x ⟨(fun n ↦ (chain prop w_prop n).1), ⟨by simp [chain], chain_proof_prop prop w_prop⟩⟩ n
   exact g2 k k_prop
 
-/- Below are copied! -/
-noncomputable
-def inc_chain_eventual_inc_chain {β}
+/-- Progressing subchain of an eventually increasing chain -/
+noncomputable def inc_chain_eventual_inc_chain {β}
   {Q : β → β → Prop}
   {g : ℕ → β}
   (Q_prop : ∀ n, ∃ m, Q (g n) (g m))
@@ -448,6 +452,7 @@ def inc_chain_eventual_inc_chain {β}
       match inc_chain_eventual_inc_chain Q_prop n with
         | ⟨ih, ih_prop⟩ => ⟨g (Q_prop ih_prop.choose).choose, by simp⟩
 
+/-- An eventually progressing chain has an progressing subchain. -/
 theorem inc_chain_eventual_inc_chain_prop {β}
   {Q : β → β → Prop} {g : ℕ → β}
   (Q_prop : ∀ n, ∃ m, Q (g n) (g m)) :
@@ -465,7 +470,8 @@ theorem inc_chain_eventual_inc_chain_prop {β}
     convert this
     · exact ih_prop.choose_spec
 
-theorem Soundness (Γ : SplitSequent) : SplitSequent.isTrue Γ → ⊨ Γ := by
+/-- Soundness theorem for the GL-split proof system. -/
+theorem soundness_sseq (Γ : SplitSequent) : SplitSequent.isTrue Γ → ⊨ Γ := by
   intro mp
   have ⟨𝕏, x, prop⟩ := mp
   by_contra h
@@ -483,14 +489,14 @@ theorem Soundness (Γ : SplitSequent) : SplitSequent.isTrue Γ → ⊨ Γ := by
       have ⟨m, m_prop⟩ := has_children_of_chain_model prop w_prop n
       use n + m) k
 
--- we may want to adapt this to the most complex split sequent system! because a proof in this system will be a proof in that system, so we get soundness for free
-
--- we wanat completeness for this system because a proof in this system is a proof in the more complex system !
-
 end SplitCut
 
-@[simp]
-def α_conv (𝕏 : Split.Proof) : 𝕏.X → SplitCut.T.obj 𝕏.X := fun x ↦
+/-! ## Soundness of GL-split cut proof system.
+
+This soundness theorem follows by converting any GL-split proof into a GL-split cut proof. -/
+
+/-- Converts structure morphism for GL-split proof into a structure morphism for GL-split cut proofs. -/
+@[simp] def α_conv (𝕏 : Split.Proof) : 𝕏.X → SplitCut.T.obj 𝕏.X := fun x ↦
   match Split.r 𝕏.α x with
     | .topₗ Δ in_Δ => ⟨.topₗ Δ in_Δ, Split.p 𝕏.α x⟩
     | .topᵣ Δ in_Δ => ⟨.topᵣ Δ in_Δ, Split.p 𝕏.α x⟩
@@ -505,7 +511,7 @@ def α_conv (𝕏 : Split.Proof) : 𝕏.X → SplitCut.T.obj 𝕏.X := fun x ↦
     | .boxₗ Δ φ in_Δ => ⟨.boxₗ Δ φ in_Δ, Split.p 𝕏.α x⟩
     | .boxᵣ Δ φ in_Δ => ⟨.boxᵣ Δ φ in_Δ, Split.p 𝕏.α x⟩
 
--- If there is a Split proof then there is a SplitCut proof
+/-- If there is a GL-split proof of Γ then there is a GL-split cut proof of Γ. -/
 theorem SplitProofIsSplitCutProof (Γ : SplitSequent) : (Split.SplitSequent.isTrue Γ) → (SplitCut.SplitSequent.isTrue Γ) := by
   intro mp
   have ⟨𝕏, x, prop⟩ := mp
@@ -513,11 +519,11 @@ theorem SplitProofIsSplitCutProof (Γ : SplitSequent) : (Split.SplitSequent.isTr
   use {
     X := 𝕏.X
     α := α_conv 𝕏
-    h x := by
+    step x := by
       have helper : ∀ x, SplitCut.f (SplitCut.r (α_conv 𝕏) x) = Split.f (Split.r 𝕏.α x) := by
         intro x
         cases r_def : Split.r 𝕏.α x <;> simp_all only [α_conv, SplitCut.r, SplitCut.f, Split.f]
-      have := 𝕏.h x
+      have := 𝕏.step x
       cases r_def : Split.r 𝕏.α x <;> simp_all only [α_conv, SplitCut.r, SplitCut.p, Split.fₙ_alternate, SplitCut.fₙ_alternate]
     path x := by
       have h : ∀ x, (SplitCut.r (α_conv 𝕏) x).isBox ↔ (Split.r 𝕏.α x).isBox := by
@@ -529,14 +535,14 @@ theorem SplitProofIsSplitCutProof (Γ : SplitSequent) : (Split.SplitSequent.isTr
       convert step
       unfold SplitCut.edge Split.edge α_conv
       simp [SplitCut.p]
-      grind
-    }
+      grind}
   use x
   simp [←prop]
   cases r_def : Split.r 𝕏.α x <;> simp_all only [α_conv, SplitCut.r, SplitCut.f, Split.f]
 
 namespace Split
 
-theorem Soundness (Γ : SplitSequent) : SplitSequent.isTrue Γ → ⊨ Γ := by
+/-- Soundness theorem for the GL-split cut proof system. -/
+theorem soundness_sseq (Γ : SplitSequent) : SplitSequent.isTrue Γ → ⊨ Γ := by
   intro mp
-  exact SplitCut.Soundness Γ (SplitProofIsSplitCutProof Γ mp)
+  exact SplitCut.soundness_sseq Γ (SplitProofIsSplitCutProof Γ mp)

@@ -12,14 +12,17 @@ import Mathlib.Tactic
 import Mathlib.Data.Setoid.Partition
 import Mathlib.Data.Finset.Lattice.Basic
 
-@[simp]
-noncomputable def SplitSequent.filter_left  : SplitSequent → SplitSequent := @Finset.filter _ (fun | Sum.inl _ => true | Sum.inr _ => false) (fun | Sum.inl _ => isTrue (by simp) | Sum.inr _ => isFalse (by simp))
+/-! ## Defining GL-ext proof systems.
 
-@[simp]
-noncomputable def SplitSequent.filter_right : SplitSequent → SplitSequent := @Finset.filter _ (fun | Sum.inl _ => false | Sum.inr _ => true) (fun | Sum.inl _ => isFalse (by simp) | Sum.inr _ => isTrue (by simp))
+Here we define the GL-ext proof system along with finitization and basic properties. We use the
+namespace SplitCut to distinguish from our general GL-proofs.
+-/
 
 namespace SplitCut
-universe u
+
+/-! # Basic components of the GL-ext proof system.-/
+
+/-- Rule applications for the GL-ext proof system. -/
 inductive RuleApp
   | skp : (Δ : SplitSequent) → RuleApp
   | cutₗ : (Δ : SplitSequent) → (A : Formula) → RuleApp
@@ -39,11 +42,14 @@ inductive RuleApp
   | boxₗ : (Δ : SplitSequent) → (A : Formula) → Sum.inl (□ A) ∈ Δ → RuleApp
   | boxᵣ : (Δ : SplitSequent) → (A : Formula) → Sum.inr (□ A) ∈ Δ → RuleApp
 
-def RuleApp.isBox : RuleApp → Prop
-  | RuleApp.boxₗ _ _ _ => true
-  | RuleApp.boxᵣ _ _ _ => true
-  | _ => false
+/-- Endofunctor for the GL-ext proof system. -/
+@[simp] def T : (CategoryTheory.Functor Type Type) where
+  obj := λ X ↦ (RuleApp × List X)
+  map := fun f ⟨r, A⟩ ↦ ⟨r, A.map f⟩
+  map_id := by aesop_cat
+  map_comp := by aesop_cat
 
+/-- Given a RuleApp, obtain the principal formulas. -/
 def fₚ : RuleApp → SplitSequent
   | RuleApp.skp _ => ∅
   | RuleApp.cutₗ _ _ => ∅
@@ -63,6 +69,7 @@ def fₚ : RuleApp → SplitSequent
   | RuleApp.boxₗ _ A _ => {Sum.inl (□ A)}
   | RuleApp.boxᵣ _ A _ => {Sum.inr (□ A)}
 
+/-- Given a RuleApp, obtain the split sequent. -/
 def f : RuleApp → SplitSequent
   | RuleApp.skp Δ => Δ
   | RuleApp.cutₗ Δ _ => Δ
@@ -82,8 +89,10 @@ def f : RuleApp → SplitSequent
   | RuleApp.boxₗ Δ _ _ => Δ
   | RuleApp.boxᵣ Δ _ _ => Δ
 
+/-- Given a RuleApp, obtain the non-principal formulas. -/
 def fₙ : RuleApp → SplitSequent := fun r ↦ f r \ fₚ r
 
+/-- Relating principal formulas, non-principal formulas, and the split sequent. -/
 theorem fₙ_alternate (r : RuleApp) : fₙ r = match r with
   | RuleApp.skp Δ => Δ
   | RuleApp.cutₗ Δ _ => Δ
@@ -103,20 +112,30 @@ theorem fₙ_alternate (r : RuleApp) : fₙ r = match r with
   | RuleApp.boxₗ Δ A _ => Δ \ {Sum.inl (□ A)}
   | RuleApp.boxᵣ Δ A _ => Δ \ {Sum.inr (□ A)} := by cases r <;> simp [fₙ, f, fₚ]
 
-@[simp] def T : (CategoryTheory.Functor (Type u) (Type u)) :=
-  ⟨λ X ↦ ((RuleApp × List X) : Type u), by rintro X Y f ⟨r, A⟩; exact ⟨r, A.map f⟩, by aesop_cat, by aesop_cat⟩
+def RuleApp.isBox : RuleApp → Prop
+  | RuleApp.boxₗ _ _ _ => true
+  | RuleApp.boxᵣ _ _ _ => true
+  | _ => false
 
-def r {X : Type u} (α : X → T.obj X) (x : X) := (α x).1
-def p {X : Type u} (α : X → T.obj X) (x : X) := (α x).2
-def edge  {X : Type u} (α : X → T.obj X) (x y : X) : Prop := y ∈ p α x
+/-- Get RuleApp of a node (first projection). -/
+def r {X : Type} (α : X → T.obj X) (x : X) := (α x).1
 
+/-- Get premises of a node (second projection). -/
+def p {X : Type} (α : X → T.obj X) (x : X) := (α x).2
+
+/-- Edge relation induced by `p`. -/
+def edge  {X : Type} (α : X → T.obj X) (x y : X) : Prop := y ∈ p α x
+
+/-- Defininion of GL-ext proof. -/
 structure Proof where
   X : Type
   α : X → T.obj X
-  h : ∀ (x : X), match r α x with
+  step : ∀ (x : X), match r α x with
     | RuleApp.skp _ => (p α x).map (fun x ↦ f (r α x)) = [(f (r α x))]
-    | RuleApp.cutₗ _ A => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)).filter_right ∪ {Sum.inl $ A}, (fₙ (r α x)).filter_left ∪ {Sum.inr $ ~A}]
-    | RuleApp.cutᵣ _ A => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)).filter_left ∪ {Sum.inr $ A}, (fₙ (r α x)).filter_right ∪ {Sum.inl $ ~A}]
+    | RuleApp.cutₗ _ A
+      => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)).filterRight ∪ {Sum.inl $ A}, (fₙ (r α x)).filterLeft ∪ {Sum.inr $ ~A}]
+    | RuleApp.cutᵣ _ A
+      => (p α x).map (fun x ↦ f (r α x)) = [(fₙ (r α x)).filterLeft ∪ {Sum.inr $ A}, (fₙ (r α x)).filterRight ∪ {Sum.inl $ ~A}]
     | RuleApp.wkₗ _ _ _ => (p α x).map (fun x ↦ f (r α x)) = [fₙ (r α x)]
     | RuleApp.wkᵣ _ _ _ => (p α x).map (fun x ↦ f (r α x)) = [fₙ (r α x)]
     | RuleApp.topₗ _ _ => p α x = ∅
@@ -125,20 +144,25 @@ structure Proof where
     | RuleApp.axₗᵣ _ _ _ => p α x = ∅
     | RuleApp.axᵣₗ _ _ _ => p α x = ∅
     | RuleApp.axᵣᵣ _ _ _ => p α x = ∅
-    | RuleApp.andₗ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A}, (fₙ (r α x)) ∪ {Sum.inl B}]
-    | RuleApp.andᵣ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inr A}, (fₙ (r α x)) ∪ {Sum.inr B}]
-    | RuleApp.orₗ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A, Sum.inl B}]
-    | RuleApp.orᵣ _ A B _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inr A, Sum.inr B}]
-    | RuleApp.boxₗ _ A _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {Sum.inl A}]
-    | RuleApp.boxᵣ _ A _ => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {Sum.inr A}]
-
+    | RuleApp.andₗ _ A B _
+      => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A}, (fₙ (r α x)) ∪ {Sum.inl B}]
+    | RuleApp.andᵣ _ A B _
+      => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inr A}, (fₙ (r α x)) ∪ {Sum.inr B}]
+    | RuleApp.orₗ _ A B _
+      => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inl A, Sum.inl B}]
+    | RuleApp.orᵣ _ A B _
+      => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)) ∪ {Sum.inr A, Sum.inr B}]
+    | RuleApp.boxₗ _ A _
+      => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {Sum.inl A}]
+    | RuleApp.boxᵣ _ A _
+      => (p α x).map (λ x ↦ f (r α x)) = [(fₙ (r α x)).D ∪ {Sum.inr A}]
   path : ∀ x, ∀ f : {f : ℕ → X // f 0 = x ∧ ∀ (n : ℕ), edge α (f n) (f (n + 1))},
     ∀ n, ∃ m, (r α (f.1 (n + m))).isBox
 
-def Proves (𝕏 : Proof) (Δ : SplitSequent) : Prop := ∃ x : 𝕏.X, f (r 𝕏.α x) = Δ
-def SplitSequent.isTrue (Δ : SplitSequent) : Prop := ∃ (𝕏 : Proof), Proves 𝕏 Δ
+def proves (𝕏 : Proof) (Δ : SplitSequent) : Prop := ∃ x : 𝕏.X, f (r 𝕏.α x) = Δ
+def SplitSequent.isTrue (Δ : SplitSequent) : Prop := ∃ (𝕏 : Proof), proves 𝕏 Δ
 
-infixr:6 "⊢" => Proves
+infixr:6 "⊢" => proves
 prefix:40 "⊢" => SplitSequent.isTrue
 
 end SplitCut

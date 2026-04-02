@@ -13,4 +13,15 @@ import GL.Split.CutProof
 import GL.Split.Game
 import GL.Split.Proof
 
--- This module serves as the root of the `GL` library.
+
+/-! # Godel-Lob Provability Logic
+
+This module serves as the root of the `GL` library, importing all its modules.
+
+Source repository: <https://github.com/mgignoux/lean4-gl-coalgebras>
+
+Dependency graph:
+
+![Dependency graph](https://github.com/mgignoux/lean4-gl-coalgebras/blob/main/dependencies.svg)
+
+-/

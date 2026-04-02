@@ -12,7 +12,7 @@ This project is a Lean 4 formalization of Craig interpolation for Gödel-Löb pr
 
 ## Module Dependency Overview
 
-[![Dependency graph](dependencies.png)](https://github.com/mgignoux/lean4-gl-coalgebras/blob/main/dependencies.svg)
+[![Dependency graph](dependencies.svg)](https://mgignoux.github.io/lean4-gl-coalgebras/docs/dependencies.svg)
 
 ## References
 

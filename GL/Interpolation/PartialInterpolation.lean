@@ -1,9 +1,6 @@
-import GL.Logic
-import GL.SplitCoalgebraProof
 import Mathlib.Data.Fintype.Defs
-import GL.Interpolants
-import GL.SplitCutCoalgebraProof
-import GL.ProofTransformations
+import GL.Interpolation.Interpolants
+import GL.Split.ProofTransformations
 
 namespace Split
 
@@ -741,19 +738,16 @@ theorem PartialInterpolationLeft_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X
             exact @Split_to_CutPre_notNonAxLeaf 𝕏 x leftInterpolantSequent _ f_last
 
 noncomputable def InterpolantProofLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : SplitCut.Proof :=
-  @ProofTranslation 𝕏 (@leftInterpolantSequent 𝕏 _) PartialInterpolationLeft PartialInterpolationLeft_proves_int PartialInterpolationLeft_box_prop
+  @ProofTransformation 𝕏 (@leftInterpolantSequent 𝕏 _) PartialInterpolationLeft PartialInterpolationLeft_proves_int PartialInterpolationLeft_box_prop
 
 theorem InterpolantProofLeft_proves_interpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X)
   : @InterpolantProofLeft 𝕏 fin_X ⊢ leftInterpolantSequent x := by
   use ⟨x, (PartialInterpolationLeft x).root⟩
-  unfold InterpolantProofLeft ProofTranslation
-  simp [ProofTranslation_f]
+  unfold InterpolantProofLeft ProofTransformation
+  simp [ProofTransformation_f]
   exact PartialInterpolationLeft_proves_int x
 
-
-
---------------------- RIGHT -------------- findme
-
+--------------------- RIGHT --------------
 
 /- PARTIAL INTERPOLANT PROOFS. I SPLIT THESE APART BECAUSE THEY RUN SO SLOW OTHERWISE -/
 noncomputable def PartialRight_topₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topₗ Δ in_Δ)
@@ -1444,11 +1438,11 @@ theorem PartialInterpolationRight_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.
             exact @Split_to_CutPre_notNonAxLeaf 𝕏 x rightInterpolantSequent _ f_last
 
 noncomputable def InterpolantProofRight {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : SplitCut.Proof :=
-  @ProofTranslation 𝕏 (@rightInterpolantSequent 𝕏 _) PartialInterpolationRight PartialInterpolationRight_proves_int PartialInterpolationRight_box_prop
+  @ProofTransformation 𝕏 (@rightInterpolantSequent 𝕏 _) PartialInterpolationRight PartialInterpolationRight_proves_int PartialInterpolationRight_box_prop
 
 theorem InterpolantProofRight_proves_interpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X)
   : @InterpolantProofRight 𝕏 fin_X ⊢ rightInterpolantSequent x := by
   use ⟨x, (PartialInterpolationRight x).root⟩
-  unfold InterpolantProofRight ProofTranslation
-  simp [ProofTranslation_f]
+  unfold InterpolantProofRight ProofTransformation
+  simp [ProofTransformation_f]
   exact PartialInterpolationRight_proves_int x

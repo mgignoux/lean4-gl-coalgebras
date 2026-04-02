@@ -1,7 +1,6 @@
-import GL.Logic
-import GL.SplitCoalgebraProof
 import Mathlib.Data.Fintype.Defs
-import GL.SplitCutCoalgebraProof
+import GL.Split.Proof
+import GL.Split.CutProof
 
 namespace CutPre
 
@@ -143,7 +142,7 @@ namespace Split
 def CutPre.Proves {𝕏 : Proof} (x : 𝕏.X) {σ} (𝕐 : CutPre.CutProofFromPremises x σ) (Δ : SplitSequent) : Prop :=
   CutPre.f (CutPre.r 𝕐.α 𝕐.root) = Δ
 
-def ProofTranslationMap {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) : (y : 𝕏.X) × (PartialProof y).X → SplitCut.T.obj ((y : 𝕏.X) × (PartialProof y).X) :=
+def ProofTransformationMap {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) : (y : 𝕏.X) × (PartialProof y).X → SplitCut.T.obj ((y : 𝕏.X) × (PartialProof y).X) :=
   fun ⟨y, z_y⟩ ↦
   match (@CutPre.r _ _ _ _ (PartialProof y).α z_y) with
   | .pre z _ => ⟨SplitCut.RuleApp.skp (σ z), [⟨z, (PartialProof z).root⟩]⟩ -- map to the root
@@ -165,23 +164,23 @@ def ProofTranslationMap {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → Cut
   | .boxᵣ Δ A in_Δ => ⟨SplitCut.RuleApp.boxᵣ Δ A in_Δ, (CutPre.p (PartialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
 
 @[simp]
-theorem ProofTranslation_f {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
-  SplitCut.f (SplitCut.r (ProofTranslationMap PartialProof) ⟨y, z_in_Cy⟩) = CutPre.f (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) := by
-    cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.f, CutPre.f]
+theorem ProofTransformation_f {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
+  SplitCut.f (SplitCut.r (ProofTransformationMap PartialProof) ⟨y, z_in_Cy⟩) = CutPre.f (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) := by
+    cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTransformationMap, SplitCut.f, CutPre.f]
 
 @[simp]
-theorem ProofTranslation_fₚ {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
-  SplitCut.fₚ (SplitCut.r (ProofTranslationMap PartialProof) ⟨y, z_in_Cy⟩) = CutPre.fₚ (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) := by
-    cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.fₚ, CutPre.fₚ]
+theorem ProofTransformation_fₚ {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
+  SplitCut.fₚ (SplitCut.r (ProofTransformationMap PartialProof) ⟨y, z_in_Cy⟩) = CutPre.fₚ (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) := by
+    cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTransformationMap, SplitCut.fₚ, CutPre.fₚ]
 
 @[simp]
-theorem ProofTranslation_fₙ {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
-  SplitCut.fₙ (SplitCut.r (ProofTranslationMap PartialProof) ⟨y, z_in_Cy⟩) = CutPre.fₙ (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) := by
-    cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.fₙ_alternate, CutPre.fₙ_alternate]
+theorem ProofTransformation_fₙ {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (y : 𝕏.X) (z_in_Cy : (PartialProof y).X) :
+  SplitCut.fₙ (SplitCut.r (ProofTransformationMap PartialProof) ⟨y, z_in_Cy⟩) = CutPre.fₙ (@CutPre.r _ _ _ _ (PartialProof y).α z_in_Cy) := by
+    cases r_def : (CutPre.r (PartialProof y).α z_in_Cy) <;> simp_all [SplitCut.r, ProofTransformationMap, SplitCut.fₙ_alternate, CutPre.fₙ_alternate]
 
-theorem ProofTranslation_isBox {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (z_in_Cy : (y : 𝕏.X) × (PartialProof y).X) :
-  (SplitCut.r (ProofTranslationMap PartialProof) z_in_Cy).isBox ↔ (CutPre.r (PartialProof z_in_Cy.1).α z_in_Cy.2).isBox := by
-  cases r_def : (CutPre.r (PartialProof z_in_Cy.1).α z_in_Cy.2) <;> simp_all [SplitCut.r, ProofTranslationMap, SplitCut.RuleApp.isBox, CutPre.RuleApp.isBox]
+theorem ProofTransformation_isBox {𝕏 : Proof} {σ} (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ) (z_in_Cy : (y : 𝕏.X) × (PartialProof y).X) :
+  (SplitCut.r (ProofTransformationMap PartialProof) z_in_Cy).isBox ↔ (CutPre.r (PartialProof z_in_Cy.1).α z_in_Cy.2).isBox := by
+  cases r_def : (CutPre.r (PartialProof z_in_Cy.1).α z_in_Cy.2) <;> simp_all [SplitCut.r, ProofTransformationMap, SplitCut.RuleApp.isBox, CutPre.RuleApp.isBox]
 
 open Classical in
 noncomputable def dep_sum_seq_proj {α : Type} {β : α → Type} {f : ℕ → (a : α) × β a}
@@ -314,7 +313,7 @@ theorem infinite_dep_sum_chain_inf
 
 open Classical in
 set_option maxHeartbeats 10000000 in
-noncomputable def ProofTranslation {𝕏 : Proof} {σ}
+noncomputable def ProofTransformation {𝕏 : Proof} {σ}
 (PartialProof : (x : 𝕏.X) → CutPre.CutProofFromPremises x σ)
 (root_proves : ∀ x, CutPre.Proves x (PartialProof x) (σ x))
 (box_prop : ∀ x, (r 𝕏.α x).isBox →  -- on every path from the root to non-ax leaves there is a box node
@@ -325,96 +324,96 @@ noncomputable def ProofTranslation {𝕏 : Proof} {σ}
      ∃ m : Fin (n + 1), (CutPre.r (PartialProof x).α (f m)).isBox))
   : SplitCut.Proof := by exact -- ∀ x : 𝕏.X, 𝕐 ⊢ σ x
   { X := (y : 𝕏.X) × (PartialProof y).X
-    α := ProofTranslationMap PartialProof
+    α := ProofTransformationMap PartialProof
     step := by -- DONT DELETE THE PROOF BELOW, ITS COMMENTED FOR NOW BECAUSE ITS SO SLOW
     --  this is a lot of repetition! but I find that not using the intermediate 'ptm_eq' steps causes lean to oversimplify down to something harder to work from
           intro y_zy
           have h2 := (PartialProof y_zy.1).step y_zy.2
           cases r_def : (@CutPre.r _ _ _ _ (PartialProof y_zy.1).α y_zy.2) <;> simp [r_def, CutPre.fₙ_alternate] at h2
           case pre z _ =>
-            have ptm_r_eq : SplitCut.r (ProofTranslationMap PartialProof) y_zy = SplitCut.RuleApp.skp (σ z) := by simp [SplitCut.r, ProofTranslationMap, r_def]
-            have ptm_p_eq : SplitCut.p (ProofTranslationMap PartialProof) y_zy = [⟨z, (PartialProof z).root⟩] := by simp [SplitCut.p, ProofTranslationMap, r_def]
-            simp [ptm_r_eq, ptm_p_eq, ProofTranslation_f]
+            have ptm_r_eq : SplitCut.r (ProofTransformationMap PartialProof) y_zy = SplitCut.RuleApp.skp (σ z) := by simp [SplitCut.r, ProofTransformationMap, r_def]
+            have ptm_p_eq : SplitCut.p (ProofTransformationMap PartialProof) y_zy = [⟨z, (PartialProof z).root⟩] := by simp [SplitCut.p, ProofTransformationMap, r_def]
+            simp [ptm_r_eq, ptm_p_eq, ProofTransformation_f]
             simp [SplitCut.f]
             exact root_proves z
           case cutₗ Δ φ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.cutₗ Δ φ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.cutₗ Δ φ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, SplitCut.fₙ_alternate, ←h2]
           case cutᵣ Δ φ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.cutᵣ Δ φ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.cutᵣ Δ φ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, SplitCut.fₙ_alternate, ←h2]
           case wkₗ Δ φ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.wkₗ Δ φ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.wkₗ Δ φ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, SplitCut.fₙ_alternate, h2]
           case wkᵣ Δ φ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.wkᵣ Δ φ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.wkᵣ Δ φ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, SplitCut.fₙ_alternate, h2]
           case topₗ Δ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.topₗ Δ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.topₗ Δ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, ←h2]
           case topᵣ Δ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.topᵣ Δ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.topᵣ Δ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, ←h2]
           case axₗₗ Δ n in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.axₗₗ Δ n in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.axₗₗ Δ n in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, ←h2]
           case axₗᵣ Δ n in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.axₗᵣ Δ n in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.axₗᵣ Δ n in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, ←h2]
           case axᵣₗ Δ n in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.axᵣₗ Δ n in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.axᵣₗ Δ n in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, ←h2]
           case axᵣᵣ Δ n in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.axᵣᵣ Δ n in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.axᵣᵣ Δ n in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, ←h2]
           case orₗ Δ φ ψ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.orₗ Δ φ ψ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.orₗ Δ φ ψ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, SplitCut.fₙ_alternate, h2]
           case orᵣ Δ φ ψ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.orᵣ Δ φ ψ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.orᵣ Δ φ ψ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, SplitCut.fₙ_alternate, h2]
           case andₗ Δ φ ψ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.andₗ Δ φ ψ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.andₗ Δ φ ψ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, SplitCut.fₙ_alternate, ←h2]
           case andᵣ Δ φ ψ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.andᵣ Δ φ ψ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.andᵣ Δ φ ψ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, SplitCut.fₙ_alternate, ←h2]
           case boxₗ Δ φ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.boxₗ Δ φ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.boxₗ Δ φ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, SplitCut.fₙ_alternate, h2]
           case boxᵣ Δ φ in_Δ =>
-            have ptm_eq : ProofTranslationMap PartialProof y_zy = ⟨SplitCut.RuleApp.boxᵣ Δ φ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTranslationMap, r_def]
-            simp [SplitCut.p, ptm_eq, ProofTranslation_f]
+            have ptm_eq : ProofTransformationMap PartialProof y_zy = ⟨SplitCut.RuleApp.boxᵣ Δ φ in_Δ, (CutPre.p (PartialProof y_zy.1).α y_zy.2).map (fun z ↦ ⟨y_zy.1, z⟩)⟩ := by simp [ProofTransformationMap, r_def]
+            simp [SplitCut.p, ptm_eq, ProofTransformation_f]
             rw [SplitCut.r]
             simp [ptm_eq, SplitCut.fₙ_alternate, h2]
     path := by
@@ -422,7 +421,7 @@ noncomputable def ProofTranslation {𝕏 : Proof} {σ}
       have lex_chain : ∀ (n : ℕ), Sigma.Lex (edge 𝕏.α) (fun x ↦ CutPre.edge (PartialProof x).α) (f n) (f (n + 1)) := by
         intro n
         have := f_succ n
-        unfold ProofTranslationMap SplitCut.edge at this
+        unfold ProofTransformationMap SplitCut.edge at this
         simp [SplitCut.p] at this
         rcases r_def : CutPre.r (PartialProof (f n).1).α (f n).2 <;> simp [r_def] at this
         case pre z z_in =>
@@ -470,15 +469,15 @@ noncomputable def ProofTranslation {𝕏 : Proof} {σ}
         convert m_prop
         have := h (l + n + m) (by omega)
         have := h (l + (n + m)) (by omega)
-        convert ProofTranslation_isBox PartialProof (f (l + n + m)) using 4
+        convert ProofTransformation_isBox PartialProof (f (l + n + m)) using 4
         · linarith
         · congr
           simp_all
-          have h : ∀ α : Type, ∀ β : α → Type, ∀ z₁ : (a : α) × β a, ∀ z₂, z₁ = z₂ → z₁.2 ≍ z₂.2 := by simp?
+          have h : ∀ α : Type, ∀ β : α → Type, ∀ z₁ : (a : α) × β a, ∀ z₂, z₁ = z₂ → z₁.2 ≍ z₂.2 := by simp
           apply h
           grind
       case pos =>
-        simp [ProofTranslation_isBox]
+        simp [ProofTransformation_isBox]
         let g : ℕ → 𝕏.X := fun n ↦ (@dep_sum_seq_proj 𝕏.X (fun x ↦ (PartialProof x).X) f (fun x ↦ CutPre.edge (PartialProof x).α) h n).1
         have g_prop : ∀ n, edge 𝕏.α (g n) (g (n + 1)) := by
           apply @infinite_dep_sum_chain
@@ -504,7 +503,7 @@ noncomputable def ProofTranslation {𝕏 : Proof} {σ}
           case zero =>
             have ⟨_, prop⟩ := Nat.find_spec (h 0)
             have := f_succ $ Nat.find (h 0)
-            unfold ProofTranslationMap SplitCut.edge SplitCut.p at this
+            unfold ProofTransformationMap SplitCut.edge SplitCut.p at this
             rcases r_def : CutPre.r (PartialProof (f (Nat.find (h 0))).1).α (f (Nat.find (h 0))).2 <;> simp only [r_def, List.mem_singleton] at this
             case pre z z_in =>
               have fst_eq := (Sigma.ext_iff.1 this).1
@@ -532,7 +531,7 @@ noncomputable def ProofTranslation {𝕏 : Proof} {σ}
             let ih := (@dep_sum_seq_proj 𝕏.X (fun x ↦ (PartialProof x).X) f (fun x ↦ CutPre.edge (PartialProof x).α) h n).2
             have ⟨_, prop⟩ := Nat.find_spec (h ih)
             have := f_succ $ Nat.find (h ih)
-            unfold ProofTranslationMap SplitCut.edge SplitCut.p at this
+            unfold ProofTransformationMap SplitCut.edge SplitCut.p at this
             rcases r_def : CutPre.r (PartialProof (f (Nat.find (h ih))).1).α (f (Nat.find (h ih))).2 <;> simp only [r_def, List.mem_singleton] at this
             case pre z z_in =>
               have fst_eq := (Sigma.ext_iff.1 this).1
@@ -561,7 +560,7 @@ noncomputable def ProofTranslation {𝕏 : Proof} {σ}
           let ih := (@dep_sum_seq_proj 𝕏.X (fun x ↦ (PartialProof x).X) f (fun x ↦ CutPre.edge (PartialProof x).α) h n).2
           have ⟨_, prop⟩ := Nat.find_spec (h ih)
           have := f_succ $ Nat.find (h ih)
-          unfold ProofTranslationMap SplitCut.edge SplitCut.p at this
+          unfold ProofTransformationMap SplitCut.edge SplitCut.p at this
           rcases r_def : CutPre.r (PartialProof (f (Nat.find (h ih))).1).α (f (Nat.find (h ih))).2 <;> simp only [r_def, List.mem_singleton] at this
           case pre z z_in =>
             have isNonAx : (CutPre.r (PartialProof (f (Nat.find (h ih) )).fst).α (f (Nat.find (h ih) )).snd).isNonAxLeaf := by simp [r_def, CutPre.RuleApp.isNonAxLeaf]

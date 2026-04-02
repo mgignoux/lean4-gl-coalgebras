@@ -1,5 +1,5 @@
-import GL.Logic
 import Mathlib.Data.List.Chain
+import GL.Logic.Syntax
 
 /-! ## Defining GL-split proof systems.
 

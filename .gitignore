@@ -2,3 +2,8 @@
 docbuild/.lake
 .DS_Store
 /Latex
+.venv/
+__pycache__/
+*.pyc
+dependencies*
+!dependencies.png

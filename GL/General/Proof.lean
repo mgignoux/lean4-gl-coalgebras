@@ -1,4 +1,4 @@
-import GL.Logic
+import GL.Logic.Syntax
 import Mathlib.Data.Set.Defs
 import Mathlib.CategoryTheory.Limits.Shapes.IsTerminal
 import Mathlib.CategoryTheory.Functor.EpiMono

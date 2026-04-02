@@ -1,5 +1,4 @@
-import GL.Logic
-import GL.Semantics
+import GL.Logic.Semantics
 
 /-! ## Fixed-Point Theorem for Box and Diamond Formulas
 

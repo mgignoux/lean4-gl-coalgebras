@@ -2,9 +2,8 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Order.CompleteLattice.Basic
 import Mathlib.Order.FixedPoints
 import Mathlib.Data.Set.Lattice
-import GL.Logic
-import GL.Semantics
-import GL.CoalgebraProof
+import GL.Logic.Semantics
+import GL.General.Proof
 
 /-! ## Soundness of GL-proof system. -/
 

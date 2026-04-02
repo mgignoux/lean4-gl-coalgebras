@@ -1,7 +1,5 @@
 import Pdl.Game
-import GL.Logic
-import GL.Semantics
-import GL.CoalgebraProof
+import GL.General.Proof
 
 abbrev Builder := Player.A
 abbrev Prover := Player.B

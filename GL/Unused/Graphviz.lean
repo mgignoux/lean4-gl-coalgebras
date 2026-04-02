@@ -1,4 +1,4 @@
-import GL.Logic
+import GL.Syntax
 import GL.CoalgebraProof
 
 unsafe def graphviz_single {Γ : Finset Formula} {𝕏 : InfiniteProof Γ} (x : 𝕏.1) (y : 𝕏.1)

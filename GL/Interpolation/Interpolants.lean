@@ -1,9 +1,6 @@
-import GL.Logic
-import GL.SplitCoalgebraProof
 import Mathlib.Data.Fintype.Defs
-import GL.Semantics
-import GL.FixedPointTheorem
-import GL.SplitCompleteness2
+import GL.Logic.FixedPointTheorem
+import GL.Split.Completeness
 
 /-! ## Finding interpolants
 

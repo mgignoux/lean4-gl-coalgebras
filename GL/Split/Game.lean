@@ -1,7 +1,5 @@
-import GL.Logic
-import GL.Semantics
-import GL.SplitCoalgebraProof
 import Pdl.Game
+import GL.Split.Proof
 
 namespace Split
 

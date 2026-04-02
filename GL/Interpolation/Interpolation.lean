@@ -1,22 +1,13 @@
-import GL.Logic
-import GL.Semantics
-import GL.Completeness2
-import GL.SplitCompleteness2
-import GL.PartialInterpolation
-import GL.Interpolants
-import GL.PartialInterpolation
-import GL.SplitSoundness
+import GL.Interpolation.PartialInterpolation
 
 /-! ## Interpolation
 
 We use everything we have proven so far to show that GL has interpolation!
 -/
 
-
 /-- Definition of Craig interpolation for modal formulas. -/
 def isInterpolant (φ : Formula) (ψ : Formula) (χ : Formula) :=
   χ.vocab ⊆ φ.vocab ∩ ψ.vocab ∧ ⊨ (φ ↣ χ) ∧ ⊨ (χ ↣ ψ)
-
 
 /-- Sorry-free interpolation theorem! -/
 theorem Interpolation (φ ψ : Formula) : ⊨ (φ ↣ ψ) → ∃ χ, isInterpolant φ ψ χ := by

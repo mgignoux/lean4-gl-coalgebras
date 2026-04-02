@@ -1,19 +1,16 @@
-import GL.Logic
-import GL.CoalgebraProof
-import GL.SplitCoalgebraProof
-import GL.SplitCutCoalgebraProof
-import GL.Interpolants
-import GL.Semantics
-import GL.Soundness
-import GL.CoalgebraGame
-import GL.Completeness1
-import GL.Completeness2
-import GL.SplitCoalgebraGame
-import GL.SplitCompleteness1
-import GL.SplitCompleteness2
-import GL.SplitSoundness
-import GL.ProofTransformations
-import GL.PartialInterpolation
-import GL.Interpolation
+import GL.General.Completeness
+import GL.General.Game
+import GL.General.Proof
+import GL.General.Soundness
+import GL.Interpolation.Interpolants
+import GL.Interpolation.Interpolation
+import GL.Split.ProofTransformations
+import GL.Logic.FixedPointTheorem
+import GL.Logic.Semantics
+import GL.Logic.Syntax
+import GL.Split.Completeness
+import GL.Split.CutProof
+import GL.Split.Game
+import GL.Split.Proof
 
 -- This module serves as the root of the `GL` library.

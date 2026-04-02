@@ -1,4 +1,4 @@
-import GL.Logic
+import GL.Syntax
 import GL.CoalgebraProof
 
 /- ADMISSIBILITY -/

@@ -2,10 +2,9 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Order.CompleteLattice.Basic
 import Mathlib.Order.FixedPoints
 import Mathlib.Data.Set.Lattice
-import GL.Logic
-import GL.Semantics
-import GL.SplitCoalgebraProof
-import GL.SplitCutCoalgebraProof
+import GL.Logic.Semantics
+import GL.Split.Proof
+import GL.Split.CutProof
 
 /-! ## Soundness of GL-split proof system. -/
 

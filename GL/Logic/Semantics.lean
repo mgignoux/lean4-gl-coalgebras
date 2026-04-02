@@ -2,7 +2,7 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Order.CompleteLattice.Basic
 import Mathlib.Order.FixedPoints
 import Mathlib.Data.Set.Lattice
-import GL.Logic
+import GL.Logic.Syntax
 
 /-! ## Semantics of GL
 

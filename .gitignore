@@ -6,4 +6,4 @@ docbuild/.lake
 __pycache__/
 *.pyc
 dependencies*
-!dependencies.png
+!dependencies.svg

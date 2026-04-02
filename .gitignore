@@ -7,3 +7,4 @@ __pycache__/
 *.pyc
 dependencies*
 !dependencies.svg
+GL/Unused/

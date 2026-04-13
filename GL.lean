@@ -22,6 +22,6 @@ Source repository: <https://github.com/mgignoux/lean4-gl-coalgebras>
 
 Dependency graph:
 
-![Dependency graph](https://github.com/mgignoux/lean4-gl-coalgebras/blob/main/dependencies.svg)
+![Dependency graph](https://mgignoux.github.io/lean4-gl-coalgebras/docs/dependencies.svg)
 
 -/

@@ -26,6 +26,7 @@ inductive Formula : Type
   | diamond : Formula → Formula
 deriving Repr,DecidableEq
 
+/-- A sequent is a finite set of formulas, read disjunctively. -/
 abbrev Sequent := Finset Formula
 
 namespace Formula
@@ -58,18 +59,22 @@ prefix:50 " ⊡ " => fun φ ↦ φ & (□ φ)
 
 /-! # Basic operations and simp lemmas for Formulas -/
 
+/-- Returns `true` if the formula is a propositional atom `at n`. -/
 def isAtomic : Formula → Bool
   | at _ => true
   | _ => false
 
+/-- Returns `true` if the formula is a negated atom `na n`. -/
 def isNegAtomic : Formula → Bool
   | na _ => true
   | _ => false
 
+/-- Returns `true` if the formula is a diamond formula `◇ φ`. -/
 def isDiamond : Formula → Bool
   | ◇ _ => true
   | _ => false
 
+/-- Returns `some φ` if the formula is `◇ φ`, otherwise `none`. -/
 def opUnDi (φ : Formula) : Option Formula := match φ with
   | ◇ φ => Option.some φ
   | _ => none
@@ -77,36 +82,15 @@ def opUnDi (φ : Formula) : Option Formula := match φ with
 @[simp] lemma opUnDi_eq {φ ψ : Formula} : φ.opUnDi = some ψ ↔ φ = ◇ ψ := by
   cases φ <;> simp [Formula.opUnDi]
 
+/-- Extracts `φ` from `◇ φ`, given a proof that the formula is a diamond. -/
 def unDi (φ : Formula) (h : φ.isDiamond) : Formula := match φ with
   | ◇ φ => φ
 
+/-- Returns `true` if the formula is a box formula `□ φ`. -/
 def isBox : Formula → Bool
   | □ _ => true
   | _ => false
 
--- instance : DecidablePred Formula.isAtomic := by
---   intro φ
---   cases φ <;> simp [isAtomic]
---   all_goals
---     infer_instance
-
--- instance : DecidablePred isNegAtomic := by
---   intro φ
---   cases φ <;> simp [isNegAtomic]
---   all_goals
---     infer_instance
-
--- instance : DecidablePred isDiamond := by
---   intro φ
---   cases φ <;> simp [isDiamond]
---   all_goals
---     infer_instance
-
--- instance : DecidablePred isBox := by
---   intro φ
---   cases φ <;> simp [isBox]
---   all_goals
---     infer_instance
 
 /-- Negation is injective. -/
 @[simp]
@@ -143,17 +127,8 @@ def length : Formula → Nat
   | □ φ => length φ + 1
   | ◇ φ => length φ + 1
 
--- def pp_form : Formula → String
---   | ⊥ => "⊥"
---   | ⊤ => "⊤"
---   | at n => "P" ++ Nat.toSubscriptString n
---   | na n => "¬P" ++ Nat.toSubscriptString n
---   | φ & ψ => "(" ++ pp_form φ ++ "∧" ++ pp_form ψ ++ ")"
---   | φ v ψ => "(" ++ pp_form φ ++ "∨" ++ pp_form ψ ++ ")"
---   | □ φ => "□" ++ pp_form φ
---   | ◇ φ => "◇" ++ pp_form φ
 
-/-- Vocab of a BML Formula. Expressed as underlying natural numbers -/
+/-- Vocab of a BML Formula. Expressed as underlying natural numbers. -/
 def vocab : Formula → Finset Nat
   | ⊥ => ∅
   | ⊤ => ∅
@@ -164,7 +139,7 @@ def vocab : Formula → Finset Nat
   | □ φ => vocab φ
   | ◇ φ => vocab φ
 
-/-- φtoms of a BML Formula. Expressed as underlying natural numbers -/
+/-- Atoms of a BML Formula. Expressed as underlying natural numbers. -/
 def atoms : Formula → Finset Nat
   | ⊥ => ∅
   | ⊤ => ∅
@@ -175,7 +150,7 @@ def atoms : Formula → Finset Nat
   | □ φ => vocab φ
   | ◇ φ => vocab φ
 
-/-- Literals of a BML Formula. Expressed as underlying natural numbers -/
+/-- Literals of a BML Formula. Expressed as underlying natural numbers. -/
 def lit : Formula → Finset (Nat ⊕ Nat)
   | ⊥ => ∅
   | ⊤ => ∅
@@ -251,7 +226,6 @@ namespace Sequent
 /-- Length of a sequent. -/
 def length (Γ : Sequent) : Nat := Finset.sum Γ Formula.length
 
--- unsafe def pp_form (Γ : Sequent) : String := String.intercalate "," ((Quot.unquot Γ.val).map Formula.pp_form)
 
 /- Vocabulary of a sequent. -/
 def vocab (Γ : Sequent) : Finset Nat := Finset.biUnion Γ Formula.vocab
@@ -300,40 +274,6 @@ theorem FL_idem {Δ : Sequent} : FL (FL Δ) = FL Δ := by
   · exact FL_mon (FL_refl)
 
 
--- /- Helper Lemmas about Finset -/
-
--- def size_without_diamond (Γ : Sequent) : Nat := Finset.sum (Γ.filter (λ φ ↦ ¬ (Formula.isDiamond φ))) Formula.length
-
--- /-- I should be in Mathlib! -/
--- lemma Finset.filter_sdiff {Γ Δ : Sequent} : (Γ \ Δ).filter (λ φ ↦ ¬ (Formula.isDiamond φ)) = Γ.filter (λ φ ↦ ¬ (Formula.isDiamond φ)) \ Δ.filter (λ φ ↦ ¬ (Formula.isDiamond φ)) := by
---   apply Finset.ext
---   intro φ
---   simp
---   constructor
---   · intro ⟨⟨A_in_Γ, φ_ni_Δ⟩, φ_di⟩
---     exact ⟨⟨A_in_Γ, φ_di⟩, fun x ↦ by exfalso; exact φ_ni_Δ x⟩
---   · intro ⟨⟨A_in_Γ, φ_di⟩, mp⟩
---     refine ⟨⟨A_in_Γ, fun x ↦ by exfalso; exact φ_di (mp x)⟩, φ_di⟩
-
--- theorem size_wod_sdiff {Γ Δ : Sequent} (h : Δ ⊆ Γ) : size_without_diamond (Γ \ Δ) = size_without_diamond Γ - size_without_diamond Δ := by
---   have this := @Finset.sum_sdiff _ _ _ _ _ Formula.length _ (Finset.filter_subset_filter (λ φ ↦ ¬ (Formula.isDiamond φ)) h)
---   have := jfef this
---   simp only [size_without_diamond]
---   rw [←this]
---   have := @ Finset.filter_sdiff Γ Δ
---   simp [this]
-
--- theorem size_wod_disjoint {Γ Δ : Sequent} :
---   Disjoint Γ Δ → size_without_diamond (Γ ∪ Δ)
---         = size_without_diamond Γ + size_without_diamond Δ := by
---   intro dis
---   have dis_diamond : Disjoint (Γ.filter (λ φ ↦ ¬ (Formula.isDiamond φ))) (Δ.filter (λ φ ↦ ¬ (Formula.isDiamond φ))):= by
---     simp_all [Disjoint]
---     intro Τ Τ_Γ' Τ_Δ'
---     exact @dis Τ (Finset.Subset.trans Τ_Γ' (Finset.filter_subset _ _)) (Finset.Subset.trans Τ_Δ' (Finset.filter_subset _ _))
---   simp only [size_without_diamond, Finset.filter_union (λ φ ↦ ¬ (Formula.isDiamond φ)) Γ Δ]
---   exact Finset.sum_union dis_diamond
-
 end Sequent
 
 abbrev SplitFormula := Formula ⊕ Formula
@@ -352,19 +292,6 @@ def opUnDi (φ : SplitFormula) : Option SplitFormula := match φ with
   | Sum.inr (◇ ψ) => Option.some (Sum.inr ψ)
   | _ => none
 
--- instance : DecidablePred isDiamond := by
---   intro φ
---   rcases φ with φ | φ
---   all_goals
---   cases φ <;> simp [isDiamond]
---   · apply Decidable.isFalse; simp
---   · apply Decidable.isFalse; simp
---   · apply Decidable.isFalse; simp
---   · apply Decidable.isFalse; simp
---   · apply Decidable.isFalse; simp
---   · apply Decidable.isFalse; simp
---   · apply Decidable.isFalse; simp
---   · apply Decidable.isTrue;  simp
 
 /- Length of a Split Formula (i.e. length of underlying BML Fornula). -/
 def length : (Formula ⊕ Formula) → Nat
@@ -477,7 +404,7 @@ theorem FL_idem {Δ : SplitSequent} : FL (FL Δ) = FL Δ := by
       · exact Or.inr ⟨χ, χ_in_Δ, by apply SplitFormula.FL_mon ψ_sub_χ; simp_all⟩
   · exact FL_mon FL_refl
 
-/-- □₄⁻¹ operator for Split Sequents -/
+/-- □₄⁻¹ operator for Split Sequents. -/
 def D (Γ : SplitSequent) : SplitSequent
   := Finset.filter (fun x => decide (SplitFormula.isDiamond x)) Γ
                          ∪ Finset.filterMap SplitFormula.opUnDi Γ (by
@@ -645,12 +572,3 @@ lemma Finset.sum_diff_singleton_lt {α : Type} [DecidableEq α] {A C : Finset α
       apply lt_and_le_imp_add_lt
       · exact (Finset.sum_le_sum_of_subset_of_nonneg (Finset.singleton_subset_iff.2 b_in_A) (by simp))
       · exact C_lt_B
---
--- instance {α} [DecidableEq α] (Γ : Finset α) : Union {x // x ∈ Γ.powerset} where -- mathlib ????
---   union φ ψ := ⟨A ∪ ψ, by
---     apply Finset.mem_powerset.2
---     apply Finset.subset_iff.2
---     intro x h
---     rcases (Finset.mem_union.1 h) with h | h
---     · apply Finset.mem_of_subset (Finset.mem_powerset.1 φ.2) h
---     · apply Finset.mem_of_subset (Finset.mem_powerset.1 ψ.2) h⟩

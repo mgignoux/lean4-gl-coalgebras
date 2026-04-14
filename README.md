@@ -16,6 +16,10 @@ This project is a Lean 4 formalization of Craig interpolation for Gödel-Löb pr
 
 ## References
 
+- Lean 4 formalization of Craig interpolation for PDL by Malvin Gattinger et al. Inspiration to this work. Beyond standard proof theoretic notions which we replicate in our work, our work also imports file `Pdl.Game`, and uses similar notion of builder-prover games to show completeness:
+
+  Malvin Gattinger et al. "`lean4-pdl`: Tableaux for Propositional Dynamic Logic in Lean 4". GitHub repository (2025). <https://github.com/m4lvin/lean4-pdl>
+
 - Proof systems for GL by Daniyar Shamkanov, on which we base our coalgebraic notion of proof:
 
   Daniyar Shamkanov. “Circular Proofs for Gödel-Löb Logic”. *Mathematical Notes* 96, no. 3 (Sept. 2014), pp. 575–585. <http://arxiv.org/abs/1401.4002>
@@ -27,7 +31,3 @@ This project is a Lean 4 formalization of Craig interpolation for Gödel-Löb pr
 - Construction of GL fixpoints by Lisa Reidhaar-Olson, used to prove the modal cases of the GL fixed-point theorem:
 
   Lisa Reidhaar-Olson. “A New Proof of the Fixed-Point Theorem of Provability Logic”. *Notre Dame Journal of Formal Logic* 31, no. 1 (1989), pp. 37–43. <https://doi.org/10.1305/ndjfl/1093635331>
-
-- Lean 4 formalization of Craig interpolation for PDL by Malvin Gattinger et al. Inspiration to this work. Beyond standard proof theoretic notions which we replicate in our work, our work also imports file `Pdl.Game`, and uses similar notion of builder-prover games to show completeness:
-
-  Malvin Gattinger et al. "`lean4-pdl`: Tableaux for Propositional Dynamic Logic in Lean 4". GitHub repository (2025). <https://github.com/m4lvin/lean4-pdl>

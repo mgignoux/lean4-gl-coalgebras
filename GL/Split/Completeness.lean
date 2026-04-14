@@ -839,7 +839,7 @@ def last_SplitSequent {Γ : SplitSequent} {strat : Strategy coalgebraGame Builde
 def path_relation (Γ : SplitSequent) (strat : Strategy coalgebraGame Builder) (π₁ π₂ : MaximalPath Γ strat)
   := (Relation.Comp Move Move) π₁.last π₂.first
 
-/-- Interesting for MathLib? -/
+-- Interesting for MathLib?
 theorem Relation.TransGen.swap_eq_swap_rel {α : Type} (r : α → α → Prop) :
   Function.swap (Relation.TransGen r) = Relation.TransGen (Function.swap r) := by
   ext x y
@@ -862,7 +862,7 @@ theorem maximal_path_refl_trans_gen
     simp at ih
     apply Relation.ReflTransGen.head g_g'.1 ih
 
-/-- Builds the counter-model from a Builder winning strategy. -/
+/-- Builds the Kripke counter-model from a Builder winning strategy. -/
 def game_b_model (Γ : SplitSequent) {strat : Strategy coalgebraGame Builder} (h : winning strat (startPos Γ))
   : Model (MaximalPath Γ strat) where
   V π n := at n ∉ (last_SplitSequent h π).toSequent
@@ -1827,7 +1827,7 @@ theorem builder_win_builds_model {Γ : SplitSequent}
 
 /-- Completeness! Comes as a corrolary of `gamedet`, `prover_win_builds_proof`, and
     `builder_win_builds_model`. -/
-theorem completeness_sseq (Γ : SplitSequent) : ⊨ Γ → SplitSequent.isTrue Γ := by
+theorem completeness (Γ : SplitSequent) : ⊨ Γ → SplitSequent.isTrue Γ := by
   intro Γ_sat
   rcases gamedet coalgebraGame (startPos Γ) with builder_wins | prover_wins
   · have ⟨strat, h⟩ := builder_wins
@@ -1837,23 +1837,23 @@ theorem completeness_sseq (Γ : SplitSequent) : ⊨ Γ → SplitSequent.isTrue �
   · have ⟨strat, h⟩ := prover_wins
     exact prover_win_builds_proof strat h
 
-/-- Corollary of `completeness_sseq`, used in Interpolants.lean -/
+/-- Corollary of `completeness`, used in Interpolants.lean. -/
 theorem equiv_iff_sem_equiv {φ ψ : Formula} : semEquiv φ ψ ↔ (φ ≅ ψ) := by
   constructor
   · intro mp
     simp [semEquiv] at mp
     unfold equiv
     constructor
-    · apply completeness_sseq
+    · apply completeness
       simp_all [Formula.isValid, SplitSequent.isValid]
-    · apply completeness_sseq
+    · apply completeness
       simp_all [Formula.isValid, SplitSequent.isValid]
       grind
   · intro ⟨mpp1, mpp2⟩
     simp [semEquiv]
     simp [Formula.isValid]
-    have := soundness_sseq {Sum.inl (~ψ), Sum.inr φ} mpp1
-    have := soundness_sseq {Sum.inr (ψ), Sum.inl (~φ)} mpp2
+    have := soundness {Sum.inl (~ψ), Sum.inr φ} mpp1
+    have := soundness {Sum.inr (ψ), Sum.inl (~φ)} mpp2
     simp_all [SplitSequent.isValid, evaluateSSeq, Sum.elim]
     grind
 

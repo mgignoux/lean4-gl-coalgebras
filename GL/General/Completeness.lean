@@ -73,7 +73,7 @@ theorem rewind_history_in_cone {Γ} (g : coalgebraGame.Pos)
 @[simp] lemma rewind_history_zero (g : coalgebraGame.Pos) : rewind_history g 0 = g := by
   simp [rewind_history]
 
-/-- This is the type of the coalgbebra we will use to build the proof of `Γ`. -/
+/-- This is the type of the coalgebra we will use to build the proof of `Γ`. -/
 def proof_type (Γ : Sequent) (strat : Strategy coalgebraGame Prover) :=
  {g // inMyCone strat (startPos Γ) g ∧ coalgebraGame.turn g = Builder}
 
@@ -785,7 +785,7 @@ def last_sequent {Γ : Sequent} {strat : Strategy coalgebraGame Builder} (h : wi
 def path_relation (Γ : Sequent) (strat : Strategy coalgebraGame Builder) (π₁ π₂ : MaximalPath Γ strat)
   := (Relation.Comp Move Move) π₁.last π₂.first
 
-/-- Interesting for MathLib? -/
+-- Interesting for MathLib?
 theorem Relation.TransGen.swap_eq_swap_rel {α : Type} (r : α → α → Prop) :
   Function.swap (Relation.TransGen r) = Relation.TransGen (Function.swap r) := by
   ext x y
@@ -1396,7 +1396,7 @@ theorem builder_win_builds_model {Γ : Sequent}
 
 /-- Completeness! Comes as a corrolary of `gamedet`, `prover_win_builds_proof`, and
     `builder_win_builds_model`. -/
-theorem completeness_seq (Γ : Sequent) : ⊨ Γ → ⊢ Γ := by
+theorem completeness (Γ : Sequent) : ⊨ Γ → ⊢ Γ := by
   intro Γ_sat
   rcases gamedet coalgebraGame (startPos Γ) with builder_wins | prover_wins
   · have ⟨strat, h⟩ := builder_wins
@@ -1405,8 +1405,3 @@ theorem completeness_seq (Γ : Sequent) : ⊨ Γ → ⊢ Γ := by
     exact nΓ_sat Γ_sat
   · have ⟨strat, h⟩ := prover_wins
     exact prover_win_builds_proof strat h
-
--- theorem Completeness (φ : Formula) : ⊨ φ → ⊢ φ := by
---   intro φ_val
---   apply Completeness_seq {φ}
---   simp_all [Formula.isValid, Sequent.isValid]

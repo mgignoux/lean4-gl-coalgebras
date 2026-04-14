@@ -161,7 +161,7 @@ theorem evaluate_box_dot_iff (φ : Formula) : ⊨ ⊡ (φ ⟷ φ) := by
     simp only [evaluate_and, evaluate_imp]
     simp
 
-/-- □ φ case of the fixed point theorem -/
+/-- □ φ case of the fixed point theorem. -/
 theorem FPT_box (φ : Formula) (n : Nat) : ⊨ (single n ⊤ (□ φ)) ⟷ (single n (□ single n ⊤ φ) (□ φ)) := by
   intro α M u
   have := FPT_box_helper φ n
@@ -181,7 +181,7 @@ theorem FPT_box (φ : Formula) (n : Nat) : ⊨ (single n ⊤ (□ φ)) ⟷ (sing
     apply evaluate_box_dot_iff)
   simp_all [single]
 
-/-- ◇ φ case of the fixed point theorem -/
+/-- ◇ φ case of the fixed point theorem. -/
 theorem FPT_diamond (φ : Formula) (n : Nat) : ⊨ (single n ⊥ (◇ φ)) ⟷ (single n (◇ single n ⊥ φ) (◇ φ)) := by
   intro α M u
   have := FPT_diamond_helper φ n
@@ -201,7 +201,7 @@ theorem FPT_diamond (φ : Formula) (n : Nat) : ⊨ (single n ⊥ (◇ φ)) ⟷ (
     apply evaluate_box_dot_iff)
   simp_all [single]
 
-/-- Vocabulary condition for □ φ case of the fixed point theorem -/
+/-- Vocabulary condition for □ φ case of the fixed point theorem. -/
 theorem FPT_box_vocab (φ : Formula) (n : ℕ) :
   n ∉ Formula.vocab (single n ⊤ (□ φ)) ∧ Formula.vocab (single n ⊤ (□ φ)) ⊆ Formula.vocab (□ φ) := by
   constructor
@@ -210,7 +210,7 @@ theorem FPT_box_vocab (φ : Formula) (n : ℕ) :
     have := in_single_voc' m_in
     simp_all [Formula.vocab]
 
-/-- Vocabulary condition for ◇ φ case of the fixed point theorem -/
+/-- Vocabulary condition for ◇ φ case of the fixed point theorem. -/
 theorem FPT_diamond_vocab (φ : Formula) (n : ℕ) :
   n ∉ Formula.vocab (single n ⊥ (◇ φ)) ∧ Formula.vocab (single n ⊥ (◇ φ)) ⊆ Formula.vocab (◇ φ) := by
   constructor
@@ -220,7 +220,7 @@ theorem FPT_diamond_vocab (φ : Formula) (n : ℕ) :
     simp_all [Formula.vocab]
 
 /-- Fixed-point theorem for formulas `□φ` and `◇φ`. -/
-theorem fixed_point_theorem_box_or_dia (φ : Formula) (n : ℕ) (box_or_dia : φ.isBox ∨ φ.isDiamond) :
+theorem fixed_point_theorem_modal (φ : Formula) (n : ℕ) (box_or_dia : φ.isBox ∨ φ.isDiamond) :
   ∃ (ψ : Formula), n ∉ Formula.vocab ψ ∧ semEquiv ψ (single n ψ φ) ∧ Formula.vocab ψ ⊆ Formula.vocab φ := by
   cases φ <;> simp [Formula.isBox, Formula.isDiamond] at box_or_dia
   case box φ =>

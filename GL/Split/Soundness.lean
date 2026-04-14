@@ -8,7 +8,7 @@ import GL.Split.CutProof
 
 /-! ## Soundness of GL-split proof system. -/
 
-namespace SplitCut
+namespace ExtSkip
 
 open Classical in
 set_option maxHeartbeats 300000 in
@@ -439,7 +439,7 @@ theorem has_children_of_chain_model {𝕏 : Proof}
   have ⟨k, k_prop⟩ := 𝕏.path x ⟨(fun n ↦ (chain prop w_prop n).1), ⟨by simp [chain], chain_proof_prop prop w_prop⟩⟩ n
   exact g2 k k_prop
 
-/-- Progressing subchain of an eventually increasing chain -/
+/-- Progressing subchain of an eventually increasing chain. -/
 noncomputable def inc_chain_eventual_inc_chain {β}
   {Q : β → β → Prop}
   {g : ℕ → β}
@@ -470,7 +470,7 @@ theorem inc_chain_eventual_inc_chain_prop {β}
     · exact ih_prop.choose_spec
 
 /-- Soundness theorem for the GL-split proof system. -/
-theorem soundness_sseq (Γ : SplitSequent) : SplitSequent.isTrue Γ → ⊨ Γ := by
+theorem soundness (Γ : SplitSequent) : SplitSequent.isTrue Γ → ⊨ Γ := by
   intro mp
   have ⟨𝕏, x, prop⟩ := mp
   by_contra h
@@ -488,14 +488,14 @@ theorem soundness_sseq (Γ : SplitSequent) : SplitSequent.isTrue Γ → ⊨ Γ :
       have ⟨m, m_prop⟩ := has_children_of_chain_model prop w_prop n
       use n + m) k
 
-end SplitCut
+end ExtSkip
 
 /-! ## Soundness of GL-split cut proof system.
 
 This soundness theorem follows by converting any GL-split proof into a GL-split cut proof. -/
 
 /-- Converts structure morphism for GL-split proof into a structure morphism for GL-split cut proofs. -/
-@[simp] def α_conv (𝕏 : Split.Proof) : 𝕏.X → SplitCut.T.obj 𝕏.X := fun x ↦
+@[simp] def α_conv (𝕏 : Split.Proof) : 𝕏.X → ExtSkip.T.obj 𝕏.X := fun x ↦
   match Split.r 𝕏.α x with
     | .topₗ Δ in_Δ => ⟨.topₗ Δ in_Δ, Split.p 𝕏.α x⟩
     | .topᵣ Δ in_Δ => ⟨.topᵣ Δ in_Δ, Split.p 𝕏.α x⟩
@@ -511,7 +511,7 @@ This soundness theorem follows by converting any GL-split proof into a GL-split 
     | .boxᵣ Δ φ in_Δ => ⟨.boxᵣ Δ φ in_Δ, Split.p 𝕏.α x⟩
 
 /-- If there is a GL-split proof of Γ then there is a GL-split cut proof of Γ. -/
-theorem SplitProofIsSplitCutProof (Γ : SplitSequent) : (Split.SplitSequent.isTrue Γ) → (SplitCut.SplitSequent.isTrue Γ) := by
+theorem SplitProofIsExtSkipProof (Γ : SplitSequent) : (Split.SplitSequent.isTrue Γ) → (ExtSkip.SplitSequent.isTrue Γ) := by
   intro mp
   have ⟨𝕏, x, prop⟩ := mp
   have := 𝕏.X
@@ -519,29 +519,29 @@ theorem SplitProofIsSplitCutProof (Γ : SplitSequent) : (Split.SplitSequent.isTr
     X := 𝕏.X
     α := α_conv 𝕏
     step x := by
-      have helper : ∀ x, SplitCut.f (SplitCut.r (α_conv 𝕏) x) = Split.f (Split.r 𝕏.α x) := by
+      have helper : ∀ x, ExtSkip.f (ExtSkip.r (α_conv 𝕏) x) = Split.f (Split.r 𝕏.α x) := by
         intro x
-        cases r_def : Split.r 𝕏.α x <;> simp_all only [α_conv, SplitCut.r, SplitCut.f, Split.f]
+        cases r_def : Split.r 𝕏.α x <;> simp_all only [α_conv, ExtSkip.r, ExtSkip.f, Split.f]
       have := 𝕏.step x
-      cases r_def : Split.r 𝕏.α x <;> simp_all only [α_conv, SplitCut.r, SplitCut.p, Split.fₙ_alternate, SplitCut.fₙ_alternate]
+      cases r_def : Split.r 𝕏.α x <;> simp_all only [α_conv, ExtSkip.r, ExtSkip.p, Split.fₙ_alternate, ExtSkip.fₙ_alternate]
     path x := by
-      have h : ∀ x, (SplitCut.r (α_conv 𝕏) x).isBox ↔ (Split.r 𝕏.α x).isBox := by
+      have h : ∀ x, (ExtSkip.r (α_conv 𝕏) x).isBox ↔ (Split.r 𝕏.α x).isBox := by
         intro x
-        cases r_def : Split.r 𝕏.α x <;> simp_all only [α_conv, SplitCut.r, SplitCut.RuleApp.isBox, Split.RuleApp.isBox]
+        cases r_def : Split.r 𝕏.α x <;> simp_all only [α_conv, ExtSkip.r, ExtSkip.RuleApp.isBox, Split.RuleApp.isBox]
       simp [h]
       intro f base step n
       apply Split.inf_path_has_inf_boxes f ?_ n
       convert step
-      unfold SplitCut.edge Split.edge α_conv
-      simp [SplitCut.p]
+      unfold ExtSkip.edge Split.edge α_conv
+      simp [ExtSkip.p]
       grind}
   use x
   simp [←prop]
-  cases r_def : Split.r 𝕏.α x <;> simp_all only [α_conv, SplitCut.r, SplitCut.f, Split.f]
+  cases r_def : Split.r 𝕏.α x <;> simp_all only [α_conv, ExtSkip.r, ExtSkip.f, Split.f]
 
 namespace Split
 
 /-- Soundness theorem for the GL-split cut proof system. -/
-theorem soundness_sseq (Γ : SplitSequent) : SplitSequent.isTrue Γ → ⊨ Γ := by
+theorem soundness (Γ : SplitSequent) : SplitSequent.isTrue Γ → ⊨ Γ := by
   intro mp
-  exact SplitCut.soundness_sseq Γ (SplitProofIsSplitCutProof Γ mp)
+  exact ExtSkip.soundness Γ (SplitProofIsExtSkipProof Γ mp)

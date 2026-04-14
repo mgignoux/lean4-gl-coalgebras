@@ -200,7 +200,7 @@ theorem has_children_of_chain_model {𝕏 : Proof}
   have ⟨k, k_prop⟩ := inf_path_has_inf_boxes (fun n ↦ (chain prop w_prop n).1) (chain_proof_prop prop w_prop) n
   apply g2 k k_prop
 
-/-- Progressing subchain of an eventually increasing chain -/
+/-- Progressing subchain of an eventually increasing chain. -/
 noncomputable def incChainEventualIncChain {β}
   {Q : β → β → Prop}
   {g : ℕ → β}
@@ -231,7 +231,7 @@ theorem incChainEventualIncChain_prop {β}
     · exact ih_prop.choose_spec
 
 /-- Soundness theorem for the GL-proof system. -/
-theorem soundness_seq (Γ : Sequent) : ⊢ Γ → ⊨ Γ := by
+theorem soundness (Γ : Sequent) : ⊢ Γ → ⊨ Γ := by
   intro mp
   have ⟨𝕏, x, prop⟩ := mp
   by_contra h
@@ -248,8 +248,3 @@ theorem soundness_seq (Γ : Sequent) : ⊢ Γ → ⊨ Γ := by
       intro n
       have ⟨m, m_prop⟩ := has_children_of_chain_model prop w_prop n
       use n + m) k
-
--- theorem Soundness (φ : Formula) : ⊢ φ → ⊨ φ := by
---   intro mp
---   convert soundness_seq {φ} mp
---   simp [Sequent.isValid, Formula.isValid]

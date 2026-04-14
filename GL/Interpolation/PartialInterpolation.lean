@@ -27,7 +27,7 @@ noncomputable def rightEquationSequent {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (
   {Sum.inl (~ (Interpolant 𝕏 (equation x)))} ∪ (SplitSequent.filterRight (f (r 𝕏.α x)))
 
 /- ## From split system to extended system -/
-/-- Transforms rule applications in the split system into applications in the extended system -/
+/-- Transforms rule applications in the split system into applications in the extended system. -/
 def Split_to_Ext {𝕏 : Split.Proof} {x : 𝕏.X} {τ} : Split.RuleApp → Ext.RuleApp x τ
   | .topₗ _ in_Δ => .topₗ _ in_Δ
   | .topᵣ _ in_Δ => .topᵣ _ in_Δ
@@ -67,16 +67,16 @@ lemma Split_to_Ext_fₙ {𝕏 : Split.Proof} {x : 𝕏.X} {τ} (r : Split.RuleAp
 All of the left and right partial interpolation proofs, split apart based on rule application. These
 are split apart since otherwise the file runs very slow. -/
 
-noncomputable def PartialLeft_topₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topₗ Δ in_Δ)
-  : Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) where
+noncomputable def partialLeft_topₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topₗ Δ in_Δ)
+  : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) where
     X := Unit
     α u := ⟨Ext.RuleApp.topₗ (leftEquationSequent x) (by simp [leftEquationSequent, rule_def, f]; exact in_Δ), {}⟩
     step u := by simp [Ext.r, Ext.p]
     root := ()
     path u f := by exfalso; simp [Ext.edge, Ext.p] at f; exact f.2
 
-noncomputable def PartialLeft_topᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topᵣ Δ in_Δ)
-   : Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) where
+noncomputable def partialLeft_topᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topᵣ Δ in_Δ)
+   : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) where
     X := Unit
     α u := ⟨Ext.RuleApp.topᵣ (leftEquationSequent x) (by
       simp [leftEquationSequent, equation, rule_def] -- why not able to simp with rule here
@@ -86,16 +86,16 @@ noncomputable def PartialLeft_topᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
     root := ()
     path u f := by exfalso; simp [Ext.edge, Ext.p] at f; exact f.2
 
-noncomputable def PartialLeft_axₗₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axₗₗ Δ n in_Δ)
-  : Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) where
+noncomputable def partialLeft_axₗₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axₗₗ Δ n in_Δ)
+  : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) where
     X := Unit
     α u := ⟨Ext.RuleApp.axₗₗ (leftEquationSequent x) n (by simp [leftEquationSequent, rule_def, f, in_Δ]), {}⟩
     step := by intro u; simp [Ext.r, Ext.p]
     root := ()
     path u f := by exfalso; simp [Ext.edge, Ext.p] at f; exact f.2
 
-noncomputable def PartialLeft_axₗᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axₗᵣ Δ n in_Δ)
-  : Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) where
+noncomputable def partialLeft_axₗᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axₗᵣ Δ n in_Δ)
+  : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) where
     X := Unit
     α u := ⟨Ext.RuleApp.axₗᵣ (leftEquationSequent x) n (by
       simp [leftEquationSequent, rule_def, f, in_Δ]
@@ -114,8 +114,8 @@ noncomputable def PartialLeft_axₗᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (
     root := ()
     path u f := by exfalso; simp [Ext.edge, Ext.p] at f; exact f.2
 
-noncomputable def PartialLeft_axᵣₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axᵣₗ Δ n in_Δ)
-  : Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) where
+noncomputable def partialLeft_axᵣₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axᵣₗ Δ n in_Δ)
+  : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) where
     X := Unit
     α u := ⟨Ext.RuleApp.axᵣₗ (leftEquationSequent x) n (by
       simp [leftEquationSequent, rule_def, f, in_Δ]
@@ -134,8 +134,8 @@ noncomputable def PartialLeft_axᵣₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (
     root := ()
     path u f := by exfalso; simp [Ext.edge, Ext.p] at f; exact f.2
 
-noncomputable def PartialLeft_axᵣᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axᵣᵣ Δ n in_Δ)
-  : Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) where
+noncomputable def partialLeft_axᵣᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axᵣᵣ Δ n in_Δ)
+  : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) where
     X := Unit
     α u := ⟨Ext.RuleApp.topᵣ (leftEquationSequent x) (by
       simp [leftEquationSequent, rule_def, f, equation]
@@ -145,8 +145,8 @@ noncomputable def PartialLeft_axᵣᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (
     root := ()
     path u f := by exfalso; simp [Ext.edge, Ext.p] at f; exact f.2
 
-noncomputable def PartialLeft_orₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.orₗ Δ φ ψ in_Δ)
-: Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
+noncomputable def partialLeft_orₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.orₗ Δ φ ψ in_Δ)
+: Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
     match p_def : p 𝕏.α x with
       | [y] =>
         have interpolant_eq : Interpolant 𝕏 (equation x) = Interpolant 𝕏 (at encodeVar y) := by
@@ -170,8 +170,8 @@ noncomputable def PartialLeft_orₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x :
         | [] => by have := 𝕏.step x; simp [rule_def] at this; simp_all
         | y :: z :: l => by have := 𝕏.step x; simp [rule_def] at this; simp_all
 
-noncomputable def PartialLeft_orᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.orᵣ Δ φ ψ in_Δ)
-  : Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
+noncomputable def partialLeft_orᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.orᵣ Δ φ ψ in_Δ)
+  : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
     | [y] =>
       have interpolant_eq : Interpolant 𝕏 (equation x) = Interpolant 𝕏 (at encodeVar y) := by
@@ -186,8 +186,8 @@ noncomputable def PartialLeft_orᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x :
     | _ :: _ :: _ => by have := 𝕏.step x; simp [rule_def] at this; simp_all
 
 set_option maxHeartbeats 400000 in
-noncomputable def PartialLeft_andₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.andₗ Δ φ ψ in_Δ)
-  : Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
+noncomputable def partialLeft_andₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.andₗ Δ φ ψ in_Δ)
+  : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y,z] =>
     have interpolant_eq : Interpolant 𝕏 (equation x) = (Interpolant 𝕏 (at encodeVar y) v Interpolant 𝕏 (at encodeVar z)) := by
@@ -240,8 +240,8 @@ noncomputable def PartialLeft_andₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
   | [_] => by have := 𝕏.step x; simp [rule_def] at this; simp_all
   | _ :: _ :: _ :: _ => by have := 𝕏.step x; simp [rule_def] at this; simp_all
 
-noncomputable def PartialLeft_andᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.andᵣ Δ φ ψ in_Δ)
-  : Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
+noncomputable def partialLeft_andᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.andᵣ Δ φ ψ in_Δ)
+  : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y,z] =>
     have interpolant_eq : Interpolant 𝕏 (equation x) = (Interpolant 𝕏 (at encodeVar y) & Interpolant 𝕏 (at encodeVar z)) := by
@@ -265,8 +265,8 @@ noncomputable def PartialLeft_andᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
   | [_] => by have := 𝕏.step x; simp [rule_def] at this; simp_all
   | _ :: _ :: _ :: _ => by have := 𝕏.step x; simp [rule_def] at this; simp_all
 
-noncomputable def PartialLeft_boxₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ in_Δ} (rule_def : r 𝕏.α x = RuleApp.boxₗ Δ φ in_Δ)
-  : Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
+noncomputable def partialLeft_boxₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ in_Δ} (rule_def : r 𝕏.α x = RuleApp.boxₗ Δ φ in_Δ)
+  : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y] =>
     have interpolant_eq : Interpolant 𝕏 (equation x) = ◇ (Interpolant 𝕏 (at encodeVar y)) := by
@@ -297,8 +297,8 @@ noncomputable def PartialLeft_boxₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
   | [] => by have := 𝕏.step x; simp [rule_def] at this; simp_all
   | _ :: _ :: _ => by have := 𝕏.step x; simp [rule_def] at this; simp_all
 
-noncomputable def PartialLeft_boxᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ in_Δ} (rule_def : r 𝕏.α x = RuleApp.boxᵣ Δ φ in_Δ)
-  : Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
+noncomputable def partialLeft_boxᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ in_Δ} (rule_def : r 𝕏.α x = RuleApp.boxᵣ Δ φ in_Δ)
+  : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y] =>
     have interpolant_eq : Interpolant 𝕏 (equation x) = □ (Interpolant 𝕏 (at encodeVar y)) := by
@@ -322,36 +322,36 @@ noncomputable def PartialLeft_boxᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
   | _ :: _ :: _ => by have := 𝕏.step x; simp [rule_def] at this; simp_all
 
 /-- Defines the left partial interpolation proof `Lₓ`. -/
-noncomputable def PartialInterpolationLeft_eq {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
+noncomputable def partialEquationLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
   match rule_def : (r 𝕏.α x) with
-    | .topₗ _ _ => PartialLeft_topₗ x rule_def
-    | .topᵣ _ _ => PartialLeft_topᵣ x rule_def
-    | .axₗₗ _ _ _ => PartialLeft_axₗₗ x rule_def
-    | .axₗᵣ _ _ _ => PartialLeft_axₗᵣ x rule_def
-    | .axᵣₗ _ _ _ => PartialLeft_axᵣₗ x rule_def
-    | .axᵣᵣ _ _ _ => PartialLeft_axᵣᵣ x rule_def
-    | .orₗ _ _ _ _ => PartialLeft_orₗ x rule_def
-    | .orᵣ _ _ _ _ => PartialLeft_orᵣ x rule_def
-    | .andₗ _ _ _ _ => PartialLeft_andₗ x rule_def
-    | .andᵣ _ _ _ _ => PartialLeft_andᵣ x rule_def
-    | .boxₗ _ _ _ => PartialLeft_boxₗ x rule_def
-    | .boxᵣ _ _ _ => PartialLeft_boxᵣ x rule_def
+    | .topₗ _ _ => partialLeft_topₗ x rule_def
+    | .topᵣ _ _ => partialLeft_topᵣ x rule_def
+    | .axₗₗ _ _ _ => partialLeft_axₗₗ x rule_def
+    | .axₗᵣ _ _ _ => partialLeft_axₗᵣ x rule_def
+    | .axᵣₗ _ _ _ => partialLeft_axᵣₗ x rule_def
+    | .axᵣᵣ _ _ _ => partialLeft_axᵣᵣ x rule_def
+    | .orₗ _ _ _ _ => partialLeft_orₗ x rule_def
+    | .orᵣ _ _ _ _ => partialLeft_orᵣ x rule_def
+    | .andₗ _ _ _ _ => partialLeft_andₗ x rule_def
+    | .andᵣ _ _ _ _ => partialLeft_andᵣ x rule_def
+    | .boxₗ _ _ _ => partialLeft_boxₗ x rule_def
+    | .boxᵣ _ _ _ => partialLeft_boxᵣ x rule_def
 
-lemma PartialInterpolationLeft_eq_proves_eq {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
-  Ext.Proves x (PartialInterpolationLeft_eq x) (leftEquationSequent x) := by
+lemma partialEquationLeft_proves_eq {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
+  Ext.Proves x (partialEquationLeft x) (leftEquationSequent x) := by
     have 𝕏_h := 𝕏.step x
-    unfold PartialInterpolationLeft_eq
+    unfold partialEquationLeft
     split <;> simp_all [Ext.Proves, Ext.r, List.map_eq_cons_iff]
-    · simp [PartialLeft_topₗ, Ext.f]
-    · simp [PartialLeft_topᵣ, Ext.f]
-    · simp [PartialLeft_axₗₗ, Ext.f]
-    · simp [PartialLeft_axₗᵣ, Ext.f]
-    · simp [PartialLeft_axᵣₗ, Ext.f]
-    · simp [PartialLeft_axᵣᵣ, Ext.f]
-    · simp [PartialLeft_orₗ]
+    · simp [partialLeft_topₗ, Ext.f]
+    · simp [partialLeft_topᵣ, Ext.f]
+    · simp [partialLeft_axₗₗ, Ext.f]
+    · simp [partialLeft_axₗᵣ, Ext.f]
+    · simp [partialLeft_axᵣₗ, Ext.f]
+    · simp [partialLeft_axᵣᵣ, Ext.f]
+    · simp [partialLeft_orₗ]
       split <;> simp_all [Ext.f]
     · rename_i rule_def
-      simp [PartialLeft_orᵣ]
+      simp [partialLeft_orᵣ]
       have ⟨y, p_def, prop⟩ := 𝕏_h
       split <;> simp_all [Ext.f]
       simp [leftInterpolantSequent, leftEquationSequent, prop, rule_def]
@@ -361,7 +361,7 @@ lemma PartialInterpolationLeft_eq_proves_eq {𝕏 : Proof} [fin_X : Fintype 𝕏
         aesop
     · rename_i rule_def
       have ⟨y, z, p_def, prop⟩ := 𝕏_h
-      simp [PartialLeft_andₗ]
+      simp [partialLeft_andₗ]
       split <;> simp_all
       have ⟨eq₁, eq₂⟩ := p_def
       by_cases eq : Interpolant 𝕏 (at encodeVar y) = Interpolant 𝕏 (at encodeVar z) <;> subst eq₁ eq₂
@@ -369,24 +369,24 @@ lemma PartialInterpolationLeft_eq_proves_eq {𝕏 : Proof} [fin_X : Fintype 𝕏
         simp [Ext.f]
       · rw [dif_neg eq]
         simp [Ext.f]
-    · simp [PartialLeft_andᵣ]
+    · simp [partialLeft_andᵣ]
       split <;> simp_all [Ext.f]
-    · simp [PartialLeft_boxₗ]
+    · simp [partialLeft_boxₗ]
       split <;> simp_all [Ext.f]
-    · simp [PartialLeft_boxᵣ]
+    · simp [partialLeft_boxᵣ]
       split <;> simp_all [Ext.f]
 
 set_option maxHeartbeats 1000000 in
-noncomputable def PartialInterpolationLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Ext.CutProofFromPremises x (@leftInterpolantSequent 𝕏 _) :=
+noncomputable def partialInterpolationLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
-  then PartialInterpolationLeft_eq x
+  then partialEquationLeft x
   else
     have equiv : Interpolant 𝕏 (at (encodeVar x)) ≅ Interpolant 𝕏 (equation x) := by
       have := (Interpolant_prop x ).1
       simp_all
-    let 𝕐₁ := PartialInterpolationLeft_eq x
+    let 𝕐₁ := partialEquationLeft x
     let y₁ := 𝕐₁.root
-    have y₁_prop := PartialInterpolationLeft_eq_proves_eq x
+    have y₁_prop := partialEquationLeft_proves_eq x
     let 𝕐₂ := equiv.1.choose
     let y₂ := equiv.1.choose_spec.choose
     have y₂_prop := equiv.1.choose_spec.choose_spec
@@ -607,16 +607,16 @@ noncomputable def PartialInterpolationLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.
                 simp [fn_def]}
 
 /-- Every left partial interpolation proof `Lₓ` proves `f(x)ˡ ∣ ιₓ`. -/
-lemma PartialInterpolationLeft_proves_int {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
-  Ext.Proves x (PartialInterpolationLeft x) (leftInterpolantSequent x) :=
+lemma partialInterpolationLeft_proves_int {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
+  Ext.Proves x (partialInterpolationLeft x) (leftInterpolantSequent x) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then (by
-    convert PartialInterpolationLeft_eq_proves_eq x using 1
-    · unfold PartialInterpolationLeft
+    convert partialEquationLeft_proves_eq x using 1
+    · unfold partialInterpolationLeft
       simp [eq]
     · unfold leftInterpolantSequent leftEquationSequent
       simp [eq])
   else by
-    unfold PartialInterpolationLeft
+    unfold partialInterpolationLeft
     simp [eq]
     simp [Ext.Proves, Ext.r, Ext.f]
 
@@ -625,27 +625,27 @@ set_option maxHeartbeats 300000 in
 /-- For every `x` in a finite split proof, the partial left interpolation proof associated with `x`
     has the property that on every path from the root to a non-axiomatic leaf, the box rule is
     applied on this path. -/
-theorem PartialInterpolationLeft_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
+theorem partialInterpolationLeft_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
   (r 𝕏.α x).isBox →
-    ∀ (n : ℕ) (f : Fin (n + 1) → (PartialInterpolationLeft x).X),
-      f 0 = (PartialInterpolationLeft x).root →
-        (Ext.r (PartialInterpolationLeft x).α (f ⟨n, by simp⟩)).isNonAxLeaf →
-          (∀ (m : Fin n), Ext.edge (PartialInterpolationLeft x).α (f m.castSucc) (f m.succ)) →
-            ∃ m, (Ext.r (PartialInterpolationLeft x).α (f m)).isBox := by
+    ∀ (n : ℕ) (f : Fin (n + 1) → (partialInterpolationLeft x).X),
+      f 0 = (partialInterpolationLeft x).root →
+        (Ext.r (partialInterpolationLeft x).α (f ⟨n, by simp⟩)).isNonAxLeaf →
+          (∀ (m : Fin n), Ext.edge (partialInterpolationLeft x).α (f m.castSucc) (f m.succ)) →
+            ∃ m, (Ext.r (partialInterpolationLeft x).α (f m)).isBox := by
   intro is_box n
   have 𝕏_h := 𝕏.step x
   cases r_def : r 𝕏.α x <;> simp_all [RuleApp.isBox]
   case boxₗ =>
     by_cases eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
-    · unfold PartialInterpolationLeft
-      rw [dif_pos eq, PartialInterpolationLeft_eq]
+    · unfold partialInterpolationLeft
+      rw [dif_pos eq, partialEquationLeft]
       split <;> simp_all
       intro f f_zero f_last f_succ
       use 0
-      simp [PartialLeft_boxₗ, f_zero]
+      simp [partialLeft_boxₗ, f_zero]
       split <;> simp_all
       simp [Ext.r, Ext.RuleApp.isBox]
-    · unfold PartialInterpolationLeft
+    · unfold partialInterpolationLeft
       rw [dif_neg eq]
       intro f f_zero f_last f_succ
       use 1
@@ -660,7 +660,7 @@ theorem PartialInterpolationLeft_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X
         rcases step with l | r
         · rw [l]
           simp [Ext.r]
-          simp [PartialInterpolationLeft_eq, PartialLeft_boxₗ]
+          simp [partialEquationLeft, partialLeft_boxₗ]
           split <;> simp_all
           split <;> simp_all [Ext.RuleApp.isBox]
         · exfalso
@@ -696,15 +696,15 @@ theorem PartialInterpolationLeft_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X
             exact @Split_to_Ext_notNonAxLeaf 𝕏 x leftInterpolantSequent _ f_last
   case boxᵣ =>
     by_cases eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
-    · unfold PartialInterpolationLeft
-      rw [dif_pos eq, PartialInterpolationLeft_eq]
+    · unfold partialInterpolationLeft
+      rw [dif_pos eq, partialEquationLeft]
       split <;> simp_all
       intro f f_zero f_last f_succ
       use 0
-      simp [PartialLeft_boxᵣ, f_zero]
+      simp [partialLeft_boxᵣ, f_zero]
       split <;> simp_all
       simp [Ext.r, Ext.RuleApp.isBox]
-    · unfold PartialInterpolationLeft
+    · unfold partialInterpolationLeft
       rw [dif_neg eq]
       intro f f_zero f_last f_succ
       use 1
@@ -719,7 +719,7 @@ theorem PartialInterpolationLeft_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X
         rcases step with l | r
         · rw [l]
           simp [Ext.r]
-          simp [PartialInterpolationLeft_eq, PartialLeft_boxᵣ]
+          simp [partialEquationLeft, partialLeft_boxᵣ]
           split <;> simp_all
           split <;> simp_all [Ext.RuleApp.isBox]
         · exfalso
@@ -755,24 +755,24 @@ theorem PartialInterpolationLeft_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X
             exact @Split_to_Ext_notNonAxLeaf 𝕏 x leftInterpolantSequent _ f_last
 
 /-- Defining the left interpolation proof with all non-axiomatic nodes removed. -/
-noncomputable def InterpolantProofLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : SplitCut.Proof :=
-  @ProofTransformation 𝕏 (@leftInterpolantSequent 𝕏 _) PartialInterpolationLeft PartialInterpolationLeft_proves_int PartialInterpolationLeft_box_prop
+noncomputable def InterpolantProofLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : ExtSkip.Proof :=
+  @proofTransformation 𝕏 (@leftInterpolantSequent 𝕏 _) partialInterpolationLeft partialInterpolationLeft_proves_int partialInterpolationLeft_box_prop
 
 /-- Left syntactic interpolation result! -/
 theorem InterpolantProofLeft_proves_interpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X)
   : @InterpolantProofLeft 𝕏 fin_X ⊢ leftInterpolantSequent x := by
-  use ⟨x, (PartialInterpolationLeft x).root⟩
-  unfold InterpolantProofLeft ProofTransformation
-  simp [ProofTransformation_f]
-  exact PartialInterpolationLeft_proves_int x
+  use ⟨x, (partialInterpolationLeft x).root⟩
+  unfold InterpolantProofLeft proofTransformation
+  simp [proofTransformation_f]
+  exact partialInterpolationLeft_proves_int x
 
 /-! # Partial Left Interpolation Proofs
 
 All of the left and right partial interpolation proofs, split apart based on rule application. These
 are split apart since otherwise the file runs very slow. -/
 
-noncomputable def PartialRight_topₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topₗ Δ in_Δ)
-   : Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) where
+noncomputable def partialRight_topₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topₗ Δ in_Δ)
+   : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) where
     X := Unit
     α u := ⟨Ext.RuleApp.topₗ (rightEquationSequent x) (by
       simp [rightEquationSequent, equation, rule_def]
@@ -782,24 +782,24 @@ noncomputable def PartialRight_topₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
     root := ()
     path u f := by exfalso; simp [Ext.edge, Ext.p] at f; exact f.2
 
-noncomputable def PartialRight_topᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topᵣ Δ in_Δ)
-  : Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) where
+noncomputable def partialRight_topᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ in_Δ} (rule_def : r 𝕏.α x = RuleApp.topᵣ Δ in_Δ)
+  : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) where
       X := Unit
       α u := ⟨Ext.RuleApp.topᵣ (rightEquationSequent x) (by simp [rightEquationSequent, rule_def, f]; exact in_Δ), {}⟩
       step u := by simp [Ext.r, Ext.p]
       root := ()
       path u f := by exfalso; simp [Ext.edge, Ext.p] at f; exact f.2
 
-noncomputable def PartialRight_axₗₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axₗₗ Δ n in_Δ)
-  : Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) where
+noncomputable def partialRight_axₗₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axₗₗ Δ n in_Δ)
+  : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) where
     X := Unit
     α u := ⟨Ext.RuleApp.topₗ (rightEquationSequent x) (by simp [rightEquationSequent, rule_def, f]; simp [equation]; split <;> simp_all [Interpolant, partial_]), {}⟩
     step := by intro u; simp [Ext.r, Ext.p]
     root := ()
     path u f := by exfalso; simp [Ext.edge, Ext.p] at f; exact f.2
 
-noncomputable def PartialRight_axₗᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axₗᵣ Δ n in_Δ)
-  : Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) where
+noncomputable def partialRight_axₗᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axₗᵣ Δ n in_Δ)
+  : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) where
     X := Unit
     α u := ⟨Ext.RuleApp.axₗᵣ (rightEquationSequent x) n (by
       simp [rightEquationSequent, rule_def, f, in_Δ]
@@ -818,8 +818,8 @@ noncomputable def PartialRight_axₗᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] 
     root := ()
     path u f := by exfalso; simp [Ext.edge, Ext.p] at f; exact f.2
 
-noncomputable def PartialRight_axᵣₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axᵣₗ Δ n in_Δ)
-  : Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) where
+noncomputable def partialRight_axᵣₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axᵣₗ Δ n in_Δ)
+  : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) where
     X := Unit
     α u := ⟨Ext.RuleApp.axᵣₗ (rightEquationSequent x) n (by
       simp [rightEquationSequent, rule_def, f, in_Δ]
@@ -838,16 +838,16 @@ noncomputable def PartialRight_axᵣₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] 
     root := ()
     path u f := by exfalso; simp [Ext.edge, Ext.p] at f; exact f.2
 
-noncomputable def PartialRight_axᵣᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axᵣᵣ Δ n in_Δ)
-  : Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) where
+noncomputable def partialRight_axᵣᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axᵣᵣ Δ n in_Δ)
+  : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) where
     X := Unit
     α u := ⟨Ext.RuleApp.axᵣᵣ (rightEquationSequent x) n (by simp [rightEquationSequent, rule_def, f, in_Δ]), {}⟩
     step := by intro u; simp [Ext.r, Ext.p]
     root := ()
     path u f := by exfalso; simp [Ext.edge, Ext.p] at f; exact f.2
 
-noncomputable def PartialRight_orₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.orₗ Δ φ ψ in_Δ)
-: Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) :=
+noncomputable def partialRight_orₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.orₗ Δ φ ψ in_Δ)
+: Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
     match p_def : p 𝕏.α x with
       | [y] =>
         have interpolant_eq : Interpolant 𝕏 (equation x) = Interpolant 𝕏 (at encodeVar y) := by
@@ -861,8 +861,8 @@ noncomputable def PartialRight_orₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
         | [] => by have := 𝕏.step x; simp [rule_def] at this; simp_all
         | y :: z :: l => by have := 𝕏.step x; simp [rule_def] at this; simp_all
 
-noncomputable def PartialRight_orᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.orᵣ Δ φ ψ in_Δ)
-  : Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) :=
+noncomputable def partialRight_orᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.orᵣ Δ φ ψ in_Δ)
+  : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
     | [y] =>
       have interpolant_eq : Interpolant 𝕏 (equation x) = Interpolant 𝕏 (at encodeVar y) := by
@@ -886,8 +886,8 @@ noncomputable def PartialRight_orᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
     | [] => by have := 𝕏.step x; simp [rule_def] at this; simp_all
     | _ :: _ :: _ => by have := 𝕏.step x; simp [rule_def] at this; simp_all
 
-noncomputable def PartialRight_andₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.andₗ Δ φ ψ in_Δ)
-  : Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) :=
+noncomputable def partialRight_andₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.andₗ Δ φ ψ in_Δ)
+  : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y,z] =>
     have interpolant_eq : Interpolant 𝕏 (equation x) = (Interpolant 𝕏 (at encodeVar y) v Interpolant 𝕏 (at encodeVar z)) := by
@@ -912,8 +912,8 @@ noncomputable def PartialRight_andₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
   | _ :: _ :: _ :: _ => by have := 𝕏.step x; simp [rule_def] at this; simp_all
 
 set_option maxHeartbeats 400000 in
-noncomputable def PartialRight_andᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.andᵣ Δ φ ψ in_Δ)
-  : Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) :=
+noncomputable def partialRight_andᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ ψ in_Δ} (rule_def : r 𝕏.α x = RuleApp.andᵣ Δ φ ψ in_Δ)
+  : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y,z] =>
     have interpolant_eq : Interpolant 𝕏 (equation x) = (Interpolant 𝕏 (at encodeVar y) & Interpolant 𝕏 (at encodeVar z)) := by
@@ -974,8 +974,8 @@ noncomputable def PartialRight_andᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
   | [_] => by have := 𝕏.step x; simp [rule_def] at this; simp_all
   | _ :: _ :: _ :: _ => by have := 𝕏.step x; simp [rule_def] at this; simp_all
 
-noncomputable def PartialRight_boxₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ in_Δ} (rule_def : r 𝕏.α x = RuleApp.boxₗ Δ φ in_Δ)
-  : Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) :=
+noncomputable def partialRight_boxₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ in_Δ} (rule_def : r 𝕏.α x = RuleApp.boxₗ Δ φ in_Δ)
+  : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y] =>
     have interpolant_eq : Interpolant 𝕏 (equation x) = ◇ (Interpolant 𝕏 (at encodeVar y)) := by
@@ -998,8 +998,8 @@ noncomputable def PartialRight_boxₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
   | [] => by have := 𝕏.step x; simp [rule_def] at this; simp_all
   | _ :: _ :: _ => by have := 𝕏.step x; simp [rule_def] at this; simp_all
 
-noncomputable def PartialRight_boxᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ in_Δ} (rule_def : r 𝕏.α x = RuleApp.boxᵣ Δ φ in_Δ)
-  : Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) :=
+noncomputable def partialRight_boxᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ φ in_Δ} (rule_def : r 𝕏.α x = RuleApp.boxᵣ Δ φ in_Δ)
+  : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y] =>
     have interpolant_eq : Interpolant 𝕏 (equation x) = □ (Interpolant 𝕏 (at encodeVar y)) := by
@@ -1031,35 +1031,35 @@ noncomputable def PartialRight_boxᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
   | _ :: _ :: _ => by have := 𝕏.step x; simp [rule_def] at this; simp_all
 
 /-- Defines the right partial interpolation proof `Rₓ`. -/
-noncomputable def PartialInterpolationRight_eq {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) :=
+noncomputable def partialEquationRight {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
   match rule_def : (r 𝕏.α x) with
-    | .topₗ _ _ => PartialRight_topₗ x rule_def
-    | .topᵣ _ _ => PartialRight_topᵣ x rule_def
-    | .axₗₗ _ _ _ => PartialRight_axₗₗ x rule_def
-    | .axₗᵣ _ _ _ => PartialRight_axₗᵣ x rule_def
-    | .axᵣₗ _ _ _ => PartialRight_axᵣₗ x rule_def
-    | .axᵣᵣ _ _ _ => PartialRight_axᵣᵣ x rule_def
-    | .orₗ _ _ _ _ => PartialRight_orₗ x rule_def
-    | .orᵣ _ _ _ _ => PartialRight_orᵣ x rule_def
-    | .andₗ _ _ _ _ => PartialRight_andₗ x rule_def
-    | .andᵣ _ _ _ _ => PartialRight_andᵣ x rule_def
-    | .boxₗ _ _ _ => PartialRight_boxₗ x rule_def
-    | .boxᵣ _ _ _ => PartialRight_boxᵣ x rule_def
+    | .topₗ _ _ => partialRight_topₗ x rule_def
+    | .topᵣ _ _ => partialRight_topᵣ x rule_def
+    | .axₗₗ _ _ _ => partialRight_axₗₗ x rule_def
+    | .axₗᵣ _ _ _ => partialRight_axₗᵣ x rule_def
+    | .axᵣₗ _ _ _ => partialRight_axᵣₗ x rule_def
+    | .axᵣᵣ _ _ _ => partialRight_axᵣᵣ x rule_def
+    | .orₗ _ _ _ _ => partialRight_orₗ x rule_def
+    | .orᵣ _ _ _ _ => partialRight_orᵣ x rule_def
+    | .andₗ _ _ _ _ => partialRight_andₗ x rule_def
+    | .andᵣ _ _ _ _ => partialRight_andᵣ x rule_def
+    | .boxₗ _ _ _ => partialRight_boxₗ x rule_def
+    | .boxᵣ _ _ _ => partialRight_boxᵣ x rule_def
 
-/-- Every right partial interpolation proof `Lₓ` proves `f(x)ˡ ∣ ιₓ`. -/
-lemma PartialInterpolationRight_eq_proves_eq {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
-  Ext.Proves x (PartialInterpolationRight_eq x) (rightEquationSequent x) := by
+/-- Every right partial interpolation proof `Rₓ` proves `~ιₓ ∣ f(x)ʳ`. -/
+lemma partialEquationRight_proves_eq {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
+  Ext.Proves x (partialEquationRight x) (rightEquationSequent x) := by
     have 𝕏_h := 𝕏.step x
-    unfold PartialInterpolationRight_eq
+    unfold partialEquationRight
     split <;> simp_all [Ext.Proves, Ext.r, List.map_eq_cons_iff]
-    · simp [PartialRight_topₗ, Ext.f]
-    · simp [PartialRight_topᵣ, Ext.f]
-    · simp [PartialRight_axₗₗ, Ext.f]
-    · simp [PartialRight_axₗᵣ, Ext.f]
-    · simp [PartialRight_axᵣₗ, Ext.f]
-    · simp [PartialRight_axᵣᵣ, Ext.f]
+    · simp [partialRight_topₗ, Ext.f]
+    · simp [partialRight_topᵣ, Ext.f]
+    · simp [partialRight_axₗₗ, Ext.f]
+    · simp [partialRight_axₗᵣ, Ext.f]
+    · simp [partialRight_axᵣₗ, Ext.f]
+    · simp [partialRight_axᵣᵣ, Ext.f]
     · rename_i rule_def
-      simp [PartialRight_orₗ]
+      simp [partialRight_orₗ]
       have ⟨y, p_def, prop⟩ := 𝕏_h
       split <;> simp_all [Ext.f]
       simp [rightInterpolantSequent, rightEquationSequent, prop, rule_def]
@@ -1067,13 +1067,13 @@ lemma PartialInterpolationRight_eq_proves_eq {𝕏 : Proof} [fin_X : Fintype �
       · simp [equation]; split <;> simp_all
       · simp [f, fₙ, fₚ]
         aesop
-    · simp [PartialRight_orᵣ]
+    · simp [partialRight_orᵣ]
       split <;> simp_all [Ext.f]
-    · simp [PartialRight_andₗ]
+    · simp [partialRight_andₗ]
       split <;> simp_all [Ext.f]
     · rename_i rule_def
       have ⟨y, z, p_def, prop⟩ := 𝕏_h
-      simp [PartialRight_andᵣ]
+      simp [partialRight_andᵣ]
       split <;> simp_all
       have ⟨eq₁, eq₂⟩ := p_def
       by_cases eq : Interpolant 𝕏 (at encodeVar y) = Interpolant 𝕏 (at encodeVar z) <;> subst eq₁ eq₂
@@ -1081,22 +1081,22 @@ lemma PartialInterpolationRight_eq_proves_eq {𝕏 : Proof} [fin_X : Fintype �
         simp [Ext.f]
       · rw [dif_neg eq]
         simp [Ext.f]
-    · simp [PartialRight_boxₗ]
+    · simp [partialRight_boxₗ]
       split <;> simp_all [Ext.f]
-    · simp [PartialRight_boxᵣ]
+    · simp [partialRight_boxᵣ]
       split <;> simp_all [Ext.f]
 
 set_option maxHeartbeats 1000000 in
-noncomputable def PartialInterpolationRight {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Ext.CutProofFromPremises x (@rightInterpolantSequent 𝕏 _) :=
+noncomputable def partialInterpolationRight {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
-  then PartialInterpolationRight_eq x
+  then partialEquationRight x
   else
     have equiv : Interpolant 𝕏 (at (encodeVar x)) ≅ Interpolant 𝕏 (equation x) := by
       have := (Interpolant_prop x).1
       simp_all
-    let 𝕐₁ := PartialInterpolationRight_eq x
+    let 𝕐₁ := partialEquationRight x
     let y₁ := 𝕐₁.root
-    have y₁_prop := PartialInterpolationRight_eq_proves_eq x
+    have y₁_prop := partialEquationRight_proves_eq x
     let 𝕐₂ := equiv.2.choose
     let y₂ := equiv.2.choose_spec.choose
     have y₂_prop := equiv.2.choose_spec.choose_spec
@@ -1316,16 +1316,16 @@ noncomputable def PartialInterpolationRight {𝕏 : Proof} [fin_X : Fintype 𝕏
                 unfold g
                 simp [fn_def]}
 
-lemma PartialInterpolationRight_proves_int {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
-  Ext.Proves x (PartialInterpolationRight x) (rightInterpolantSequent x) :=
+lemma partialInterpolationRight_proves_int {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
+  Ext.Proves x (partialInterpolationRight x) (rightInterpolantSequent x) :=
   if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then (by
-    convert PartialInterpolationRight_eq_proves_eq x using 1
-    · unfold PartialInterpolationRight
+    convert partialEquationRight_proves_eq x using 1
+    · unfold partialInterpolationRight
       simp [eq]
     · unfold rightInterpolantSequent rightEquationSequent
       simp [eq])
   else by
-    unfold PartialInterpolationRight
+    unfold partialInterpolationRight
     simp [eq]
     simp [Ext.Proves, Ext.r, Ext.f]
 
@@ -1334,27 +1334,27 @@ set_option maxHeartbeats 300000 in
 /-- For every `x` in a finite split proof, the partial left interpolation proof associated with `x`
     has the property that on every path from the root to a non-axiomatic leaf, the box rule is
     applied on this path. -/
-theorem PartialInterpolationRight_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
+theorem partialInterpolationRight_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
   (r 𝕏.α x).isBox →
-    ∀ (n : ℕ) (f : Fin (n + 1) → (PartialInterpolationRight x).X),
-      f 0 = (PartialInterpolationRight x).root →
-        (Ext.r (PartialInterpolationRight x).α (f ⟨n, by simp⟩)).isNonAxLeaf →
-          (∀ (m : Fin n), Ext.edge (PartialInterpolationRight x).α (f m.castSucc) (f m.succ)) →
-            ∃ m, (Ext.r (PartialInterpolationRight x).α (f m)).isBox := by
+    ∀ (n : ℕ) (f : Fin (n + 1) → (partialInterpolationRight x).X),
+      f 0 = (partialInterpolationRight x).root →
+        (Ext.r (partialInterpolationRight x).α (f ⟨n, by simp⟩)).isNonAxLeaf →
+          (∀ (m : Fin n), Ext.edge (partialInterpolationRight x).α (f m.castSucc) (f m.succ)) →
+            ∃ m, (Ext.r (partialInterpolationRight x).α (f m)).isBox := by
   intro is_box n
   have 𝕏_h := 𝕏.step x
   cases r_def : r 𝕏.α x <;> simp_all [RuleApp.isBox]
   case boxₗ =>
     by_cases eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
-    · unfold PartialInterpolationRight
-      rw [dif_pos eq, PartialInterpolationRight_eq]
+    · unfold partialInterpolationRight
+      rw [dif_pos eq, partialEquationRight]
       split <;> simp_all
       intro f f_zero f_last f_succ
       use 0
-      simp [PartialRight_boxₗ, f_zero]
+      simp [partialRight_boxₗ, f_zero]
       split <;> simp_all
       simp [Ext.r, Ext.RuleApp.isBox]
-    · unfold PartialInterpolationRight
+    · unfold partialInterpolationRight
       rw [dif_neg eq]
       intro f f_zero f_last f_succ
       use 1
@@ -1369,7 +1369,7 @@ theorem PartialInterpolationRight_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.
         rcases step with l | r
         · rw [l]
           simp [Ext.r]
-          simp [PartialInterpolationRight_eq, PartialRight_boxₗ]
+          simp [partialEquationRight, partialRight_boxₗ]
           split <;> simp_all
           split <;> simp_all [Ext.RuleApp.isBox]
         · exfalso
@@ -1405,15 +1405,15 @@ theorem PartialInterpolationRight_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.
             exact @Split_to_Ext_notNonAxLeaf 𝕏 x rightInterpolantSequent _ f_last
   case boxᵣ =>
     by_cases eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
-    · unfold PartialInterpolationRight
-      rw [dif_pos eq, PartialInterpolationRight_eq]
+    · unfold partialInterpolationRight
+      rw [dif_pos eq, partialEquationRight]
       split <;> simp_all
       intro f f_zero f_last f_succ
       use 0
-      simp [PartialRight_boxᵣ, f_zero]
+      simp [partialRight_boxᵣ, f_zero]
       split <;> simp_all
       simp [Ext.r, Ext.RuleApp.isBox]
-    · unfold PartialInterpolationRight
+    · unfold partialInterpolationRight
       rw [dif_neg eq]
       intro f f_zero f_last f_succ
       use 1
@@ -1428,7 +1428,7 @@ theorem PartialInterpolationRight_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.
         rcases step with l | r
         · rw [l]
           simp [Ext.r]
-          simp [PartialInterpolationRight_eq, PartialRight_boxᵣ]
+          simp [partialEquationRight, partialRight_boxᵣ]
           split <;> simp_all
           split <;> simp_all [Ext.RuleApp.isBox]
         · exfalso
@@ -1464,13 +1464,24 @@ theorem PartialInterpolationRight_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.
             exact @Split_to_Ext_notNonAxLeaf 𝕏 x rightInterpolantSequent _ f_last
 
 /-- Defining the right interpolation proof with all non-axiomatic nodes removed. -/
-noncomputable def InterpolantProofRight {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : SplitCut.Proof :=
-  @ProofTransformation 𝕏 (@rightInterpolantSequent 𝕏 _) PartialInterpolationRight PartialInterpolationRight_proves_int PartialInterpolationRight_box_prop
+noncomputable def InterpolantProofRight {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : ExtSkip.Proof :=
+  @proofTransformation 𝕏 (@rightInterpolantSequent 𝕏 _) partialInterpolationRight partialInterpolationRight_proves_int partialInterpolationRight_box_prop
 
 /-- Right syntactic interpolation result! -/
 theorem InterpolantProofRight_proves_interpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X)
   : @InterpolantProofRight 𝕏 fin_X ⊢ rightInterpolantSequent x := by
-  use ⟨x, (PartialInterpolationRight x).root⟩
-  unfold InterpolantProofRight ProofTransformation
-  simp [ProofTransformation_f]
-  exact PartialInterpolationRight_proves_int x
+  use ⟨x, (partialInterpolationRight x).root⟩
+  unfold InterpolantProofRight proofTransformation
+  simp [proofTransformation_f]
+  exact partialInterpolationRight_proves_int x
+
+
+/-- ## Syntactic interpolation
+
+Given a finite split proof, `InterpolantProofLeft` proves the left interpolation correctness
+statement and `InterpolantProofRight` proves the right interpolation correctness statement. -/
+
+theorem syntacticInterpolation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
+    (@InterpolantProofLeft 𝕏 fin_X  ⊢ leftInterpolantSequent  x)
+  ∧ (@InterpolantProofRight 𝕏 fin_X ⊢ rightInterpolantSequent x) :=
+  ⟨InterpolantProofLeft_proves_interpolant x, InterpolantProofRight_proves_interpolant x⟩

@@ -57,12 +57,15 @@ def evaluateSeq {α : Type} : Model α × α → Sequent → Prop :=
 def evaluateSSeq {α : Type} : Model α × α → SplitSequent → Prop :=
   λ M_u Γ ↦ ∃ φ ∈ Γ, evaluate M_u (Sum.elim id id φ)
 
+/-- A formula is valid if it holds at every world in every GL model. -/
 def Formula.isValid (φ : Formula) : Prop
   := ∀ (α : Type), ∀ M : Model α, ∀ u : α, evaluate ⟨M, u⟩ φ
 
+/-- A sequent is valid if some formula in it holds at every world in every GL model. -/
 def Sequent.isValid (Δ : Sequent) : Prop
   := ∀ (α : Type), ∀ M : Model α, ∀ u : α, evaluateSeq ⟨M, u⟩ Δ
 
+/-- A split sequent is valid if some formula in it holds at every world in every GL model. -/
 def SplitSequent.isValid (Δ : SplitSequent) : Prop
   := ∀ (α : Type), ∀ M : Model α, ∀ u : α, evaluateSSeq ⟨M, u⟩ Δ
 
@@ -70,68 +73,9 @@ prefix:40 "⊨" => Formula.isValid
 prefix:40 "⊨" => Sequent.isValid
 prefix:40 "⊨" => SplitSequent.isValid
 
+/-- Two formulas are semantically equivalent if their biconditional is valid. -/
 def semEquiv : Formula → Formula → Prop := fun φ ψ ↦ ⊨ φ ⟷ ψ
 
--- /- TRANSFORMATIONS -/
-
--- /-- Structure preserving map substituting Pₙ by C --/
--- def single (n : Nat) (C : Formula) : Formula → Formula
---   | ⊥ => ⊥
---   | ⊤ => ⊤
---   | at k => if k == n then C else at k
---   | na k => if k == n then ~ C else na k
---   | A & B => (single n C A) & (single n C B)
---   | A v B => (single n C A) v (single n C B)
---   | □ A => □ (single n C A)
---   | ◇ A => ◇ (single n C A)
-
--- theorem single_neg (n : Nat) (C D : Formula) : single n C (~D) = Formula.neg (single n C D) := by
---   induction D <;> simp [Formula.neg, single] <;> aesop
-
--- theorem single_iff (n : Nat) (C D E : Formula) : single n C (D ⟷ E) = (single n C D) ⟷ (single n C E) := by
---   simp [single, single_neg]
-
--- @[simp]
--- theorem in_neg_voc_iff {n : Nat} {φ : Formula} : n ∈ (~φ).vocab ↔ n ∈ φ.vocab := by
---   induction φ <;> simp_all [Formula.vocab]
-
--- theorem in_single_voc (m n : Nat) (φ ψ : Formula) :
---   m ∉ φ.vocab → (m ≠ n → m ∉ ψ.vocab) → n ∉ φ.vocab → m ∉ (single n φ ψ).vocab
---   := by
---     intro mp
---     induction ψ <;> simp_all [single, Formula.vocab]
---     case atom k =>
---       by_cases k = n <;> simp_all [Formula.vocab]; aesop
---     case negAtom k =>
---       by_cases k = n <;> simp_all [Formula.vocab]
---       aesop
-
--- /-- Structure preserving map substituting all atoms meeting a certain criteria p --/
--- def partial_ {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) : Formula → Formula
---   | ⊥ => ⊥
---   | ⊤ => ⊤
---   | at n => if h : p n then σ ⟨n, h⟩ else at n
---   | na n => if h : p n then ~ σ ⟨n, h⟩ else na n
---   | A & B => (partial_ σ A) & (partial_ σ B)
---   | A v B => (partial_ σ A) v (partial_ σ B)
---   | □ A => □ (partial_ σ A)
---   | ◇ A => ◇ (partial_ σ A)
-
--- /-- Structure preserving map substituting all atoms via a transformation σ --/
--- def full (σ : Nat → Formula) (A : Formula) : Formula := match A with
---   | ⊥ => ⊥
---   | ⊤ => ⊤
---   | at n => σ n
---   | na n => ~ (σ n)
---   | A & B => (full σ A) & (full σ B)
---   | A v B => (full σ A) v (full σ B)
---   | □ A => □ (full σ A)
---   | ◇ A => ◇ (full σ A)
--- termination_by Formula.size A
--- decreasing_by
---   all_goals
---   simp [Formula.size]
---   try linarith
 
 /-- Model construction for substitution lemma. -/
 def modelSubstitution {α} (M : Model α) (n : Nat) (φ : Formula) : Model α where
@@ -148,7 +92,7 @@ theorem substitution_lemma {α} (M : Model α) (u : α) (n : Nat) (ψ : Formula)
   case atom k => aesop
   case negAtom k => if eq : k = n then simp [eq, evaluate_neg] else aesop
 
-/-- Corollary of substitution lemma: If `φ` valid, then `φ[ψ/n]` is valid -/
+/-- Corollary of substitution lemma: If `φ` valid, then `φ[ψ/n]` is valid. -/
 lemma single_preserves_validity (n : Nat) (φ ψ : Formula) : ⊨ φ → ⊨ single n ψ φ :=
   fun φ_val α M u ↦ (substitution_lemma M u n ψ φ).2 (φ_val α (modelSubstitution M n ψ) u)
 

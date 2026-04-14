@@ -271,7 +271,7 @@ def coalgebraGame : Game where
       simp
       exact Move.builder Γ_prop nin
 
-/-- Move relation and being in the set of game moves are equivalant. -/
+/-- Move relation and being in the set of game moves are equivalent. -/
 theorem move_iff_in_moves {g g' : coalgebraGame.Pos} : Move g g' ↔ g' ∈ coalgebraGame.moves g := by
   constructor
   · intro g_g'

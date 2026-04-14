@@ -147,7 +147,7 @@ theorem encodeVar_in_equation_imp_edge {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {
   all_goals
     aesop
 
-/-- From the paper: If p ∈ χx then p ∈ Voc(fˡ(x)) ∩ Voc(fʳ(x)) or p = py and x ◁ y -/
+/-- From the paper: If p ∈ χx then p ∈ Voc(fˡ(x)) ∩ Voc(fʳ(x)) or p = py and x ◁ y. -/
 theorem var_in_equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {x : 𝕏.X} (n : ℕ) :
   n ∈ (equation x).vocab → n ∈ (SplitSequent.left (f (r 𝕏.α x))).vocab ∩ (SplitSequent.right (f (r 𝕏.α x))).vocab
   ∨ ∃ y, encodeVar y = n ∧ (edge 𝕏.α) x y := by
@@ -161,7 +161,7 @@ theorem var_in_equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {x : 𝕏.X} (n 
     grind [Formula.vocab]
 
 /-- Helper for Solution strong, gives interaction between single substitution and partial substitution. -/
-theorem Solution_strong_helper {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) (n : ℕ) {B A : Formula}
+theorem interpolant_strong_helper {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) (n : ℕ) {B A : Formula}
   : single n B (partial_ σ A) = @partial_ (fun m ↦ p m ∨ m = n) _ (fun m ↦ single n B (if h : p m then σ ⟨m, h⟩ else at m)) A := by
   induction A
   case top => simp only [partial_, single]
@@ -194,14 +194,14 @@ theorem Solution_strong_helper {p : Nat → Prop} [DecidablePred p] (σ : Subtyp
 
 open Classical in
 /-- Strong solution towards finding interpolants. -/
-noncomputable def Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
+noncomputable def interpolant_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
   {Y : Finset 𝕏.X} (Y_sub : Y ⊆ fin_X.elems) :
     {n // n ∈ Y.image encodeVar} → Formula :=
     if em_con : Y = ∅ then (fun ⟨n, n_prop⟩ ↦ False.elim (by simp_all)) else
     if loop_con : ∃ y, Relation.TransGen (edgeRestr (fun x ↦ x ∈ Y)) y y then
       have box_in_Y := exists_box_on_restr_loop loop_con.choose (fun x ↦ x ∈ Y) loop_con.choose_spec
       let box := box_in_Y.choose
-      have τ := @Solution_strong _ _ (Y \ {box}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
+      have τ := @interpolant_strong _ _ (Y \ {box}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
       have box_or_dia : (partial_ τ (equation box)).isBox ∨ (partial_ τ (equation box)).isDiamond := by
         unfold box
         have is_box := box_in_Y.choose_spec.1
@@ -212,13 +212,13 @@ noncomputable def Solution_strong {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
         · unfold equation
           split <;> simp_all
           simp [partial_, Formula.isBox]
-      have ψ := (fixed_point_theorem_box_or_dia (partial_ τ (equation box)) (encodeVar box) box_or_dia).choose -- I think this is what we want
+      have ψ := (fixed_point_theorem_modal (partial_ τ (equation box)) (encodeVar box) box_or_dia).choose -- I think this is what we want
       fun n ↦ (single (encodeVar box) ψ) (partial_ τ (at n))
     else
       have y_in_Y : ∃ y, y ∈ Y := by by_contra h; apply em_con; apply Finset.eq_empty_of_forall_notMem; simp_all
       have leaf_in_Y := finite_and_no_loop_implies_exists_leaf (fun x ↦ x ∈ Y) y_in_Y.choose y_in_Y.choose_spec loop_con
       let leaf := leaf_in_Y.choose
-      let τ := @Solution_strong _ _ (Y \ {leaf}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
+      let τ := @interpolant_strong _ _ (Y \ {leaf}) (by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in) -- maybe make seperate
       fun n ↦ (single (encodeVar leaf) (equation leaf)) (partial_ τ (at n))
 termination_by Finset.card Y
 decreasing_by
@@ -231,22 +231,19 @@ decreasing_by
 
 theorem equiv_help {C D E : Formula} (h : C ≅ D) (g : D = E) : (C ≅ E) := by aesop
 
--- theorem in_single_voc' {m n : ℕ} {φ ψ : Formula} : m ∈ (single n φ ψ).vocab → (m ∈ φ.vocab ∧ n ∈ ψ.vocab) ∨ (m ∈ ψ.vocab ∧ m ≠ n) := by
---   intro m_in
---   induction ψ <;> simp_all [single] <;> try grind [Formula.vocab, in_neg_voc_iff, Formula.instTop, Formula.instBot]
 
 set_option maxHeartbeats 1000000 in
 open Classical in
-/-- Proves the `Solution_strong` satisfies the necessary properties. -/
-theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
+/-- Proves the `interpolant_strong` satisfies the necessary properties. -/
+theorem interpolant_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
   (Y : Finset 𝕏.X) (Y_sub : Y ⊆ fin_X.elems) :
       ∀ n : {n // n ∈ Y.image encodeVar},
-          ((Solution_strong Y_sub n = partial_ (Solution_strong Y_sub) (equation (unencodeVar n (encodeVar_helper₁ n.2))))
-         ∨ (Solution_strong Y_sub n ≅ partial_ (Solution_strong Y_sub) (equation (unencodeVar n (encodeVar_helper₁ n.2)))))
-       ∧ (∀ m ∈ (Solution_strong Y_sub n).vocab, m ∈ ((SplitSequent.left (f (r 𝕏.α (unencodeVar n (encodeVar_helper₁ n.2))))).vocab ∩ (SplitSequent.right (f (r 𝕏.α (unencodeVar n (encodeVar_helper₁ n.2))))).vocab) ∪ (fin_X.elems.image encodeVar \ Y.image encodeVar))
-       ∧ (∀ y : 𝕏.X, encodeVar y ∈ (partial_ (Solution_strong Y_sub) (at n)).vocab → (Relation.ReflTransGen (edge 𝕏.α)) (unencodeVar n (encodeVar_helper₁ n.2)) y)
+          ((interpolant_strong Y_sub n = partial_ (interpolant_strong Y_sub) (equation (unencodeVar n (encodeVar_helper₁ n.2))))
+         ∨ (interpolant_strong Y_sub n ≅ partial_ (interpolant_strong Y_sub) (equation (unencodeVar n (encodeVar_helper₁ n.2)))))
+       ∧ (∀ m ∈ (interpolant_strong Y_sub n).vocab, m ∈ ((SplitSequent.left (f (r 𝕏.α (unencodeVar n (encodeVar_helper₁ n.2))))).vocab ∩ (SplitSequent.right (f (r 𝕏.α (unencodeVar n (encodeVar_helper₁ n.2))))).vocab) ∪ (fin_X.elems.image encodeVar \ Y.image encodeVar))
+       ∧ (∀ y : 𝕏.X, encodeVar y ∈ (partial_ (interpolant_strong Y_sub) (at n)).vocab → (Relation.ReflTransGen (edge 𝕏.α)) (unencodeVar n (encodeVar_helper₁ n.2)) y)
        := by
-  unfold Solution_strong
+  unfold interpolant_strong
   intro ⟨n, n_in⟩
   by_cases em_con : Y = ∅
   · subst em_con
@@ -256,8 +253,8 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
       simp [em_con, loop_con]
       have box_in_Y := exists_box_on_restr_loop loop_con.choose (fun x ↦ x ∈ Y) loop_con.choose_spec
       have Z_sub : Y \ {box_in_Y.choose} ⊆ Fintype.elems := by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in
-      let τ_prop := @Solution_strong_prop _ _ (Y \ {box_in_Y.choose}) Z_sub -- maybe make seperate
-      have box_or_dia : (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose)).isBox ∨ (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose)).isDiamond := by
+      let τ_prop := @interpolant_strong_prop _ _ (Y \ {box_in_Y.choose}) Z_sub -- maybe make seperate
+      have box_or_dia : (partial_ (interpolant_strong Z_sub) (equation box_in_Y.choose)).isBox ∨ (partial_ (interpolant_strong Z_sub) (equation box_in_Y.choose)).isDiamond := by
         have is_box := box_in_Y.choose_spec.1
         cases r_def : r 𝕏.α box_in_Y.choose <;> simp [r_def] at is_box <;> simp [RuleApp.isBox] at is_box
         · unfold equation
@@ -266,8 +263,8 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
         · unfold equation
           split <;> simp_all
           simp [partial_, Formula.isBox]
-      have fpt := (fixed_point_theorem_box_or_dia (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose)) (encodeVar box_in_Y.choose) box_or_dia)
-      have const := partial_const (Solution_strong Z_sub) (at (encodeVar box_in_Y.choose)) (by
+      have fpt := (fixed_point_theorem_modal (partial_ (interpolant_strong Z_sub) (equation box_in_Y.choose)) (encodeVar box_in_Y.choose) box_or_dia)
+      have const := partial_const (interpolant_strong Z_sub) (at (encodeVar box_in_Y.choose)) (by
         simp [Formula.vocab, Finset.mem_singleton, forall_eq])
       have ⟨z, p_eq, z_in, box_z⟩ : ∃ z, p 𝕏.α box_in_Y.choose = [z] ∧ z ∈ Y ∧ z ∈ p 𝕏.α box_in_Y.choose := by
         have is_box := box_in_Y.choose_spec.1
@@ -305,7 +302,7 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
         refine ⟨?_, ?_, ?_⟩
         · right
           simp [partial_, single, encodeVar_inv]
-          have h : fpt.choose ≅ (single (encodeVar box_in_Y.choose) fpt.choose (partial_ (Solution_strong Z_sub) (equation box_in_Y.choose))) := equiv_iff_sem_equiv.1 fpt.choose_spec.2.1
+          have h : fpt.choose ≅ (single (encodeVar box_in_Y.choose) fpt.choose (partial_ (interpolant_strong Z_sub) (equation box_in_Y.choose))) := equiv_iff_sem_equiv.1 fpt.choose_spec.2.1
           convert h using 1
           rcases equation_eq with c | c
           all_goals
@@ -376,7 +373,7 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
         · rcases eq_or_equiv with eq | equiv
           · left
             simp [partial_, n_in', eq]
-            convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar box_in_Y.choose) fpt.choose (equation (unencodeVar n (encodeVar_helper₁ n_in)))
+            convert @interpolant_strong_helper _ _ (interpolant_strong Z_sub) (encodeVar box_in_Y.choose) fpt.choose (equation (unencodeVar n (encodeVar_helper₁ n_in)))
             · simp
               constructor
               · intro ⟨y, y_in, y_eq⟩
@@ -425,7 +422,7 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
             have := single_preserves_equiv (encodeVar box_in_Y.choose) _ _ fpt.choose equiv
             apply equiv_help this
 
-            convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar box_in_Y.choose) fpt.choose (equation (unencodeVar n (encodeVar_helper₁ n_in)))
+            convert @interpolant_strong_helper _ _ (interpolant_strong Z_sub) (encodeVar box_in_Y.choose) fpt.choose (equation (unencodeVar n (encodeVar_helper₁ n_in)))
             · simp
               constructor
               · intro mp
@@ -534,9 +531,9 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
       have y_in_Y : ∃ y, y ∈ Y := by by_contra h; apply em_con; apply Finset.eq_empty_of_forall_notMem; simp_all
       have leaf_in_Y := finite_and_no_loop_implies_exists_leaf (fun x ↦ x ∈ Y) y_in_Y.choose y_in_Y.choose_spec loop_con
       have Z_sub : Y \ {leaf_in_Y.choose} ⊆ Fintype.elems := by simp [Finset.subset_iff]; intro _ x_in _; exact Y_sub x_in
-      let τ_prop := @Solution_strong_prop _ _ (Y \ {leaf_in_Y.choose}) Z_sub -- maybe make seperate
+      let τ_prop := @interpolant_strong_prop _ _ (Y \ {leaf_in_Y.choose}) Z_sub -- maybe make seperate
 
-      have const := partial_const (Solution_strong Z_sub) (at (encodeVar leaf_in_Y.choose)) (by
+      have const := partial_const (interpolant_strong Z_sub) (at (encodeVar leaf_in_Y.choose)) (by
         simp [Formula.vocab, Finset.mem_singleton, forall_eq])
 
       by_cases n = encodeVar leaf_in_Y.choose
@@ -595,7 +592,7 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
         · rcases eq_or_equiv with eq | equiv
           · left
             simp [partial_, n_in', eq]
-            convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) (equation (unencodeVar n (encodeVar_helper₁ n_in)))
+            convert @interpolant_strong_helper _ _ (interpolant_strong Z_sub) (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) (equation (unencodeVar n (encodeVar_helper₁ n_in)))
             · simp
               constructor
               · intro mp
@@ -643,7 +640,7 @@ theorem Solution_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
             have := single_preserves_equiv (encodeVar leaf_in_Y.choose) _ _ (equation leaf_in_Y.choose) equiv
             apply equiv_help this
 
-            convert @Solution_strong_helper _ _ (Solution_strong Z_sub) (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) (equation (unencodeVar n (encodeVar_helper₁ n_in)))
+            convert @interpolant_strong_helper _ _ (interpolant_strong Z_sub) (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) (equation (unencodeVar n (encodeVar_helper₁ n_in)))
             · simp
               constructor
               · intro mp
@@ -729,7 +726,7 @@ decreasing_by
     simp [←Finset.card_sdiff_add_card_inter Y {leaf_in_Y.choose}, leaf_in]
 
 noncomputable def Interpolant (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Formula → Formula
-  := partial_ $ @Solution_strong 𝕏 _ fin_X.elems (by aesop)
+  := partial_ $ @interpolant_strong 𝕏 _ fin_X.elems (by aesop)
 
 lemma eq_chain {α : Type} {a b c d : α} {r : α → α → Prop} (h₁ : r a c) (h₂ : a = b) (h₃ : c = d) : r b d :=
 by
@@ -742,7 +739,7 @@ theorem Interpolant_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
  := by
   unfold Interpolant
   have h : ∀ y : 𝕏.X, encodeVar y ∈ Finset.image encodeVar fin_X.elems := by simp [Fintype.complete]
-  have := @Solution_strong_prop 𝕏 _ fin_X.elems (by aesop) ⟨encodeVar x, by simp [h]⟩
+  have := @interpolant_strong_prop 𝕏 _ fin_X.elems (by aesop) ⟨encodeVar x, by simp [h]⟩
   refine ⟨?_, ?_⟩
   · rcases this.1 with l | r
     · left

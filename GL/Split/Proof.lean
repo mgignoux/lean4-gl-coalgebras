@@ -97,7 +97,7 @@ def p {X : Type} (α : X → T.obj X) (x : X) := (α x).2
 /-- Edge relation induced by `p`. -/
 def edge {X : Type} (α : X → T.obj X) (x y : X) : Prop := y ∈ p α x
 
-/-- Defininion of GL-split proof. -/
+/-- Definition of GL-split proof. -/
 structure Proof where
   X : Type
   α : X → T.obj X
@@ -265,40 +265,40 @@ lemma node_in_pg_sequent_in_FL (𝕏 : Proof) (x : 𝕏.X) : ∀ y : (pointGener
 
 /-! # Filtration of GL-Proofs -/
 
-/-- Equivelance relation used for Filtration. -/
-instance instSetoidX (𝕏 : Proof) : Setoid 𝕏.X where
+/-- Equivalence relation used for Filtration. -/
+instance f_eq_equi_rel (𝕏 : Proof) : Setoid 𝕏.X where
   r x y := f (r 𝕏.α x) = f (r 𝕏.α y)
   iseqv := ⟨by intro x; exact rfl,
             by intro x y h; exact Eq.symm h,
             by intro x y z h1 h2; exact Eq.trans h1 h2⟩
 
 /-- Structure morphism for Filtration. -/
-@[simp] noncomputable def αQuot 𝕐 (x : Quotient (instSetoidX 𝕐)) :=
-  T.map (Quotient.mk (instSetoidX 𝕐)) (𝕐.α (Quotient.out x))
+@[simp] noncomputable def αQuot 𝕐 (x : Quotient (f_eq_equi_rel 𝕐)) :=
+  T.map (Quotient.mk (f_eq_equi_rel 𝕐)) (𝕐.α (Quotient.out x))
 
 /-- Filtration of a GL-split Proof is a GL-split proof. -/
 noncomputable def filtration (𝕐 : Proof) : Proof where
-  X := Quotient (instSetoidX 𝕐)
+  X := Quotient (f_eq_equi_rel 𝕐)
   α := αQuot 𝕐
   step := by
     intro x
     cases x using Quotient.inductionOn
     case h x =>
-      have hyp := fun x ↦ @Quotient.mk_out _ (instSetoidX 𝕐) x
-      have h := 𝕐.step (@Quotient.out _ (instSetoidX 𝕐) ⟦x⟧)
+      have hyp := fun x ↦ @Quotient.mk_out _ (f_eq_equi_rel 𝕐) x
+      have h := 𝕐.step (@Quotient.out _ (f_eq_equi_rel 𝕐) ⟦x⟧)
       simp only [r,p,αQuot,T] at *
       convert h <;> simp_all
       all_goals
         intro x x_in
         exact hyp x
 
-/-! # Finite Model Property -/
+/-! # Finite Proof Property -/
 
-/-- Given a split proof of `Δ` there exists a finite split proof of `Δ`-/
+/-- Given a split proof of `Δ` there exists a finite split proof of `Δ`. -/
 theorem finite_proof_of_proof (𝕏 : Proof) (Δ : SplitSequent) : (𝕏 ⊢ Δ) → ∃ 𝕐, Finite 𝕐.X ∧ (𝕐 ⊢ Δ) := by
   intro X_proves_Δ
   have ⟨x, f_Δ⟩ := X_proves_Δ
-  use pointGeneratedProof (filtration 𝕏) (Quotient.mk (instSetoidX 𝕏) x)
+  use pointGeneratedProof (filtration 𝕏) (Quotient.mk (f_eq_equi_rel 𝕏) x)
   constructor
   · have h : Finite (SplitSequent.FL Δ).powerset := by
       apply Set.finite_coe_iff.1
@@ -315,7 +315,7 @@ theorem finite_proof_of_proof (𝕏 : Proof) (Δ : SplitSequent) : (𝕏 ⊢ Δ)
     apply Subtype.ext
     apply Quotient.out_equiv_out.1
     exact f_z_eq
-  · use ⟨Quotient.mk (instSetoidX 𝕏) x, Relation.ReflTransGen.refl⟩
+  · use ⟨Quotient.mk (f_eq_equi_rel 𝕏) x, Relation.ReflTransGen.refl⟩
     rw [←f_Δ]
     simp [r, filtration, pointGeneratedProof]
     exact Quotient.mk_out x
@@ -458,9 +458,9 @@ theorem inf_path_has_inf_boxes {𝕏 : Proof} (g : ℕ → 𝕏.X) (h : ∀ n, e
     apply lt_if_not_box_edge ⟨h (n + m), h2 m⟩
 
 /-- If a proof is finite and there are no loops under a restriction, then there must exist a leaf. -/
-theorem finite_and_no_loop_implies_exists_leaf {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (h : 𝕏.X → Prop) (x : 𝕏.X) (x_sat : h x):
-(¬ ∃ y, Relation.TransGen (edgeRestr h) y y)
-    → ∃ y : 𝕏.X, h y ∧ ∀ z ∈ (p 𝕏.α y), ¬ h z := by
+theorem finite_and_no_loop_implies_exists_leaf {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (h : 𝕏.X → Prop)
+  (x : 𝕏.X) (x_sat : h x) :
+    (¬ ∃ y, Relation.TransGen (edgeRestr h) y y) → ∃ y : 𝕏.X, h y ∧ ∀ z ∈ (p 𝕏.α y), ¬ h z := by
   intro mp
   by_contra con
   simp_all
@@ -472,7 +472,6 @@ theorem finite_and_no_loop_implies_exists_leaf {𝕏 : Proof} [fin_X : Fintype �
       exact ⟨(Exists.choose_spec (con x x_sat)).1 , x_sat, (Exists.choose_spec (con x x_sat)).2⟩
     case succ n ih =>
       exact ⟨(Exists.choose_spec (con (chain (n + 1)).1 (chain (n + 1)).2)).1, ih.2.2, (Exists.choose_spec (con (chain (n + 1)) ih.2.2)).2⟩
-  -- we now have an infinite chain, so we just so it is injective
   have ci_cj : ∀ k n, Relation.TransGen (edgeRestr h) (chain k).1 (chain (k + n + 1)).1 := by
     intro m n
     induction n
@@ -497,8 +496,9 @@ theorem finite_and_no_loop_implies_exists_leaf {𝕏 : Proof} [fin_X : Fintype �
   apply Subtype.finite
 
 
-theorem in_vocab_of_path_left {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y) {n} (n_in : n ∈ (SplitSequent.left (f (r 𝕏.α y))).vocab)
-  : n ∈ (SplitSequent.left (f (r 𝕏.α x))).vocab := by
+theorem in_vocab_of_path_left {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y)
+  {n} (n_in : n ∈ (SplitSequent.left (f (r 𝕏.α y))).vocab) :
+    n ∈ (SplitSequent.left (f (r 𝕏.α x))).vocab := by
   induction x_y
   case refl => exact n_in
   case tail y z x_y y_z ih =>
@@ -547,8 +547,9 @@ theorem in_vocab_of_path_left {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.Refl
       · exact ⟨φ, c1.1, n_in_φ⟩
       · exact ⟨◇φ, c2, by simp [Formula.vocab, n_in_φ]⟩
 
-theorem in_vocab_of_path_right {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y) {n} (n_in : n ∈ (SplitSequent.right (f (r 𝕏.α y))).vocab)
-  : n ∈ (SplitSequent.right (f (r 𝕏.α x))).vocab := by
+theorem in_vocab_of_path_right {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y)
+  {n} (n_in : n ∈ (SplitSequent.right (f (r 𝕏.α y))).vocab) :
+    n ∈ (SplitSequent.right (f (r 𝕏.α x))).vocab := by
   induction x_y
   case refl => exact n_in
   case tail y z x_y y_z ih =>

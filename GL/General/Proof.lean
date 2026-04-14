@@ -71,15 +71,6 @@ def RuleApp.isBox : RuleApp → Bool
   | RuleApp.box _ _ _ => true
   | _ => false
 
--- instance : DecidablePred RuleApp.isBox := by
---   intro r
---   cases r <;> simp [RuleApp.isBox]
---   · apply Decidable.isFalse; simp
---   · apply Decidable.isFalse; simp
---   · apply Decidable.isFalse; simp
---   · apply Decidable.isFalse; simp
---   · apply Decidable.isTrue; simp
-
 /-- Get RuleApp of a node (first projection). -/
 def r {X : Type} (α : X → T.obj X) (x : X) := (α x).1
 
@@ -89,7 +80,7 @@ def p {X : Type} (α : X → T.obj X) (x : X) := (α x).2
 /-- Edge relation induced by `p`. -/
 def edge  {X : Type} (α : X → T.obj X) (x y : X) : Prop := y ∈ p α x
 
-/-- Defininion of GL-proof. -/
+/-- Definition of GL-proof. -/
 structure Proof where
   X : Type
   α : X → T.obj X
@@ -107,7 +98,9 @@ instance (𝕏 : Proof) : CategoryTheory.Endofunctor.Coalgebra T where
   V := 𝕏.X
   str := 𝕏.α
 
+/-- A proof `𝕏` proves sequent `Δ` if some node of `𝕏` has sequent `Δ` as its sequent. -/
 def proves (𝕏 : Proof) (Δ : Sequent) : Prop := ∃ x : 𝕏.X, f (r 𝕏.α x) = Δ
+/-- A sequent is provable if there exists a GL-proof of it. -/
 def Sequent.isTrue (Δ : Sequent) : Prop := ∃ 𝕏 : Proof, proves 𝕏 Δ
 
 infixr:6 "⊢" => proves
@@ -203,40 +196,40 @@ lemma node_in_pg_sequent_in_FL (𝕏 : Proof) (x : 𝕏.X) :
 
 /-! # Filtration of GL-Proofs -/
 
-/-- Equivelance relation used for Filtration. -/
-instance instSetoidX (𝕏 : Proof) : Setoid 𝕏.X where
+/-- Equivalence relation used for Filtration. -/
+instance f_eq_equi_rel (𝕏 : Proof) : Setoid 𝕏.X where
   r x y := f (r 𝕏.α x) = f (r 𝕏.α y)
   iseqv := ⟨by intro x; exact rfl,
             by intro x y h; exact Eq.symm h,
             by intro x y z h1 h2; exact Eq.trans h1 h2⟩
 
 /-- Structure morphism for Filtration. -/
-@[simp] noncomputable def αQuot 𝕐 (x : Quotient (instSetoidX 𝕐)) :=
-  T.map (Quotient.mk (instSetoidX 𝕐)) (𝕐.α (Quotient.out x))
+@[simp] noncomputable def αQuot 𝕐 (x : Quotient (f_eq_equi_rel 𝕐)) :=
+  T.map (Quotient.mk (f_eq_equi_rel 𝕐)) (𝕐.α (Quotient.out x))
 
 /-- Filtration of a GL-Proof is a GL-proof. -/
 noncomputable def filtration (𝕐 : Proof) : Proof where
-  X := Quotient (instSetoidX 𝕐)
+  X := Quotient (f_eq_equi_rel 𝕐)
   α := αQuot 𝕐
   step := by
     intro x
     cases x using Quotient.inductionOn
     case h x =>
-      have hyp := fun x ↦ @Quotient.mk_out _ (instSetoidX 𝕐) x
-      have h := 𝕐.step (@Quotient.out _ (instSetoidX 𝕐) ⟦x⟧)
+      have hyp := fun x ↦ @Quotient.mk_out _ (f_eq_equi_rel 𝕐) x
+      have h := 𝕐.step (@Quotient.out _ (f_eq_equi_rel 𝕐) ⟦x⟧)
       simp only [r,p,αQuot,T] at *
       convert h <;> simp_all
       all_goals
         intro x x_in
         exact hyp x
 
-/-! # Finite Model Property -/
+/-! # Finite Proof Property -/
 
-/-- Given a proof of `Δ` there exists a finite proof of `Δ`-/
+/-- Given a proof of `Δ` there exists a finite proof of `Δ`. -/
 theorem finite_proof_of_proof (𝕏 : Proof) (Δ : Sequent) : (𝕏 ⊢ Δ) → ∃ 𝕐, Finite 𝕐.X ∧ (𝕐 ⊢ Δ) := by
   intro X_proves_Δ
   have ⟨x, f_Δ⟩ := X_proves_Δ
-  use pointGeneratedProof (filtration 𝕏) (Quotient.mk (instSetoidX 𝕏) x)
+  use pointGeneratedProof (filtration 𝕏) (Quotient.mk (f_eq_equi_rel 𝕏) x)
   constructor
   · have h : Finite (Sequent.FL Δ).powerset := by
       apply Set.finite_coe_iff.1
@@ -253,7 +246,7 @@ theorem finite_proof_of_proof (𝕏 : Proof) (Δ : Sequent) : (𝕏 ⊢ Δ) → 
     apply Subtype.ext
     apply Quotient.out_equiv_out.1
     exact f_z_eq
-  · use ⟨Quotient.mk (instSetoidX 𝕏) x, Relation.ReflTransGen.refl⟩
+  · use ⟨Quotient.mk (f_eq_equi_rel 𝕏) x, Relation.ReflTransGen.refl⟩
     rw [←f_Δ]
     simp [r, filtration, pointGeneratedProof]
     exact Quotient.mk_out x
@@ -293,7 +286,3 @@ theorem inf_path_has_inf_boxes {𝕏 : Proof} (g : ℕ → 𝕏.X) (h : ∀ n, e
     apply (wellFounded_iff_isEmpty_descending_chain.1 (@wellFounded_lt ℕ _ _)).false
     use fun m ↦ Sequent.length (f (r 𝕏.α (g (n + m))))
     exact fun m ↦ lt_if_not_box_edge ⟨h (n + m), by simp_all⟩
-
--- def equiv (A : Formula) (B : Formula) : Prop :=
---   (∃ (𝕏 : Proof), 𝕏 ⊢ {~A, B}) ∧ (∃ (𝕏 : Proof), 𝕏 ⊢ {A, ~B})
--- infixr:7 "≅" => equiv

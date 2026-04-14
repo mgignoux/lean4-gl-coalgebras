@@ -12,17 +12,17 @@ import Mathlib.Tactic
 import Mathlib.Data.Setoid.Partition
 import Mathlib.Data.Finset.Lattice.Basic
 
-/-! ## Defining GL-ext proof systems.
+/-! ## Defining GL-ext+skip proof systems.
 
 Here we define the GL-ext proof system along with finitization and basic properties. We use the
-namespace SplitCut to distinguish from our general GL-proofs.
+namespace ExtSkip to distinguish from our general GL-proofs.
 -/
 
-namespace SplitCut
+namespace ExtSkip
 
-/-! # Basic components of the GL-ext proof system.-/
+/-! # Basic components of the GL-ext+skip proof system.-/
 
-/-- Rule applications for the GL-ext proof system. -/
+/-- Rule applications for the GL-ext+skip proof system. -/
 inductive RuleApp
   | skp : (Δ : SplitSequent) → RuleApp
   | cutₗ : (Δ : SplitSequent) → (A : Formula) → RuleApp
@@ -42,7 +42,7 @@ inductive RuleApp
   | boxₗ : (Δ : SplitSequent) → (A : Formula) → Sum.inl (□ A) ∈ Δ → RuleApp
   | boxᵣ : (Δ : SplitSequent) → (A : Formula) → Sum.inr (□ A) ∈ Δ → RuleApp
 
-/-- Endofunctor for the GL-ext proof system. -/
+/-- Endofunctor for the GL-ext+skip proof system. -/
 @[simp] def T : (CategoryTheory.Functor Type Type) where
   obj := λ X ↦ (RuleApp × List X)
   map := fun f ⟨r, A⟩ ↦ ⟨r, A.map f⟩
@@ -126,7 +126,7 @@ def p {X : Type} (α : X → T.obj X) (x : X) := (α x).2
 /-- Edge relation induced by `p`. -/
 def edge  {X : Type} (α : X → T.obj X) (x y : X) : Prop := y ∈ p α x
 
-/-- Defininion of GL-ext proof. -/
+/-- Definition of GL-ext+skip proof. -/
 structure Proof where
   X : Type
   α : X → T.obj X
@@ -165,4 +165,4 @@ def SplitSequent.isTrue (Δ : SplitSequent) : Prop := ∃ (𝕏 : Proof), proves
 infixr:6 "⊢" => proves
 prefix:40 "⊢" => SplitSequent.isTrue
 
-end SplitCut
+end ExtSkip

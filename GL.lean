@@ -14,7 +14,7 @@ import GL.Split.Game
 import GL.Split.Proof
 
 
-/-! # Godel-Lob Provability Logic
+/-! # Gödel-Löb Provability Logic
 
 This module serves as the root of the `GL` library, importing all its modules.
 

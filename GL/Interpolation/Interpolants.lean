@@ -7,14 +7,14 @@ import GL.Split.Completeness
 Here we show that given a finite GL-split proof, we can always find suitable interpolants.
 -/
 
-namespace Split
+open Split
 
 /-- Get the entire underlying sequent of a finite proof. -/
-def Proof.Sequent (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Sequent :=
+def Split.Proof.Sequent (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Sequent :=
   fin_X.elems.biUnion (fun x ↦ (f (r 𝕏.α x)).image (Sum.elim id id))
 
 /-- Find `n` such that for all `m ≥ n`, `m` is not in an the variables of the proof. -/
-def Proof.freeVar (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Nat :=
+def Split.Proof.freeVar (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Nat :=
   Sequent.freshVar (Proof.Sequent 𝕏)
 
 theorem at_in_lt_freeVar {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {n : Nat} (h : at n ∈ 𝕏.Sequent) : n < 𝕏.freeVar := by
@@ -229,12 +229,9 @@ decreasing_by
     simp [←Finset.card_sdiff_add_card_inter Y {leaf}, leaf_in]
     linarith
 
-theorem equiv_help {C D E : Formula} (h : C ≅ D) (g : D = E) : (C ≅ E) := by aesop
-
-
 set_option maxHeartbeats 1000000 in
 open Classical in
-/-- Proves the `interpolant_strong` satisfies the necessary properties. -/
+/-- Proves that `interpolant_strong` satisfies the necessary properties. -/
 theorem interpolant_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
   (Y : Finset 𝕏.X) (Y_sub : Y ⊆ fin_X.elems) :
       ∀ n : {n // n ∈ Y.image encodeVar},
@@ -420,6 +417,7 @@ theorem interpolant_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
           · right
             simp [partial_, n_in']
             have := single_preserves_equiv (encodeVar box_in_Y.choose) _ _ fpt.choose equiv
+            have equiv_help {C D E : Formula} (h : C ≅ D) (g : D = E) : (C ≅ E) := by aesop
             apply equiv_help this
 
             convert @interpolant_strong_helper _ _ (interpolant_strong Z_sub) (encodeVar box_in_Y.choose) fpt.choose (equation (unencodeVar n (encodeVar_helper₁ n_in)))
@@ -638,6 +636,7 @@ theorem interpolant_strong_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X]
           · right
             simp [partial_, n_in']
             have := single_preserves_equiv (encodeVar leaf_in_Y.choose) _ _ (equation leaf_in_Y.choose) equiv
+            have equiv_help {C D E : Formula} (h : C ≅ D) (g : D = E) : (C ≅ E) := by aesop
             apply equiv_help this
 
             convert @interpolant_strong_helper _ _ (interpolant_strong Z_sub) (encodeVar leaf_in_Y.choose) (equation leaf_in_Y.choose) (equation (unencodeVar n (encodeVar_helper₁ n_in)))

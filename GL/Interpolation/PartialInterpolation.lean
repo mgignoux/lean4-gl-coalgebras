@@ -2,11 +2,11 @@ import Mathlib.Data.Fintype.Defs
 import GL.Interpolation.Interpolants
 import GL.Split.ProofTransformations
 
-namespace Split
 
+open Split
 /-- Given a node `x`, defines what the root of the left interpolation proof should look like,
     i.e. `f(x)ˡ ∣ ιₓ` in on paper work. -/
-noncomputable def leftInterpolantSequent {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : SplitSequent :=
+noncomputable def leftInterpolantSequent {𝕏 : Split.Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : SplitSequent :=
   {Sum.inr (Interpolant 𝕏 (at (encodeVar x)))} ∪ (SplitSequent.filterLeft (f (r 𝕏.α x)))
 
 /-- Given a node `x`, defines what the same as above except for the equation `σ(χₓ)`, helpful for
@@ -755,14 +755,14 @@ theorem partialInterpolationLeft_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X
             exact @Split_to_Ext_notNonAxLeaf 𝕏 x leftInterpolantSequent _ f_last
 
 /-- Defining the left interpolation proof with all non-axiomatic nodes removed. -/
-noncomputable def InterpolantProofLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : ExtSkip.Proof :=
+noncomputable def interpolantProofLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : ExtSkip.Proof :=
   @proofTransformation 𝕏 (@leftInterpolantSequent 𝕏 _) partialInterpolationLeft partialInterpolationLeft_proves_int partialInterpolationLeft_box_prop
 
 /-- Left syntactic interpolation result! -/
-theorem InterpolantProofLeft_proves_interpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X)
-  : @InterpolantProofLeft 𝕏 fin_X ⊢ leftInterpolantSequent x := by
+theorem interpolantProofLeft_proves_interpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X)
+  : @interpolantProofLeft 𝕏 fin_X ⊢ leftInterpolantSequent x := by
   use ⟨x, (partialInterpolationLeft x).root⟩
-  unfold InterpolantProofLeft proofTransformation
+  unfold interpolantProofLeft proofTransformation
   simp [proofTransformation_f]
   exact partialInterpolationLeft_proves_int x
 
@@ -1464,24 +1464,24 @@ theorem partialInterpolationRight_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.
             exact @Split_to_Ext_notNonAxLeaf 𝕏 x rightInterpolantSequent _ f_last
 
 /-- Defining the right interpolation proof with all non-axiomatic nodes removed. -/
-noncomputable def InterpolantProofRight {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : ExtSkip.Proof :=
+noncomputable def interpolantProofRight {𝕏 : Proof} [fin_X : Fintype 𝕏.X] : ExtSkip.Proof :=
   @proofTransformation 𝕏 (@rightInterpolantSequent 𝕏 _) partialInterpolationRight partialInterpolationRight_proves_int partialInterpolationRight_box_prop
 
 /-- Right syntactic interpolation result! -/
-theorem InterpolantProofRight_proves_interpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X)
-  : @InterpolantProofRight 𝕏 fin_X ⊢ rightInterpolantSequent x := by
+theorem interpolantProofRight_proves_interpolant {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X)
+  : @interpolantProofRight 𝕏 fin_X ⊢ rightInterpolantSequent x := by
   use ⟨x, (partialInterpolationRight x).root⟩
-  unfold InterpolantProofRight proofTransformation
+  unfold interpolantProofRight proofTransformation
   simp [proofTransformation_f]
   exact partialInterpolationRight_proves_int x
 
 
 /-- ## Syntactic interpolation
 
-Given a finite split proof, `InterpolantProofLeft` proves the left interpolation correctness
-statement and `InterpolantProofRight` proves the right interpolation correctness statement. -/
+Given a finite split proof, `interpolantProofLeft` proves the left interpolation correctness
+statement and `interpolantProofRight` proves the right interpolation correctness statement. -/
 
 theorem syntacticInterpolation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
-    (@InterpolantProofLeft 𝕏 fin_X  ⊢ leftInterpolantSequent  x)
-  ∧ (@InterpolantProofRight 𝕏 fin_X ⊢ rightInterpolantSequent x) :=
-  ⟨InterpolantProofLeft_proves_interpolant x, InterpolantProofRight_proves_interpolant x⟩
+    (@interpolantProofLeft 𝕏 fin_X  ⊢ leftInterpolantSequent  x)
+  ∧ (@interpolantProofRight 𝕏 fin_X ⊢ rightInterpolantSequent x) :=
+  ⟨interpolantProofLeft_proves_interpolant x, interpolantProofRight_proves_interpolant x⟩

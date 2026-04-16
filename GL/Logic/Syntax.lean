@@ -225,9 +225,14 @@ namespace Sequent
 /-- Length of a sequent. -/
 def length (Γ : Sequent) : Nat := Finset.sum Γ Formula.length
 
-
 /- Vocabulary of a sequent. -/
 def vocab (Γ : Sequent) : Finset Nat := Finset.biUnion Γ Formula.vocab
+
+/- Literals of a sequent. -/
+def lit (Γ : Sequent) : Finset (Nat ⊕ Nat) := Finset.biUnion Γ Formula.lit
+
+/- Negation of a sequent. -/
+def neg (Γ : Sequent) : Finset Formula := Finset.biUnion Γ (fun φ ↦ {Formula.neg φ})
 
 /- Given a sequent `Γ`, finds a variable not in `Γ`-/
 def freshVar (Γ : Finset Formula) : Nat :=

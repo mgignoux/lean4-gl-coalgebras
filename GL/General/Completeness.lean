@@ -15,7 +15,7 @@ def rewind_history_one_step (g : coalgebraGame.Pos)
   | ⟨Sum.inr R, Γs, Rs⟩ => ⟨Sum.inl (Γs.head (by simp_all [coalgebraGame])), Γs.tail, Rs⟩
 
 /-- Rewinding the history one step is still in the cone of the game. -/
-theorem rewind_history_one_step_in_cone {Γ} (g : coalgebraGame.Pos)
+lemma rewind_history_one_step_in_cone {Γ} (g : coalgebraGame.Pos)
   (h : coalgebraGame.turn g = Prover ∧ g.2.2 ≠ ∅ ∨ coalgebraGame.turn g = Builder ∧ g.2.1 ≠ ∅)
   (strat : Strategy coalgebraGame Prover) (in_cone : inMyCone strat (startPos Γ) g)
   : inMyCone strat (startPos Γ) (rewind_history_one_step g h) := by
@@ -58,7 +58,7 @@ def rewind_history
         grind⟩
 
 /-- Rewinding the history `n` steps is still in the cone of the game. -/
-theorem rewind_history_in_cone {Γ} (g : coalgebraGame.Pos)
+lemma rewind_history_in_cone {Γ} (g : coalgebraGame.Pos)
   (n : Fin ((if coalgebraGame.turn g = Prover then min (2 * g.2.1.length + 1) (2 * g.2.2.length)
              else min (2 * g.2.1.length) (2 * g.2.2.length + 1)) + 1) )
   (strat : Strategy coalgebraGame Prover) (in_cone : inMyCone strat (startPos Γ) g) :
@@ -112,7 +112,7 @@ def next_next {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (g : pro
   ⟨next_next, next_next_in_cone, B_next_next⟩
 
 /-- The sequent at the premise defined by `next_next` is the sequent `Δ` which we expect. -/
-theorem next_next_cor {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (g : proof_type Γ strat)
+lemma next_next_cor {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} (g : proof_type Γ strat)
   (h : winning strat (startPos Γ)) (nrep : Δ ∉ g.1.2.1) (pos : Δ ∈ (builder_RuleApp g.1 g.2.2).sequents) :
   f (builder_RuleApp (next_next g h nrep pos).1 (next_next g h nrep pos).2.2) = Δ := by
   let next : GamePos := ⟨Sum.inl $ Δ, g.1.2.1, builder_RuleApp g.1 g.2.2 :: g.1.2.2⟩
@@ -161,7 +161,7 @@ theorem next_next_cor {Γ Δ : Sequent} {strat : Strategy coalgebraGame Prover} 
     simp [f]
 
 /-- Comparison of rule app history length and sequent history length. -/
-theorem history_length_in_cone {Γ : Sequent} (strat : Strategy coalgebraGame Prover) (g : coalgebraGame.Pos)
+lemma history_length_in_cone {Γ : Sequent} (strat : Strategy coalgebraGame Prover) (g : coalgebraGame.Pos)
 (in_cone : inMyCone strat (startPos Γ) g) :
   (coalgebraGame.turn g = Prover → g.2.1.length = g.2.2.length) ∧ (coalgebraGame.turn g = Builder → g.2.1.length = g.2.2.length + 1) := by
   induction in_cone
@@ -206,7 +206,7 @@ lemma rewind_turn_one_step  {g n h1 h2} : coalgebraGame.turn (rewind_history g �
 
 /-- Rewinding an even number of moves is the same players turn, rewinding an odd number is other
     players turn. -/
-theorem rewind_turn {g n} : if Even n.1 then coalgebraGame.turn (rewind_history g n) = coalgebraGame.turn g
+lemma rewind_turn {g n} : if Even n.1 then coalgebraGame.turn (rewind_history g n) = coalgebraGame.turn g
    else coalgebraGame.turn (rewind_history g n) = other (coalgebraGame.turn g) := by
   induction n using Fin.induction
   case zero => simp
@@ -226,7 +226,7 @@ theorem rewind_turn {g n} : if Even n.1 then coalgebraGame.turn (rewind_history 
       exact rewind_turn_one_step
 
 /-- The sequent at the one step rewind can be found in the history. -/
-theorem rewind_history_one_step_correspondence {Γ g} (strat : Strategy coalgebraGame Prover)
+lemma rewind_history_one_step_correspondence {Γ g} (strat : Strategy coalgebraGame Prover)
   {h0 h1 h2}  (in_cone : inMyCone strat (startPos Γ) g)
   : f (builder_RuleApp (rewind_history_one_step g h0) h1) = g.2.1[0]'h2 := by
   cases in_cone <;> try simp at h2
@@ -271,7 +271,7 @@ theorem rewind_history_one_step_correspondence {Γ g} (strat : Strategy coalgebr
       simp [coalgebraGame] at g_in_moves_q'
 
 /-- The sequent at the `n` step rewind can be found in the history. -/
-theorem rewind_history_correspondence (Γ g) (strat : Strategy coalgebraGame Prover)
+lemma rewind_history_correspondence (Γ g) (strat : Strategy coalgebraGame Prover)
   (n) (h2 h3 h4 h6)  (in_cone : inMyCone strat (startPos Γ) g)
   : (∀ b_turn_g : coalgebraGame.turn g = Builder, f (builder_RuleApp (rewind_history g ⟨2 * n, h3⟩) (by have := @rewind_turn g ⟨2 * n, h3⟩; grind)) = g.2.1[n]'h6)
   ∧ (∀ p_turn_q : coalgebraGame.turn g = Prover,  f (builder_RuleApp (rewind_history g ⟨2 * n + 1, h4⟩) (by have := @rewind_turn g ⟨2 * n + 1, h4⟩; simp [p_turn_q] at this; grind)) = g.2.1[n]'h2)
@@ -370,7 +370,7 @@ def rep_next (Γ : Sequent) {Δ : Sequent} {strat : Strategy coalgebraGame Prove
       simp [rep_pos]⟩
 
 /-- The sequent at the premise defined by `rep_next` is the sequent `Δ` which we expect. -/
-theorem rep_next_cor (Γ : Sequent) {Δ : Sequent} {strat : Strategy coalgebraGame Prover}
+lemma rep_next_cor (Γ : Sequent) {Δ : Sequent} {strat : Strategy coalgebraGame Prover}
   (g : proof_type Γ strat) (rep : Δ ∈ g.1.2.1) :
   f (builder_RuleApp (rep_next Γ g rep).1 (rep_next Γ g rep).2.2) = Δ := by
   have Δ_eq := Fin.find_spec (List.mem_iff_get.1 rep)
@@ -559,7 +559,7 @@ def MaximalPath.first {Γ : Sequent} {strat : Strategy coalgebraGame Builder} : 
   fun π => π.list.head π.ne
 
 /-- Maximal paths always start from a move which is Prover's turn. -/
-theorem maximal_path_starts_in_prover_turn {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
+lemma maximal_path_starts_in_prover_turn {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
   (π : MaximalPath Γ strat) :
   coalgebraGame.turn π.first = Prover := by
   match first_def : π.first with
@@ -574,7 +574,7 @@ theorem maximal_path_starts_in_prover_turn {Γ : Sequent} {strat : Strategy coal
       grind
 
 /-- Maximal paths always end in a move which is Prover's turn. -/
-theorem maximal_path_ends_in_prover_turn {Γ : Sequent} {strat : Strategy coalgebraGame Builder} (h : winning strat (startPos Γ))
+lemma maximal_path_ends_in_prover_turn {Γ : Sequent} {strat : Strategy coalgebraGame Builder} (h : winning strat (startPos Γ))
   (π : MaximalPath Γ strat) :
   coalgebraGame.turn π.last = Prover := by
   match last_def : π.last with
@@ -628,26 +628,26 @@ decreasing_by
   simp [WellFounded.wrap]
 
 /-- If Builder is winning, the List from `make_path_from` is nonempty. -/
-theorem make_path_from_is_nonempty (strat : Strategy coalgebraGame Builder) (g : coalgebraGame.Pos)
+lemma make_path_from_is_nonempty (strat : Strategy coalgebraGame Builder) (g : coalgebraGame.Pos)
   : ¬ make_path_from strat g = ∅ := by
   unfold make_path_from
   simp [coalgebraGame, Sequent.ruleApps]
   split <;> split <;> simp
 
-theorem make_path_from_head (strat : Strategy coalgebraGame Builder) (g : coalgebraGame.Pos)
+lemma make_path_from_head (strat : Strategy coalgebraGame Builder) (g : coalgebraGame.Pos)
   : (make_path_from strat g).head (make_path_from_is_nonempty strat g) = g := by
   unfold make_path_from
   simp [coalgebraGame, Sequent.ruleApps]
   split <;> split <;> simp
 
-theorem make_path_from_head? (strat : Strategy coalgebraGame Builder) (g : coalgebraGame.Pos)
+lemma make_path_from_head? (strat : Strategy coalgebraGame Builder) (g : coalgebraGame.Pos)
   : (make_path_from strat g).head? = some g := by
   unfold make_path_from
   simp [coalgebraGame, Sequent.ruleApps]
   split <;> split <;> simp
 
 /-- If Builder is winning, the List from `make_path_from` is a chain. -/
-theorem make_path_from_is_chain (strat : Strategy coalgebraGame Builder) (g : coalgebraGame.Pos)
+lemma make_path_from_is_chain (strat : Strategy coalgebraGame Builder) (g : coalgebraGame.Pos)
   : List.IsChain non_box_move (make_path_from strat g) :=
   open Classical in
   match g_def : g with
@@ -694,7 +694,7 @@ decreasing_by
   simp [WellFounded.wrap]
 
 /-- If Builder is winning, the List from `make_path_from` is maximal. -/
-theorem make_path_is_max (strat : Strategy coalgebraGame Builder) (g : coalgebraGame.Pos) :
+lemma make_path_is_max (strat : Strategy coalgebraGame Builder) (g : coalgebraGame.Pos) :
   ¬ ∃ g', non_box_move ((make_path_from strat g).getLast (make_path_from_is_nonempty strat g)) g' :=
   open Classical in
   match g_def : g with
@@ -725,7 +725,7 @@ decreasing_by
   simp [WellFounded.wrap]
 
 /-- If Builder is winning, every move in the list from `make_path_from` is in the cone. -/
-theorem make_path_is_in_cone (Δ : Sequent) (strat : Strategy coalgebraGame Builder) (g : coalgebraGame.Pos) (in_cone : inMyCone strat (Sum.inl Δ, [], []) g) (h : winning strat ⟨Sum.inl Δ, [], []⟩) :
+lemma make_path_is_in_cone (Δ : Sequent) (strat : Strategy coalgebraGame Builder) (g : coalgebraGame.Pos) (in_cone : inMyCone strat (Sum.inl Δ, [], []) g) (h : winning strat ⟨Sum.inl Δ, [], []⟩) :
   ∀ i, inMyCone strat (Sum.inl Δ, [], []) ((make_path_from strat g).get i) := by
   intro ⟨i_val, i_prop⟩
   cases i_val
@@ -749,7 +749,7 @@ theorem make_path_is_in_cone (Δ : Sequent) (strat : Strategy coalgebraGame Buil
       · simp [make_path_from, exists_non_box_move] at i_prop
 
 /-- If Builder is winning, the starting move or any move after a box move has a maximal path. -/
-theorem always_exists_maximal_path_from_root_or_after (Γ : Sequent) (strat : Strategy coalgebraGame Builder)
+lemma always_exists_maximal_path_from_root_or_after (Γ : Sequent) (strat : Strategy coalgebraGame Builder)
   (h : winning strat (startPos Γ)) (g : coalgebraGame.Pos) (in_cone : inMyCone strat (startPos Γ) g)
   (head_cases : after_box g ∨ g = (startPos Γ)) : ∃ π : MaximalPath Γ strat, π.first = g := by
   use {
@@ -786,7 +786,7 @@ def path_relation (Γ : Sequent) (strat : Strategy coalgebraGame Builder) (π₁
   := (Relation.Comp Move Move) π₁.last π₂.first
 
 -- Interesting for MathLib?
-theorem Relation.TransGen.swap_eq_swap_rel {α : Type} (r : α → α → Prop) :
+lemma Relation.TransGen.swap_eq_swap_rel {α : Type} (r : α → α → Prop) :
   Function.swap (Relation.TransGen r) = Relation.TransGen (Function.swap r) := by
   ext x y
   constructor
@@ -797,7 +797,7 @@ theorem Relation.TransGen.swap_eq_swap_rel {α : Type} (r : α → α → Prop) 
     case single x y_x => exact Relation.TransGen.single y_x
     case tail x z y_x x_z ih => exact Relation.TransGen.head x_z ih
 
-theorem maximal_path_refl_trans_gen (as) (ne : as ≠ []) (chain : List.IsChain non_box_move as) :
+lemma maximal_path_refl_trans_gen (as) (ne : as ≠ []) (chain : List.IsChain non_box_move as) :
   Relation.ReflTransGen Move (as.head ne) (as.getLast ne) := by
   induction chain
   case nil => simp at ne
@@ -839,7 +839,7 @@ def game_b_model (Γ : Sequent) {strat : Strategy coalgebraGame Builder} (h : wi
     apply @RelHomClass.wellFounded _ _ (Function.swap (path_relation Γ strat)) (Relation.TransGen (Function.swap Move)) Unit instFunLike instRelHome () (WellFounded.transGen coalgebraGame.wf.2)
 -- using RelHomClass.wellFounded feels like overkill, but it works.
 
-theorem move_from_last_implies_box {Γ : Sequent} {strat : Strategy coalgebraGame Builder} (π : MaximalPath Γ strat) :
+lemma move_from_last_implies_box {Γ : Sequent} {strat : Strategy coalgebraGame Builder} (π : MaximalPath Γ strat) :
   ∀ x, Move π.last x → is_box x := by
   intro x π_x
   by_contra h
@@ -848,7 +848,7 @@ theorem move_from_last_implies_box {Γ : Sequent} {strat : Strategy coalgebraGam
   refine ⟨x, ⟨π_x, h⟩⟩
 
 /-- Helper for `◇` case of `builder_win_strong`. -/
-theorem diamond_in_of_move_move_diamond_in {x z} (hx hz) (x_z : (Relation.Comp Move Move) x z) :
+lemma diamond_in_of_move_move_diamond_in {x z} (hx hz) (x_z : (Relation.Comp Move Move) x z) :
   ∀ φ, ◇ φ ∈ prover_sequent x hx → ◇ φ ∈ prover_sequent z hz := by
   simp only [Relation.Comp] at x_z
   have ⟨y, x_y, y_z⟩ := x_z
@@ -891,7 +891,7 @@ theorem diamond_in_of_move_move_diamond_in {x z} (hx hz) (x_z : (Relation.Comp M
     simp [Formula.isDiamond, φ_in]
 
 /-- Helper for `◇` case of `builder_win_strong`. -/
-theorem diamond_in_last_of_diamond_in_first {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
+lemma diamond_in_last_of_diamond_in_first {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
   (h : winning strat (startPos Γ)) :
   ∀ π : MaximalPath Γ strat, ∀ φ (i : ℕ) (lt : i < π.list.length) helper (ps),
   ◇ φ ∈ prover_sequent ((π.list)[π.list.length - i - 1]'helper) ps → ◇ φ ∈ last_sequent h π := by
@@ -964,7 +964,7 @@ theorem diamond_in_last_of_diamond_in_first {Γ : Sequent} {strat : Strategy coa
         · exact P_turn_u₂
 
 /-- Helper for `◇` case of `builder_win_strong`. -/
-theorem formula_in_successor_of_diamond_formula_in {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
+lemma formula_in_successor_of_diamond_formula_in {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
   (h : winning strat (startPos Γ)) {π ρ : MaximalPath Γ strat} (π_ρ : path_relation Γ strat π ρ) :
   ∀ φ, ◇ φ ∈ last_sequent h π → φ ∈ first_sequent ρ := by
   intro φ diφ_in
@@ -1012,7 +1012,7 @@ theorem formula_in_successor_of_diamond_formula_in {Γ : Sequent} {strat : Strat
     exact diφ_in
 
 /-- Helper for `◇` case of `builder_win_strong`. -/
-theorem diamond_in_path_of_diamond_formula_in {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
+lemma diamond_in_path_of_diamond_formula_in {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
   (h : winning strat (startPos Γ)) {π ρ : MaximalPath Γ strat} (π_ρ : Relation.TransGen (path_relation Γ strat) π ρ) :
   ∀ φ, ◇ φ ∈ last_sequent h π → ◇ φ ∈ first_sequent ρ := by
   intro φ φ_in
@@ -1045,7 +1045,7 @@ theorem diamond_in_path_of_diamond_formula_in {Γ : Sequent} {strat : Strategy c
       · grind
 
 /-- Helper for `◇` case of `builder_win_strong`. -/
-theorem formula_in_path_of_diamond_formula_in {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
+lemma formula_in_path_of_diamond_formula_in {Γ : Sequent} {strat : Strategy coalgebraGame Builder}
   (h : winning strat (startPos Γ)) {π ρ : MaximalPath Γ strat} (π_ρ : Relation.TransGen (path_relation Γ strat) π ρ) :
   ∀ φ, ◇ φ ∈ last_sequent h π → φ ∈ first_sequent ρ := by
   intro φ φ_in

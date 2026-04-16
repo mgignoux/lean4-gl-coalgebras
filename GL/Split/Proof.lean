@@ -67,7 +67,7 @@ def f : RuleApp → SplitSequent
 def fₙ : RuleApp → SplitSequent := fun Γ ↦ f Γ \ fₚ Γ
 
 /-- Relating principal formulas, non-principal formulas, and the sequent. -/
-theorem fₙ_alternate (r : RuleApp) : fₙ r = match r with
+lemma fₙ_alternate (r : RuleApp) : fₙ r = match r with
   | RuleApp.topₗ Δ _ => Δ \ {Sum.inl ⊤}
   | RuleApp.topᵣ Δ _ => Δ \ {Sum.inr ⊤}
   | RuleApp.axₗₗ Δ n _ => Δ \ {Sum.inl $ at n, Sum.inl $ na n}
@@ -81,7 +81,7 @@ theorem fₙ_alternate (r : RuleApp) : fₙ r = match r with
   | RuleApp.boxₗ Δ A _ => Δ \ {Sum.inl (□ A)}
   | RuleApp.boxᵣ Δ A _ => Δ \ {Sum.inr (□ A)} := by cases r <;> simp [fₙ, f, fₚ]
 
-theorem fₙ_sub_f {r : RuleApp} : fₙ r ⊆ f r := by simp [fₙ]
+lemma fₙ_sub_f {r : RuleApp} : fₙ r ⊆ f r := by simp [fₙ]
 
 def RuleApp.isBox : RuleApp → Prop
   | RuleApp.boxₗ _ _ _ => true
@@ -135,7 +135,7 @@ infixr:7 "≅" => equiv
 /-! # Fischer-Ladner properties of GL-split proofs -/
 
 /-- Every edge is contained in FL closure. -/
-theorem edge_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : (edge 𝕏.α) x y) :
+lemma edge_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : (edge 𝕏.α) x y) :
   f (r 𝕏.α y) ⊆ SplitSequent.FL (f (r 𝕏.α x)) := by
   unfold edge at x_y
   have := 𝕏.step x
@@ -228,7 +228,7 @@ theorem edge_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : (edge 𝕏.α) x y) :
     simp_all
 
 /-- Every path is contained in FL closure. -/
-theorem path_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y) :
+lemma path_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y) :
   f (r 𝕏.α y) ⊆ SplitSequent.FL (f (r 𝕏.α x)) := by
   induction x_y
   case refl => exact SplitSequent.FL_refl
@@ -380,13 +380,13 @@ lemma lt_if_not_box_path {𝕏 : Proof} {x y : 𝕏.X} : Relation.TransGen (nbEd
   case tail y z x_y y_z ih => exact Nat.lt_trans (lt_if_not_box_edge y_z) ih
 
 /-- Non box paths do not loop. -/
-theorem no_non_box_loop {𝕏 : Proof} (x : 𝕏.X) : ¬ (Relation.TransGen (nbEdge 𝕏.α) x x) := by
+lemma no_non_box_loop {𝕏 : Proof} (x : 𝕏.X) : ¬ (Relation.TransGen (nbEdge 𝕏.α) x x) := by
   intro con
   apply lt_if_not_box_path at con
   simp at con
 
 /-- Every path of increasing size has a box rule application. -/
-theorem exists_box_on_le_path {𝕏 : Proof} (x y : 𝕏.X) : Relation.TransGen (edge 𝕏.α) x y → (f (r 𝕏.α x)).length ≤ (f (r 𝕏.α y)).length
+lemma exists_box_on_le_path {𝕏 : Proof} (x y : 𝕏.X) : Relation.TransGen (edge 𝕏.α) x y → (f (r 𝕏.α x)).length ≤ (f (r 𝕏.α y)).length
   → ∃ z, Relation.ReflTransGen (edge 𝕏.α) x z ∧ Relation.ReflTransGen (edge 𝕏.α) z y ∧ (r 𝕏.α z).isBox := by
   intro x_y size_le
   induction x_y
@@ -447,7 +447,7 @@ lemma exists_box_on_restr_loop {𝕏 : Proof} (x : 𝕏.X) (p : 𝕏.X → Prop)
     case tail x_ _z => apply Relation.TransGen.trans_right x_ (Relation.TransGen.single _z)
 
 /-- Every infinite path has an infinite number of nodes which are box rule applications. -/
-theorem inf_path_has_inf_boxes {𝕏 : Proof} (g : ℕ → 𝕏.X) (h : ∀ n, edge 𝕏.α (g n) (g (n + 1))) :
+lemma inf_path_has_inf_boxes {𝕏 : Proof} (g : ℕ → 𝕏.X) (h : ∀ n, edge 𝕏.α (g n) (g (n + 1))) :
   ∀ n, ∃ m, (r 𝕏.α (g (n + m))).isBox := by
     intro n
     by_contra h2
@@ -458,7 +458,7 @@ theorem inf_path_has_inf_boxes {𝕏 : Proof} (g : ℕ → 𝕏.X) (h : ∀ n, e
     apply lt_if_not_box_edge ⟨h (n + m), h2 m⟩
 
 /-- If a proof is finite and there are no loops under a restriction, then there must exist a leaf. -/
-theorem finite_and_no_loop_implies_exists_leaf {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (h : 𝕏.X → Prop)
+lemma finite_and_no_loop_implies_exists_leaf {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (h : 𝕏.X → Prop)
   (x : 𝕏.X) (x_sat : h x) :
     (¬ ∃ y, Relation.TransGen (edgeRestr h) y y) → ∃ y : 𝕏.X, h y ∧ ∀ z ∈ (p 𝕏.α y), ¬ h z := by
   intro mp
@@ -496,7 +496,7 @@ theorem finite_and_no_loop_implies_exists_leaf {𝕏 : Proof} [fin_X : Fintype �
   apply Subtype.finite
 
 
-theorem in_vocab_of_path_left {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y)
+lemma in_vocab_of_path_left {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y)
   {n} (n_in : n ∈ (SplitSequent.left (f (r 𝕏.α y))).vocab) :
     n ∈ (SplitSequent.left (f (r 𝕏.α x))).vocab := by
   induction x_y
@@ -547,7 +547,7 @@ theorem in_vocab_of_path_left {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.Refl
       · exact ⟨φ, c1.1, n_in_φ⟩
       · exact ⟨◇φ, c2, by simp [Formula.vocab, n_in_φ]⟩
 
-theorem in_vocab_of_path_right {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y)
+lemma in_vocab_of_path_right {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y)
   {n} (n_in : n ∈ (SplitSequent.right (f (r 𝕏.α y))).vocab) :
     n ∈ (SplitSequent.right (f (r 𝕏.α x))).vocab := by
   induction x_y

@@ -43,7 +43,7 @@ inductive Move : GamePos → GamePos → Prop
   | builder {R Rs Γ Γs} : Γ ∈ R.sequents → Γ ∉ Γs → Move ⟨Sum.inr R, Γs, Rs⟩ ⟨Sum.inl Γ, Γs, R :: Rs⟩ -- no repeat sequents allowed!
 
 /-- Given two consecutive Prover moves, the latter move is in the FL closure of the prior. -/
-theorem move_move_in_FL {g1 g2 : GamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLeft))
+lemma move_move_in_FL {g1 g2 : GamePos} (h1 : (g1.1.isLeft)) (h3 : (g2.1.isLeft))
 (g1_g2 : Relation.ReflTransGen (Relation.Comp Move Move) g1 g2): g2.1.getLeft h3 ∈ (g1.1.getLeft h1).FL.powerset := by
   simp
   induction g1_g2
@@ -272,7 +272,7 @@ def coalgebraGame : Game where
       exact Move.builder Γ_prop nin
 
 /-- Move relation and being in the set of game moves are equivalent. -/
-theorem move_iff_in_moves {g g' : coalgebraGame.Pos} : Move g g' ↔ g' ∈ coalgebraGame.moves g := by
+lemma move_iff_in_moves {g g' : coalgebraGame.Pos} : Move g g' ↔ g' ∈ coalgebraGame.moves g := by
   constructor
   · intro g_g'
     unfold Game.moves

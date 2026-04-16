@@ -114,7 +114,7 @@ lemma not_prove_empty : ¬ ∃ 𝕏, 𝕏 ⊢ {} := by
 /-! # Fischer-Ladner properties of GL-proofs -/
 
 /-- Every edge is contained in FL closure. -/
-theorem edge_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : (edge 𝕏.α) x y) : f (r 𝕏.α y) ⊆ Sequent.FL (f (r 𝕏.α x)) := by
+lemma edge_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : (edge 𝕏.α) x y) : f (r 𝕏.α y) ⊆ Sequent.FL (f (r 𝕏.α x)) := by
   unfold edge at x_y
   have := 𝕏.step x
   cases rule : r 𝕏.α x <;> simp only [rule] at this
@@ -161,7 +161,7 @@ theorem edge_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : (edge 𝕏.α) x y) : f 
     · exact ⟨□ φ, by simp [f, in_Δ], by simp [Formula.FL, Formula.FL_refl]⟩
 
 /-- Every path is contained in FL closure. -/
-theorem path_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y) : f (r 𝕏.α y) ⊆ Sequent.FL (f (r 𝕏.α x)) := by
+lemma path_in_FL {𝕏 : Proof} {x y : 𝕏.X} (x_y : Relation.ReflTransGen (edge 𝕏.α) x y) : f (r 𝕏.α y) ⊆ Sequent.FL (f (r 𝕏.α x)) := by
   induction x_y
   case refl => exact Sequent.FL_refl
   case tail y z x_y y_z fy_fx =>
@@ -278,7 +278,7 @@ lemma lt_if_not_box_edge {𝕏 : Proof} {x y : 𝕏.X} :
       exact @Finset.sum_diff_singleton_lt _ _ Δ {A, B} (A v B) _ or_in (by grind [Formula.length])
 
 /-- Every infinite path has an infinite number of nodes which are box rule applications. -/
-theorem inf_path_has_inf_boxes {𝕏 : Proof} (g : ℕ → 𝕏.X) (h : ∀ n, edge 𝕏.α (g n) (g (n + 1))) :
+lemma inf_path_has_inf_boxes {𝕏 : Proof} (g : ℕ → 𝕏.X) (h : ∀ n, edge 𝕏.α (g n) (g (n + 1))) :
   ∀ n, ∃ m, (r 𝕏.α (g (n + m))).isBox := by
     intro n
     by_contra h2

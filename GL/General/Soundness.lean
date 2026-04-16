@@ -160,7 +160,7 @@ lemma chain_model_prop {𝕏 : Proof}
     split <;> try grind [RuleApp.isBox]
 
 /-- The right projection of `chain` eventually progresses. -/
-theorem has_children_of_chain_model {𝕏 : Proof}
+lemma has_children_of_chain_model {𝕏 : Proof}
   {x : 𝕏.X}
   {Γ : Sequent}
   (prop : f (r 𝕏.α x) = Γ)
@@ -213,7 +213,7 @@ noncomputable def incChainEventualIncChain {β}
         | ⟨ih, ih_prop⟩ => ⟨g (Q_prop ih_prop.choose).choose, by simp⟩
 
 /-- An eventually progressing chain has an progressing subchain. -/
-theorem incChainEventualIncChain_prop {β}
+lemma incChainEventualIncChain_prop {β}
   {Q : β → β → Prop} {g : ℕ → β}
   (Q_prop : ∀ n, ∃ m, Q (g n) (g m)) :
   ∀ n, Q (incChainEventualIncChain Q_prop n).1

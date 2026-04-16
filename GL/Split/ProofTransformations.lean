@@ -74,7 +74,7 @@ def f {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} : RuleApp
 def fₙ {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} : RuleApp x τ → SplitSequent := fun r ↦ f r \ fₚ r
 
 /-- Relating principal formulas, non-principal formulas, and the split sequent. -/
-theorem fₙ_alternate {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (r : RuleApp x τ) : fₙ r = match r with
+lemma fₙ_alternate {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (r : RuleApp x τ) : fₙ r = match r with
   | RuleApp.pre y _ => τ y
   | RuleApp.cutₗ Δ _ => Δ
   | RuleApp.cutᵣ Δ _ => Δ
@@ -95,17 +95,17 @@ theorem fₙ_alternate {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitS
 
 universe u
 
-@[simp] def T {𝕏 : Split.Proof} (x : 𝕏.X) (τ : 𝕏.X → SplitSequent) : (CategoryTheory.Functor (Type u) (Type u)) :=
-  ⟨λ X ↦ ((RuleApp x τ × List X) : Type u), fun f ⟨r, A⟩ ↦ ⟨r, A.map f⟩, by aesop_cat, by aesop_cat⟩
+@[simp] def T {𝕏 : Split.Proof} (x : 𝕏.X) (τ : 𝕏.X → SplitSequent) : (CategoryTheory.Functor Type Type) :=
+  ⟨λ X ↦ ((RuleApp x τ × List X) : Type), fun f ⟨r, A⟩ ↦ ⟨r, A.map f⟩, by aesop_cat, by aesop_cat⟩
 
 /-- Get RuleApp of a node (first projection). -/
-def r {X : Type u} {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (α : X → (T x τ).obj X) (x : X) := (α x).1
+def r {X : Type} {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (α : X → (T x τ).obj X) (x : X) := (α x).1
 
 /-- Get premises of a node (second projection). -/
-def p {X : Type u} {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (α : X → (T x τ).obj X) (x : X) := (α x).2
+def p {X : Type} {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (α : X → (T x τ).obj X) (x : X) := (α x).2
 
 /-- Edge relation induced by `p`. -/
-def edge  {X : Type u} {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (α : X → (T x τ).obj X) (x y : X) : Prop := y ∈ p α x
+def edge  {X : Type} {𝕏 : Split.Proof} {x : 𝕏.X} {τ : 𝕏.X → SplitSequent} (α : X → (T x τ).obj X) (x y : X) : Prop := y ∈ p α x
 
 def RuleApp.isBox {𝕏 : Split.Proof} {x : 𝕏.X} {τ} : RuleApp x τ → Prop
   | RuleApp.boxₗ _ _ _ => true
@@ -174,21 +174,21 @@ def proofTransformationMap {𝕏 : Proof} {σ} (partialProof : (x : 𝕏.X) → 
   | .boxᵣ Δ A in_Δ => ⟨ExtSkip.RuleApp.boxᵣ Δ A in_Δ, (Ext.p (partialProof y).α z_y).map (fun z ↦ ⟨y, z⟩)⟩
 
 @[simp]
-theorem proofTransformation_f {𝕏 : Proof} {σ} (partialProof : (x : 𝕏.X) → Ext.PreProof x σ) (y : 𝕏.X) (z_in_Cy : (partialProof y).X) :
+lemma proofTransformation_f {𝕏 : Proof} {σ} (partialProof : (x : 𝕏.X) → Ext.PreProof x σ) (y : 𝕏.X) (z_in_Cy : (partialProof y).X) :
   ExtSkip.f (ExtSkip.r (proofTransformationMap partialProof) ⟨y, z_in_Cy⟩) = Ext.f (@Ext.r _ _ _ _ (partialProof y).α z_in_Cy) := by
     cases r_def : (Ext.r (partialProof y).α z_in_Cy) <;> simp_all [ExtSkip.r, proofTransformationMap, ExtSkip.f, Ext.f]
 
 @[simp]
-theorem proofTransformation_fₚ {𝕏 : Proof} {σ} (partialProof : (x : 𝕏.X) → Ext.PreProof x σ) (y : 𝕏.X) (z_in_Cy : (partialProof y).X) :
+lemma proofTransformation_fₚ {𝕏 : Proof} {σ} (partialProof : (x : 𝕏.X) → Ext.PreProof x σ) (y : 𝕏.X) (z_in_Cy : (partialProof y).X) :
   ExtSkip.fₚ (ExtSkip.r (proofTransformationMap partialProof) ⟨y, z_in_Cy⟩) = Ext.fₚ (@Ext.r _ _ _ _ (partialProof y).α z_in_Cy) := by
     cases r_def : (Ext.r (partialProof y).α z_in_Cy) <;> simp_all [ExtSkip.r, proofTransformationMap, ExtSkip.fₚ, Ext.fₚ]
 
 @[simp]
-theorem proofTransformation_fₙ {𝕏 : Proof} {σ} (partialProof : (x : 𝕏.X) → Ext.PreProof x σ) (y : 𝕏.X) (z_in_Cy : (partialProof y).X) :
+lemma proofTransformation_fₙ {𝕏 : Proof} {σ} (partialProof : (x : 𝕏.X) → Ext.PreProof x σ) (y : 𝕏.X) (z_in_Cy : (partialProof y).X) :
   ExtSkip.fₙ (ExtSkip.r (proofTransformationMap partialProof) ⟨y, z_in_Cy⟩) = Ext.fₙ (@Ext.r _ _ _ _ (partialProof y).α z_in_Cy) := by
     cases r_def : (Ext.r (partialProof y).α z_in_Cy) <;> simp_all [ExtSkip.r, proofTransformationMap, ExtSkip.fₙ_alternate, Ext.fₙ_alternate]
 
-theorem proofTransformation_isBox {𝕏 : Proof} {σ} (partialProof : (x : 𝕏.X) → Ext.PreProof x σ) (z_in_Cy : (y : 𝕏.X) × (partialProof y).X) :
+lemma proofTransformation_isBox {𝕏 : Proof} {σ} (partialProof : (x : 𝕏.X) → Ext.PreProof x σ) (z_in_Cy : (y : 𝕏.X) × (partialProof y).X) :
   (ExtSkip.r (proofTransformationMap partialProof) z_in_Cy).isBox ↔ (Ext.r (partialProof z_in_Cy.1).α z_in_Cy.2).isBox := by
   cases r_def : (Ext.r (partialProof z_in_Cy.1).α z_in_Cy.2) <;> simp_all [ExtSkip.r, proofTransformationMap, ExtSkip.RuleApp.isBox, Ext.RuleApp.isBox]
 
@@ -207,14 +207,14 @@ noncomputable def dep_sum_seq_proj {α : Type} {β : α → Type} {f : ℕ → (
       have ih := dep_sum_seq_proj h n
       exact ⟨(f (Nat.find (h ih.2) + 1)).1, Nat.find (h ih.2) + 1⟩
 
-theorem infinite_dep_sum_sequence_proj_eq {α : Type} {β : α → Type} {f : ℕ → (a : α) × β a}
+lemma infinite_dep_sum_sequence_proj_eq {α : Type} {β : α → Type} {f : ℕ → (a : α) × β a}
   {Q : (a : α) → β a → β a → Prop}
   (h : ∀ n, ∃ m ≥ n, ∀ h : (f m).1 = (f (m + 1)).1, ¬ Q (f m).1 (f m).2 (h ▸ (f (m + 1)).2)) :
   ∀ n, (f (dep_sum_seq_proj h n).2).1 = (dep_sum_seq_proj h n).1 := by
   intro n
   cases n <;> simp [dep_sum_seq_proj] -- surprised how this works?
 
-theorem dep_sum_seq_proj_leq {α : Type} {β : α → Type} {f : ℕ → (a : α) × β a} {Q : (a : α) → β a → β a → Prop} (h : ∀ n, ∃ m ≥ n, ∀ h : (f m).1 = (f (m + 1)).1, ¬ Q (f m).1 (f m).2 (h ▸ (f (m + 1)).2)) :
+lemma dep_sum_seq_proj_leq {α : Type} {β : α → Type} {f : ℕ → (a : α) × β a} {Q : (a : α) → β a → β a → Prop} (h : ∀ n, ∃ m ≥ n, ∀ h : (f m).1 = (f (m + 1)).1, ¬ Q (f m).1 (f m).2 (h ▸ (f (m + 1)).2)) :
   ∀ n, n ≤ (dep_sum_seq_proj h n).2 := by
   intro n
   induction n
@@ -224,7 +224,7 @@ theorem dep_sum_seq_proj_leq {α : Type} {β : α → Type} {f : ℕ → (a : α
     grind
 
 open Classical in
-theorem fst_same_in_range {α : Type} {β : α → Type} {f : ℕ → (a : α) × β a}
+lemma fst_same_in_range {α : Type} {β : α → Type} {f : ℕ → (a : α) × β a}
   {Q : (a : α) → β a → β a → Prop}
   (h : ∀ n, ∃ m ≥ n, ∀ h : (f m).1 = (f (m + 1)).1, ¬ Q (f m).1 (f m).2 (h ▸ (f (m + 1)).2)) :
   ∀ n, ∀ m, n ≤ Nat.find (h (dep_sum_seq_proj h m).2) → n ≥ (dep_sum_seq_proj h m).2 → (f (dep_sum_seq_proj h m).2).1 = (f n).1 := by
@@ -255,7 +255,7 @@ theorem fst_same_in_range {α : Type} {β : α → Type} {f : ℕ → (a : α) �
       linarith
 
 open Classical in
-theorem infinite_dep_sum_chain
+lemma infinite_dep_sum_chain
   {α : Type} {β : α → Type} {f : ℕ → (a : α) × β a}
   {R : α → α → Prop}  {Q : (a : α) → β a → β a → Prop}
   (h : ∀ n, ∃ m ≥ n, ∀ h : (f m).1 = (f (m + 1)).1, ¬ Q (f m).1 (f m).2 (h ▸ (f (m + 1)).2))
@@ -286,7 +286,7 @@ noncomputable def infinite_dep_sum_chain_finite_subchain
     eq ▸ (f ((dep_sum_seq_proj h m).2 + n)).2
 
 open Classical in
-theorem infinite_dep_sum_chain_finite_subchain_prop
+lemma infinite_dep_sum_chain_finite_subchain_prop
   {α : Type} {β : α → Type} {f : ℕ → (a : α) × β a}
   {Q : (a : α) → β a → β a → Prop}
   (h : ∀ n, ∃ m ≥ n, ∀ h : (f m).1 = (f (m + 1)).1, ¬ Q (f m).1 (f m).2 (h ▸ (f (m + 1)).2))
@@ -304,7 +304,7 @@ theorem infinite_dep_sum_chain_finite_subchain_prop
     · simp
     · grind
 
-theorem infinite_dep_sum_chain_inf
+lemma infinite_dep_sum_chain_inf
   {α : Type} {β : α → Type} {f : ℕ → (a : α) × β a}
   {Q : (a : α) → β a → β a → Prop}
   (h : ∀ n, ∃ m ≥ n, ∀ h : (f m).1 = (f (m + 1)).1, ¬ Q (f m).1 (f m).2 (h ▸ (f (m + 1)).2))

@@ -399,7 +399,7 @@ lemma chain_model_prop {𝕏 : Proof}
     split <;> try grind [RuleApp.isBox]
 
 /-- The right projection of `chain` eventually progresses. -/
-theorem has_children_of_chain_model {𝕏 : Proof}
+lemma has_children_of_chain_model {𝕏 : Proof}
   {x : 𝕏.X}
   {Γ : SplitSequent}
   (prop : f (r 𝕏.α x) = Γ)
@@ -452,7 +452,7 @@ noncomputable def inc_chain_eventual_inc_chain {β}
         | ⟨ih, ih_prop⟩ => ⟨g (Q_prop ih_prop.choose).choose, by simp⟩
 
 /-- An eventually progressing chain has an progressing subchain. -/
-theorem inc_chain_eventual_inc_chain_prop {β}
+lemma inc_chain_eventual_inc_chain_prop {β}
   {Q : β → β → Prop} {g : ℕ → β}
   (Q_prop : ∀ n, ∃ m, Q (g n) (g m)) :
   ∀ n, Q (inc_chain_eventual_inc_chain Q_prop n).1
@@ -469,8 +469,8 @@ theorem inc_chain_eventual_inc_chain_prop {β}
     convert this
     · exact ih_prop.choose_spec
 
-/-- Soundness theorem for the GL-split proof system. -/
-theorem soundness (Γ : SplitSequent) : SplitSequent.isTrue Γ → ⊨ Γ := by
+/-- Soundness lemma for the GL-split proof system. -/
+lemma soundness (Γ : SplitSequent) : SplitSequent.isTrue Γ → ⊨ Γ := by
   intro mp
   have ⟨𝕏, x, prop⟩ := mp
   by_contra h
@@ -492,7 +492,7 @@ end ExtSkip
 
 /-! ## Soundness of GL-split cut proof system.
 
-This soundness theorem follows by converting any GL-split proof into a GL-split cut proof. -/
+This soundness lemma follows by converting any GL-split proof into a GL-split cut proof. -/
 
 /-- Converts structure morphism for GL-split proof into a structure morphism for GL-split cut proofs. -/
 @[simp] def α_conv (𝕏 : Split.Proof) : 𝕏.X → ExtSkip.T.obj 𝕏.X := fun x ↦
@@ -511,7 +511,7 @@ This soundness theorem follows by converting any GL-split proof into a GL-split 
     | .boxᵣ Δ φ in_Δ => ⟨.boxᵣ Δ φ in_Δ, Split.p 𝕏.α x⟩
 
 /-- If there is a GL-split proof of Γ then there is a GL-split cut proof of Γ. -/
-theorem SplitProofIsExtSkipProof (Γ : SplitSequent) : (Split.SplitSequent.isTrue Γ) → (ExtSkip.SplitSequent.isTrue Γ) := by
+lemma SplitProofIsExtSkipProof (Γ : SplitSequent) : (Split.SplitSequent.isTrue Γ) → (ExtSkip.SplitSequent.isTrue Γ) := by
   intro mp
   have ⟨𝕏, x, prop⟩ := mp
   have := 𝕏.X

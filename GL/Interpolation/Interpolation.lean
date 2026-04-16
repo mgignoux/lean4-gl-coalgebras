@@ -18,8 +18,8 @@ theorem interpolation (φ ψ : Formula) : ⊨ (φ ↣ ψ) → ∃ χ, isInterpol
   have ⟨𝕏, 𝕏_proves⟩ := Split.completeness _ φ_ψ_sseq
   have ⟨𝕐, fin_Y, y, y_prop⟩ := Split.finite_proof_of_proof 𝕏 _ 𝕏_proves
   have Fintype_Y := @Fintype.ofFinite _ fin_Y
-  refine ⟨Interpolant 𝕐 (at (encodeVar y)), ?_, ?_, ?_⟩
-  · have := (@Interpolant_prop 𝕐 Fintype_Y y).2
+  refine ⟨interpolant 𝕐 (at (encodeVar y)), ?_, ?_, ?_⟩
+  · have := (@interpolant_prop 𝕐 Fintype_Y y).2
     convert this
     · ext n
       simp [y_prop, SplitSequent.left, Sequent.vocab]

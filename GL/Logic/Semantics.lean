@@ -33,17 +33,17 @@ def evaluate {α : Type} : Model α × α → Formula → Prop
   | (M, w), □ φ => ∀ (u : α), M.R w u → evaluate (M, u) φ
   | (M, w), ◇ φ => ∃ (u : α), M.R w u ∧ evaluate (M, u) φ
 
-theorem evaluate_neg {α : Type} (M : Model α) (u : α) (φ : Formula) :
+lemma evaluate_neg {α : Type} (M : Model α) (u : α) (φ : Formula) :
   ¬ evaluate (M, u) φ ↔ evaluate (M, u) (~φ) := by
   induction φ generalizing u <;> simp [Formula.neg, evaluate] <;> grind
 
 @[simp]
-theorem evaluate_and {α : Type} (M : Model α) (u : α) (φ ψ : Formula) :
+lemma evaluate_and {α : Type} (M : Model α) (u : α) (φ ψ : Formula) :
   evaluate (M, u) (φ & ψ) ↔ (evaluate (M, u) φ ∧ evaluate (M, u) ψ) := by
   simp
 
 @[simp]
-theorem evaluate_imp {α : Type} (M : Model α) (u : α) (φ ψ : Formula) : evaluate (M, u) (φ ↣ ψ) ↔ (evaluate (M, u) φ → evaluate (M, u) ψ) := by
+lemma evaluate_imp {α : Type} (M : Model α) (u : α) (φ ψ : Formula) : evaluate (M, u) (φ ↣ ψ) ↔ (evaluate (M, u) φ → evaluate (M, u) ψ) := by
   simp [←evaluate_neg]
   tauto
 
@@ -85,7 +85,7 @@ def modelSubstitution {α} (M : Model α) (n : Nat) (φ : Formula) : Model α wh
   con_wf := M.con_wf
 
 /-- Substitution Lemma for modal logic! -/
-theorem substitution_lemma {α} (M : Model α) (u : α) (n : Nat) (ψ : Formula)
+lemma substitution_lemma {α} (M : Model α) (u : α) (n : Nat) (ψ : Formula)
   : ∀ φ, evaluate ⟨M, u⟩ (single n ψ φ) ↔ evaluate ⟨(modelSubstitution M n ψ), u⟩ φ := by
   intro φ
   induction φ generalizing u <;> simp_all [single, modelSubstitution] <;> try grind

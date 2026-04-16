@@ -2,29 +2,29 @@ import Mathlib.Data.Fintype.Defs
 import GL.Interpolation.Interpolants
 import GL.Split.ProofTransformations
 
-
 open Split
+
 /-- Given a node `x`, defines what the root of the left interpolation proof should look like,
     i.e. `f(x)ˡ ∣ ιₓ` in on paper work. -/
 noncomputable def leftInterpolantSequent {𝕏 : Split.Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : SplitSequent :=
-  {Sum.inr (Interpolant 𝕏 (at (encodeVar x)))} ∪ (SplitSequent.filterLeft (f (r 𝕏.α x)))
+  {Sum.inr (interpolant 𝕏 (at (encodeVar x)))} ∪ (SplitSequent.filterLeft (f (r 𝕏.α x)))
 
 /-- Given a node `x`, defines what the same as above except for the equation `σ(χₓ)`, helpful for
     cases where the interpolant isn't defined by the interpolants of its premise nodes.,
     i.e. `f(x)ˡ ∣ σ(χₓ)` in on paper work. -/
 noncomputable def leftEquationSequent {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : SplitSequent :=
-  {Sum.inr (Interpolant 𝕏 (equation x))} ∪ (SplitSequent.filterLeft (f (r 𝕏.α x)))
+  {Sum.inr (interpolant 𝕏 (equation x))} ∪ (SplitSequent.filterLeft (f (r 𝕏.α x)))
 
 /-- Given a node `x`, defines what the root of the right interpolation proof should look like,
     i.e. `~ιₓ ∣ f(x)ʳ ` in on paper work. -/
 noncomputable def rightInterpolantSequent {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : SplitSequent :=
-  {Sum.inl (~ (Interpolant 𝕏 (at (encodeVar x))))} ∪ (SplitSequent.filterRight (f (r 𝕏.α x)))
+  {Sum.inl (~ (interpolant 𝕏 (at (encodeVar x))))} ∪ (SplitSequent.filterRight (f (r 𝕏.α x)))
 
 /-- Given a node `x`, defines what the same as above except for the equation `σ(χₓ)`, helpful for
     cases where the interpolant isn't defined by the interpolants of its premise nodes.,
     i.e. `~σ(χₓ) ∣ f(x)ʳ ` in on paper work. -/
 noncomputable def rightEquationSequent {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : SplitSequent :=
-  {Sum.inl (~ (Interpolant 𝕏 (equation x)))} ∪ (SplitSequent.filterRight (f (r 𝕏.α x)))
+  {Sum.inl (~ (interpolant 𝕏 (equation x)))} ∪ (SplitSequent.filterRight (f (r 𝕏.α x)))
 
 /- ## From split system to extended system -/
 /-- Transforms rule applications in the split system into applications in the extended system. -/
@@ -80,7 +80,7 @@ noncomputable def partialLeft_topᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
     X := Unit
     α u := ⟨Ext.RuleApp.topᵣ (leftEquationSequent x) (by
       simp [leftEquationSequent, equation, rule_def] -- why not able to simp with rule here
-      split <;> simp_all [Interpolant, partial_] -- wow, do not forget about split!!!
+      split <;> simp_all [interpolant, partial_] -- wow, do not forget about split!!!
       ), {}⟩
     step := by intro u; simp [Ext.r, Ext.p]
     root := ()
@@ -99,7 +99,7 @@ noncomputable def partialLeft_axₗᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (
     X := Unit
     α u := ⟨Ext.RuleApp.axₗᵣ (leftEquationSequent x) n (by
       simp [leftEquationSequent, rule_def, f, in_Δ]
-      simp [Interpolant, equation]
+      simp [interpolant, equation]
       split <;> simp_all
       apply partial_const
       simp [Formula.vocab]
@@ -119,7 +119,7 @@ noncomputable def partialLeft_axᵣₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (
     X := Unit
     α u := ⟨Ext.RuleApp.axᵣₗ (leftEquationSequent x) n (by
       simp [leftEquationSequent, rule_def, f, in_Δ]
-      simp [Interpolant, equation]
+      simp [interpolant, equation]
       split <;> simp_all
       apply partial_const
       simp [Formula.vocab]
@@ -139,7 +139,7 @@ noncomputable def partialLeft_axᵣᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (
     X := Unit
     α u := ⟨Ext.RuleApp.topᵣ (leftEquationSequent x) (by
       simp [leftEquationSequent, rule_def, f, equation]
-      split <;> simp_all [Interpolant, partial_]
+      split <;> simp_all [interpolant, partial_]
       ), {}⟩
     step := by intro u; simp [Ext.r, Ext.p]
     root := ()
@@ -149,7 +149,7 @@ noncomputable def partialLeft_orₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x :
 : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
     match p_def : p 𝕏.α x with
       | [y] =>
-        have interpolant_eq : Interpolant 𝕏 (equation x) = Interpolant 𝕏 (at encodeVar y) := by
+        have interpolant_eq : interpolant 𝕏 (equation x) = interpolant 𝕏 (at encodeVar y) := by
           rw [equation]
           split <;> simp_all
         { X := Fin 2
@@ -174,7 +174,7 @@ noncomputable def partialLeft_orᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x :
   : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
     | [y] =>
-      have interpolant_eq : Interpolant 𝕏 (equation x) = Interpolant 𝕏 (at encodeVar y) := by
+      have interpolant_eq : interpolant 𝕏 (equation x) = interpolant 𝕏 (at encodeVar y) := by
         rw [equation]
         split <;> simp_all
     { X := Unit
@@ -190,14 +190,14 @@ noncomputable def partialLeft_andₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
   : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y,z] =>
-    have interpolant_eq : Interpolant 𝕏 (equation x) = (Interpolant 𝕏 (at encodeVar y) v Interpolant 𝕏 (at encodeVar z)) := by
+    have interpolant_eq : interpolant 𝕏 (equation x) = (interpolant 𝕏 (at encodeVar y) v interpolant 𝕏 (at encodeVar z)) := by
       rw [equation]
-      split <;> simp_all [Interpolant, partial_, encodeVar]
-    if eq : Interpolant 𝕏 (at encodeVar y) = Interpolant 𝕏 (at encodeVar z)
+      split <;> simp_all [interpolant, partial_, encodeVar]
+    if eq : interpolant 𝕏 (at encodeVar y) = interpolant 𝕏 (at encodeVar z)
     then {
     X := Fin 4
-    α | 0 => ⟨Ext.RuleApp.orᵣ (leftEquationSequent x) (Interpolant 𝕏 (at encodeVar y)) (Interpolant 𝕏 (at encodeVar z)) (by simp [leftEquationSequent, rule_def, f, interpolant_eq]), [1]⟩
-      | 1 => ⟨Ext.RuleApp.andₗ (((leftEquationSequent x) \ {Sum.inr $ Interpolant 𝕏 (equation x)}) ∪ {(Sum.inr $ Interpolant 𝕏 (at encodeVar y)), Sum.inr $ (Interpolant 𝕏 (at encodeVar z))}) φ ψ (by simp [leftEquationSequent, rule_def, f, interpolant_eq, in_Δ]), [2,3]⟩
+    α | 0 => ⟨Ext.RuleApp.orᵣ (leftEquationSequent x) (interpolant 𝕏 (at encodeVar y)) (interpolant 𝕏 (at encodeVar z)) (by simp [leftEquationSequent, rule_def, f, interpolant_eq]), [1]⟩
+      | 1 => ⟨Ext.RuleApp.andₗ (((leftEquationSequent x) \ {Sum.inr $ interpolant 𝕏 (equation x)}) ∪ {(Sum.inr $ interpolant 𝕏 (at encodeVar y)), Sum.inr $ (interpolant 𝕏 (at encodeVar z))}) φ ψ (by simp [leftEquationSequent, rule_def, f, interpolant_eq, in_Δ]), [2,3]⟩
       | 2 => ⟨Ext.RuleApp.pre y (by simp [p_def]), {}⟩
       | 3 => ⟨Ext.RuleApp.pre z (by simp [p_def]), {}⟩
     step
@@ -213,10 +213,10 @@ noncomputable def partialLeft_andₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
     path z f := by exfalso; simp [Ext.edge, Ext.p] at f; grind}
     else {
     X := Fin 6
-    α | 0 => ⟨Ext.RuleApp.orᵣ (leftEquationSequent x) (Interpolant 𝕏 (at encodeVar y)) (Interpolant 𝕏 (at encodeVar z)) (by simp [leftEquationSequent, rule_def, f, interpolant_eq]), [1]⟩
-      | 1 => ⟨Ext.RuleApp.andₗ (((leftEquationSequent x) \ {Sum.inr $ Interpolant 𝕏 (equation x)}) ∪ {(Sum.inr $ Interpolant 𝕏 (at encodeVar y)), Sum.inr $ (Interpolant 𝕏 (at encodeVar z))}) φ ψ (by simp [leftEquationSequent, rule_def, f, interpolant_eq, in_Δ]), [2,3]⟩
-      | 2 => ⟨Ext.RuleApp.wkᵣ ((((((leftEquationSequent x) \ {Sum.inr $ Interpolant 𝕏 (equation x)}) ∪ {Sum.inr $ Interpolant 𝕏 (at encodeVar y), Sum.inr $ (Interpolant 𝕏 (at encodeVar z))})) \ {Sum.inl (φ & ψ)}) ∪ {Sum.inl φ}) (Interpolant 𝕏 (at encodeVar z)) (by simp [leftEquationSequent, rule_def, f, interpolant_eq]), [4]⟩
-      | 3 => ⟨Ext.RuleApp.wkᵣ ((((((leftEquationSequent x) \ {Sum.inr $ Interpolant 𝕏 (equation x)}) ∪ {Sum.inr $ Interpolant 𝕏 (at encodeVar y), Sum.inr $ (Interpolant 𝕏 (at encodeVar z))})) \ {Sum.inl (φ & ψ)}) ∪ {Sum.inl ψ}) (Interpolant 𝕏 (at encodeVar y)) (by simp [leftEquationSequent, rule_def, f, interpolant_eq]), [5]⟩
+    α | 0 => ⟨Ext.RuleApp.orᵣ (leftEquationSequent x) (interpolant 𝕏 (at encodeVar y)) (interpolant 𝕏 (at encodeVar z)) (by simp [leftEquationSequent, rule_def, f, interpolant_eq]), [1]⟩
+      | 1 => ⟨Ext.RuleApp.andₗ (((leftEquationSequent x) \ {Sum.inr $ interpolant 𝕏 (equation x)}) ∪ {(Sum.inr $ interpolant 𝕏 (at encodeVar y)), Sum.inr $ (interpolant 𝕏 (at encodeVar z))}) φ ψ (by simp [leftEquationSequent, rule_def, f, interpolant_eq, in_Δ]), [2,3]⟩
+      | 2 => ⟨Ext.RuleApp.wkᵣ ((((((leftEquationSequent x) \ {Sum.inr $ interpolant 𝕏 (equation x)}) ∪ {Sum.inr $ interpolant 𝕏 (at encodeVar y), Sum.inr $ (interpolant 𝕏 (at encodeVar z))})) \ {Sum.inl (φ & ψ)}) ∪ {Sum.inl φ}) (interpolant 𝕏 (at encodeVar z)) (by simp [leftEquationSequent, rule_def, f, interpolant_eq]), [4]⟩
+      | 3 => ⟨Ext.RuleApp.wkᵣ ((((((leftEquationSequent x) \ {Sum.inr $ interpolant 𝕏 (equation x)}) ∪ {Sum.inr $ interpolant 𝕏 (at encodeVar y), Sum.inr $ (interpolant 𝕏 (at encodeVar z))})) \ {Sum.inl (φ & ψ)}) ∪ {Sum.inl ψ}) (interpolant 𝕏 (at encodeVar y)) (by simp [leftEquationSequent, rule_def, f, interpolant_eq]), [5]⟩
       | 4 => ⟨Ext.RuleApp.pre y (by simp [p_def]), {}⟩
       | 5 => ⟨Ext.RuleApp.pre z (by simp [p_def]), {}⟩
     step
@@ -244,11 +244,11 @@ noncomputable def partialLeft_andᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
   : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y,z] =>
-    have interpolant_eq : Interpolant 𝕏 (equation x) = (Interpolant 𝕏 (at encodeVar y) & Interpolant 𝕏 (at encodeVar z)) := by
+    have interpolant_eq : interpolant 𝕏 (equation x) = (interpolant 𝕏 (at encodeVar y) & interpolant 𝕏 (at encodeVar z)) := by
       rw [equation]
-      split <;> simp_all [Interpolant, partial_, encodeVar]
+      split <;> simp_all [interpolant, partial_, encodeVar]
     { X := Fin 3
-      α | 0 => ⟨Ext.RuleApp.andᵣ (leftEquationSequent x) (Interpolant 𝕏 (at encodeVar y)) (Interpolant 𝕏 (at encodeVar z)) (by simp [leftEquationSequent, rule_def, f, interpolant_eq]), [1,2]⟩
+      α | 0 => ⟨Ext.RuleApp.andᵣ (leftEquationSequent x) (interpolant 𝕏 (at encodeVar y)) (interpolant 𝕏 (at encodeVar z)) (by simp [leftEquationSequent, rule_def, f, interpolant_eq]), [1,2]⟩
         | 1 => ⟨Ext.RuleApp.pre y (by simp [p_def]), {}⟩
         | 2 => ⟨Ext.RuleApp.pre z (by simp [p_def]), {}⟩
       step
@@ -269,12 +269,12 @@ noncomputable def partialLeft_boxₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
   : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y] =>
-    have interpolant_eq : Interpolant 𝕏 (equation x) = ◇ (Interpolant 𝕏 (at encodeVar y)) := by
+    have interpolant_eq : interpolant 𝕏 (equation x) = ◇ (interpolant 𝕏 (at encodeVar y)) := by
       rw [equation]
-      split <;> simp_all [Interpolant, partial_, encodeVar]
+      split <;> simp_all [interpolant, partial_, encodeVar]
     { X := Fin 3
       α | 0 => ⟨Ext.RuleApp.boxₗ (leftEquationSequent x) φ (by simp [leftEquationSequent, rule_def, f, in_Δ]), [1]⟩
-        | 1 => ⟨Ext.RuleApp.wkᵣ (((leftEquationSequent x) \ {Sum.inl $ □ φ}).D ∪ {Sum.inl φ}) (◇ (Interpolant 𝕏 (at encodeVar y))) (by simp [leftEquationSequent, rule_def, f, interpolant_eq, SplitSequent.D, SplitFormula.isDiamond]), [2]⟩
+        | 1 => ⟨Ext.RuleApp.wkᵣ (((leftEquationSequent x) \ {Sum.inl $ □ φ}).D ∪ {Sum.inl φ}) (◇ (interpolant 𝕏 (at encodeVar y))) (by simp [leftEquationSequent, rule_def, f, interpolant_eq, SplitSequent.D, SplitFormula.isDiamond]), [2]⟩
         | 2 => ⟨Ext.RuleApp.pre y (by simp [p_def]), {}⟩
       step
         | 0 => by simp [Ext.r, Ext.p, leftEquationSequent, rule_def, f, interpolant_eq, Ext.f, Ext.fₙ_alternate]
@@ -290,7 +290,7 @@ noncomputable def partialLeft_boxₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
           intro mp
           subst mp
           simp
-          induction Interpolant 𝕏 (at encodeVar y) <;> simp_all
+          induction interpolant 𝕏 (at encodeVar y) <;> simp_all
         | 2 => by simp [Ext.r, Ext.p]
       root := 0
       path z f := by exfalso; simp [Ext.edge, Ext.p] at f; grind}
@@ -301,11 +301,11 @@ noncomputable def partialLeft_boxᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
   : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y] =>
-    have interpolant_eq : Interpolant 𝕏 (equation x) = □ (Interpolant 𝕏 (at encodeVar y)) := by
+    have interpolant_eq : interpolant 𝕏 (equation x) = □ (interpolant 𝕏 (at encodeVar y)) := by
       rw [equation]
-      split <;> simp_all [Interpolant, partial_, encodeVar]
+      split <;> simp_all [interpolant, partial_, encodeVar]
     { X := Fin 2
-      α | 0 => ⟨Ext.RuleApp.boxᵣ (leftEquationSequent x) (Interpolant 𝕏 (at encodeVar y)) (by simp [leftEquationSequent, interpolant_eq]), [1]⟩
+      α | 0 => ⟨Ext.RuleApp.boxᵣ (leftEquationSequent x) (interpolant 𝕏 (at encodeVar y)) (by simp [leftEquationSequent, interpolant_eq]), [1]⟩
         | 1 => ⟨Ext.RuleApp.pre y (by simp [p_def]), {}⟩
       step
         | 0 => by
@@ -364,7 +364,7 @@ lemma partialEquationLeft_proves_eq {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x :
       simp [partialLeft_andₗ]
       split <;> simp_all
       have ⟨eq₁, eq₂⟩ := p_def
-      by_cases eq : Interpolant 𝕏 (at encodeVar y) = Interpolant 𝕏 (at encodeVar z) <;> subst eq₁ eq₂
+      by_cases eq : interpolant 𝕏 (at encodeVar y) = interpolant 𝕏 (at encodeVar z) <;> subst eq₁ eq₂
       · rw [dif_pos eq]
         simp [Ext.f]
       · rw [dif_neg eq]
@@ -378,11 +378,11 @@ lemma partialEquationLeft_proves_eq {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x :
 
 set_option maxHeartbeats 1000000 in
 noncomputable def partialInterpolationLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Ext.PreProof x (@leftInterpolantSequent 𝕏 _) :=
-  if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
+  if eq : interpolant 𝕏 (at (encodeVar x)) = interpolant 𝕏 (equation x)
   then partialEquationLeft x
   else
-    have equiv : Interpolant 𝕏 (at (encodeVar x)) ≅ Interpolant 𝕏 (equation x) := by
-      have := (Interpolant_prop x ).1
+    have equiv : interpolant 𝕏 (at (encodeVar x)) ≅ interpolant 𝕏 (equation x) := by
+      have := (interpolant_prop x ).1
       simp_all
     let 𝕐₁ := partialEquationLeft x
     let y₁ := 𝕐₁.root
@@ -391,7 +391,7 @@ noncomputable def partialInterpolationLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.
     let y₂ := equiv.1.choose_spec.choose
     have y₂_prop := equiv.1.choose_spec.choose_spec
     { X := Unit ⊕ 𝕐₁.X ⊕ 𝕐₂.X
-      α | Sum.inl u => ⟨Ext.RuleApp.cutᵣ (leftInterpolantSequent x) (Interpolant 𝕏 (equation x)), [Sum.inr (Sum.inl y₁), Sum.inr (Sum.inr y₂)]⟩
+      α | Sum.inl u => ⟨Ext.RuleApp.cutᵣ (leftInterpolantSequent x) (interpolant 𝕏 (equation x)), [Sum.inr (Sum.inl y₁), Sum.inr (Sum.inr y₂)]⟩
         | Sum.inr (Sum.inl z₁) => ⟨Ext.r 𝕐₁.α z₁, List.map (Sum.inr ∘ Sum.inl) (Ext.p 𝕐₁.α z₁)⟩
         | Sum.inr (Sum.inr z₂) => ⟨Split_to_Ext (r 𝕐₂.α z₂), List.map (Sum.inr ∘ Sum.inr) (p 𝕐₂.α z₂)⟩
       step
@@ -609,7 +609,7 @@ noncomputable def partialInterpolationLeft {𝕏 : Proof} [fin_X : Fintype 𝕏.
 /-- Every left partial interpolation proof `Lₓ` proves `f(x)ˡ ∣ ιₓ`. -/
 lemma partialInterpolationLeft_proves_int {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
   Ext.Proves x (partialInterpolationLeft x) (leftInterpolantSequent x) :=
-  if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then (by
+  if eq : interpolant 𝕏 (at (encodeVar x)) = interpolant 𝕏 (equation x) then (by
     convert partialEquationLeft_proves_eq x using 1
     · unfold partialInterpolationLeft
       simp [eq]
@@ -636,7 +636,7 @@ theorem partialInterpolationLeft_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X
   have 𝕏_h := 𝕏.step x
   cases r_def : r 𝕏.α x <;> simp_all [RuleApp.isBox]
   case boxₗ =>
-    by_cases eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
+    by_cases eq : interpolant 𝕏 (at (encodeVar x)) = interpolant 𝕏 (equation x)
     · unfold partialInterpolationLeft
       rw [dif_pos eq, partialEquationLeft]
       split <;> simp_all
@@ -695,7 +695,7 @@ theorem partialInterpolationLeft_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X
           · simp [f_last_def] at f_last
             exact @Split_to_Ext_notNonAxLeaf 𝕏 x leftInterpolantSequent _ f_last
   case boxᵣ =>
-    by_cases eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
+    by_cases eq : interpolant 𝕏 (at (encodeVar x)) = interpolant 𝕏 (equation x)
     · unfold partialInterpolationLeft
       rw [dif_pos eq, partialEquationLeft]
       split <;> simp_all
@@ -776,7 +776,7 @@ noncomputable def partialRight_topₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
     X := Unit
     α u := ⟨Ext.RuleApp.topₗ (rightEquationSequent x) (by
       simp [rightEquationSequent, equation, rule_def]
-      split <;> simp_all [Interpolant, partial_]
+      split <;> simp_all [interpolant, partial_]
       ), {}⟩
     step := by intro u; simp [Ext.r, Ext.p]
     root := ()
@@ -793,7 +793,7 @@ noncomputable def partialRight_topᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
 noncomputable def partialRight_axₗₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) {Δ n in_Δ} (rule_def : r 𝕏.α x = RuleApp.axₗₗ Δ n in_Δ)
   : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) where
     X := Unit
-    α u := ⟨Ext.RuleApp.topₗ (rightEquationSequent x) (by simp [rightEquationSequent, rule_def, f]; simp [equation]; split <;> simp_all [Interpolant, partial_]), {}⟩
+    α u := ⟨Ext.RuleApp.topₗ (rightEquationSequent x) (by simp [rightEquationSequent, rule_def, f]; simp [equation]; split <;> simp_all [interpolant, partial_]), {}⟩
     step := by intro u; simp [Ext.r, Ext.p]
     root := ()
     path u f := by exfalso; simp [Ext.edge, Ext.p] at f; exact f.2
@@ -803,7 +803,7 @@ noncomputable def partialRight_axₗᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] 
     X := Unit
     α u := ⟨Ext.RuleApp.axₗᵣ (rightEquationSequent x) n (by
       simp [rightEquationSequent, rule_def, f, in_Δ]
-      simp [Interpolant, equation]
+      simp [interpolant, equation]
       split <;> simp_all
       rw [←partial_const] <;> simp
       simp [Formula.vocab]
@@ -823,7 +823,7 @@ noncomputable def partialRight_axᵣₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] 
     X := Unit
     α u := ⟨Ext.RuleApp.axᵣₗ (rightEquationSequent x) n (by
       simp [rightEquationSequent, rule_def, f, in_Δ]
-      simp [Interpolant, equation]
+      simp [interpolant, equation]
       split <;> simp_all
       rw [←partial_const] <;> simp
       simp [Formula.vocab]
@@ -850,7 +850,7 @@ noncomputable def partialRight_orₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
 : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
     match p_def : p 𝕏.α x with
       | [y] =>
-        have interpolant_eq : Interpolant 𝕏 (equation x) = Interpolant 𝕏 (at encodeVar y) := by
+        have interpolant_eq : interpolant 𝕏 (equation x) = interpolant 𝕏 (at encodeVar y) := by
           rw [equation]
           split <;> simp_all
         { X := Unit
@@ -865,7 +865,7 @@ noncomputable def partialRight_orᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
   : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
     | [y] =>
-      have interpolant_eq : Interpolant 𝕏 (equation x) = Interpolant 𝕏 (at encodeVar y) := by
+      have interpolant_eq : interpolant 𝕏 (equation x) = interpolant 𝕏 (at encodeVar y) := by
         rw [equation]
         split <;> simp_all
     { X := Fin 2
@@ -890,11 +890,11 @@ noncomputable def partialRight_andₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
   : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y,z] =>
-    have interpolant_eq : Interpolant 𝕏 (equation x) = (Interpolant 𝕏 (at encodeVar y) v Interpolant 𝕏 (at encodeVar z)) := by
+    have interpolant_eq : interpolant 𝕏 (equation x) = (interpolant 𝕏 (at encodeVar y) v interpolant 𝕏 (at encodeVar z)) := by
       rw [equation]
-      split <;> simp_all [Interpolant, partial_, encodeVar]
+      split <;> simp_all [interpolant, partial_, encodeVar]
     { X := Fin 3
-      α | 0 => ⟨Ext.RuleApp.andₗ (rightEquationSequent x) (~ (Interpolant 𝕏 (at encodeVar y))) (~ (Interpolant 𝕏 (at encodeVar z))) (by simp [rightEquationSequent, rule_def, f, interpolant_eq]), [1,2]⟩
+      α | 0 => ⟨Ext.RuleApp.andₗ (rightEquationSequent x) (~ (interpolant 𝕏 (at encodeVar y))) (~ (interpolant 𝕏 (at encodeVar z))) (by simp [rightEquationSequent, rule_def, f, interpolant_eq]), [1,2]⟩
         | 1 => ⟨Ext.RuleApp.pre y (by simp [p_def]), {}⟩
         | 2 => ⟨Ext.RuleApp.pre z (by simp [p_def]), {}⟩
       step
@@ -916,14 +916,14 @@ noncomputable def partialRight_andᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
   : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y,z] =>
-    have interpolant_eq : Interpolant 𝕏 (equation x) = (Interpolant 𝕏 (at encodeVar y) & Interpolant 𝕏 (at encodeVar z)) := by
+    have interpolant_eq : interpolant 𝕏 (equation x) = (interpolant 𝕏 (at encodeVar y) & interpolant 𝕏 (at encodeVar z)) := by
       rw [equation]
-      split <;> simp_all [Interpolant, partial_, encodeVar]
-    if eq : Interpolant 𝕏 (at encodeVar y) = Interpolant 𝕏 (at encodeVar z)
+      split <;> simp_all [interpolant, partial_, encodeVar]
+    if eq : interpolant 𝕏 (at encodeVar y) = interpolant 𝕏 (at encodeVar z)
     then {
     X := Fin 4
-    α | 0 => ⟨Ext.RuleApp.orₗ (rightEquationSequent x) (~Interpolant 𝕏 (at encodeVar y)) (~Interpolant 𝕏 (at encodeVar z)) (by simp [rightEquationSequent, rule_def, f, interpolant_eq]), [1]⟩
-      | 1 => ⟨Ext.RuleApp.andᵣ (((rightEquationSequent x) \ {Sum.inl $ ~Interpolant 𝕏 (equation x)}) ∪ {(Sum.inl $ ~Interpolant 𝕏 (at encodeVar y)), Sum.inl $ ~Interpolant 𝕏 (at encodeVar z)}) φ ψ (by simp [rightEquationSequent, rule_def, f, interpolant_eq, in_Δ]), [2,3]⟩
+    α | 0 => ⟨Ext.RuleApp.orₗ (rightEquationSequent x) (~interpolant 𝕏 (at encodeVar y)) (~interpolant 𝕏 (at encodeVar z)) (by simp [rightEquationSequent, rule_def, f, interpolant_eq]), [1]⟩
+      | 1 => ⟨Ext.RuleApp.andᵣ (((rightEquationSequent x) \ {Sum.inl $ ~interpolant 𝕏 (equation x)}) ∪ {(Sum.inl $ ~interpolant 𝕏 (at encodeVar y)), Sum.inl $ ~interpolant 𝕏 (at encodeVar z)}) φ ψ (by simp [rightEquationSequent, rule_def, f, interpolant_eq, in_Δ]), [2,3]⟩
       | 2 => ⟨Ext.RuleApp.pre y (by simp [p_def]), {}⟩
       | 3 => ⟨Ext.RuleApp.pre z (by simp [p_def]), {}⟩
     step
@@ -939,10 +939,10 @@ noncomputable def partialRight_andᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
     path z f := by exfalso; simp [Ext.edge, Ext.p] at f; grind}
     else {
     X := Fin 6
-    α | 0 => ⟨Ext.RuleApp.orₗ (rightEquationSequent x) (~Interpolant 𝕏 (at encodeVar y)) (~Interpolant 𝕏 (at encodeVar z)) (by simp [rightEquationSequent, rule_def, f, interpolant_eq]), [1]⟩
-      | 1 => ⟨Ext.RuleApp.andᵣ (((rightEquationSequent x) \ {Sum.inl $ ~Interpolant 𝕏 (equation x)}) ∪ {(Sum.inl $ ~Interpolant 𝕏 (at encodeVar y)), Sum.inl $ ~Interpolant 𝕏 (at encodeVar z)}) φ ψ (by simp [rightEquationSequent, rule_def, f, interpolant_eq, in_Δ]), [2,3]⟩
-      | 2 => ⟨Ext.RuleApp.wkₗ ((((((rightEquationSequent x) \ {Sum.inl $ ~Interpolant 𝕏 (equation x)}) ∪ {Sum.inl $ ~Interpolant 𝕏 (at encodeVar y), Sum.inl $ ~Interpolant 𝕏 (at encodeVar z)})) \ {Sum.inr (φ & ψ)}) ∪ {Sum.inr φ}) (~Interpolant 𝕏 (at encodeVar z)) (by simp [rightEquationSequent, rule_def, f, interpolant_eq]), [4]⟩
-      | 3 => ⟨Ext.RuleApp.wkₗ ((((((rightEquationSequent x) \ {Sum.inl $ ~Interpolant 𝕏 (equation x)}) ∪ {Sum.inl $ ~Interpolant 𝕏 (at encodeVar y), Sum.inl $ ~Interpolant 𝕏 (at encodeVar z)})) \ {Sum.inr (φ & ψ)}) ∪ {Sum.inr ψ}) (~Interpolant 𝕏 (at encodeVar y)) (by simp [rightEquationSequent, rule_def, f, interpolant_eq]), [5]⟩
+    α | 0 => ⟨Ext.RuleApp.orₗ (rightEquationSequent x) (~interpolant 𝕏 (at encodeVar y)) (~interpolant 𝕏 (at encodeVar z)) (by simp [rightEquationSequent, rule_def, f, interpolant_eq]), [1]⟩
+      | 1 => ⟨Ext.RuleApp.andᵣ (((rightEquationSequent x) \ {Sum.inl $ ~interpolant 𝕏 (equation x)}) ∪ {(Sum.inl $ ~interpolant 𝕏 (at encodeVar y)), Sum.inl $ ~interpolant 𝕏 (at encodeVar z)}) φ ψ (by simp [rightEquationSequent, rule_def, f, interpolant_eq, in_Δ]), [2,3]⟩
+      | 2 => ⟨Ext.RuleApp.wkₗ ((((((rightEquationSequent x) \ {Sum.inl $ ~interpolant 𝕏 (equation x)}) ∪ {Sum.inl $ ~interpolant 𝕏 (at encodeVar y), Sum.inl $ ~interpolant 𝕏 (at encodeVar z)})) \ {Sum.inr (φ & ψ)}) ∪ {Sum.inr φ}) (~interpolant 𝕏 (at encodeVar z)) (by simp [rightEquationSequent, rule_def, f, interpolant_eq]), [4]⟩
+      | 3 => ⟨Ext.RuleApp.wkₗ ((((((rightEquationSequent x) \ {Sum.inl $ ~interpolant 𝕏 (equation x)}) ∪ {Sum.inl $ ~interpolant 𝕏 (at encodeVar y), Sum.inl $ ~interpolant 𝕏 (at encodeVar z)})) \ {Sum.inr (φ & ψ)}) ∪ {Sum.inr ψ}) (~interpolant 𝕏 (at encodeVar y)) (by simp [rightEquationSequent, rule_def, f, interpolant_eq]), [5]⟩
       | 4 => ⟨Ext.RuleApp.pre y (by simp [p_def]), {}⟩
       | 5 => ⟨Ext.RuleApp.pre z (by simp [p_def]), {}⟩
     step
@@ -978,11 +978,11 @@ noncomputable def partialRight_boxₗ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
   : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y] =>
-    have interpolant_eq : Interpolant 𝕏 (equation x) = ◇ (Interpolant 𝕏 (at encodeVar y)) := by
+    have interpolant_eq : interpolant 𝕏 (equation x) = ◇ (interpolant 𝕏 (at encodeVar y)) := by
       rw [equation]
-      split <;> simp_all [Interpolant, partial_, encodeVar]
+      split <;> simp_all [interpolant, partial_, encodeVar]
     { X := Fin 2
-      α | 0 => ⟨Ext.RuleApp.boxₗ (rightEquationSequent x) (~(Interpolant 𝕏 (at encodeVar y))) (by simp [rightEquationSequent, interpolant_eq]), [1]⟩
+      α | 0 => ⟨Ext.RuleApp.boxₗ (rightEquationSequent x) (~(interpolant 𝕏 (at encodeVar y))) (by simp [rightEquationSequent, interpolant_eq]), [1]⟩
         | 1 => ⟨Ext.RuleApp.pre y (by simp [p_def]), {}⟩
       step
         | 0 => by
@@ -1002,12 +1002,12 @@ noncomputable def partialRight_boxᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
   : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
   match p_def : p 𝕏.α x with
   | [y] =>
-    have interpolant_eq : Interpolant 𝕏 (equation x) = □ (Interpolant 𝕏 (at encodeVar y)) := by
+    have interpolant_eq : interpolant 𝕏 (equation x) = □ (interpolant 𝕏 (at encodeVar y)) := by
       rw [equation]
-      split <;> simp_all [Interpolant, partial_, encodeVar]
+      split <;> simp_all [interpolant, partial_, encodeVar]
     { X := Fin 3
       α | 0 => ⟨Ext.RuleApp.boxᵣ (rightEquationSequent x) φ (by simp [rightEquationSequent, rule_def, f, in_Δ]), [1]⟩
-        | 1 => ⟨Ext.RuleApp.wkₗ (((rightEquationSequent x) \ {Sum.inr $ □ φ}).D ∪ {Sum.inr φ}) (◇ (~(Interpolant 𝕏 (at encodeVar y)))) (by simp [rightEquationSequent, rule_def, f, interpolant_eq, SplitSequent.D, SplitFormula.isDiamond]), [2]⟩
+        | 1 => ⟨Ext.RuleApp.wkₗ (((rightEquationSequent x) \ {Sum.inr $ □ φ}).D ∪ {Sum.inr φ}) (◇ (~(interpolant 𝕏 (at encodeVar y)))) (by simp [rightEquationSequent, rule_def, f, interpolant_eq, SplitSequent.D, SplitFormula.isDiamond]), [2]⟩
         | 2 => ⟨Ext.RuleApp.pre y (by simp [p_def]), {}⟩
       step
         | 0 => by simp [Ext.r, Ext.p, rightEquationSequent, rule_def, f, interpolant_eq, Ext.f, Ext.fₙ_alternate]
@@ -1023,7 +1023,7 @@ noncomputable def partialRight_boxᵣ {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x
           intro mp
           subst mp
           simp
-          induction Interpolant 𝕏 (at encodeVar y) <;> simp_all -- MALVIN so weird
+          induction interpolant 𝕏 (at encodeVar y) <;> simp_all -- MALVIN so weird
         | 2 => by simp [Ext.r, Ext.p]
       root := 0
       path z f := by exfalso; simp [Ext.edge, Ext.p] at f; grind}
@@ -1076,7 +1076,7 @@ lemma partialEquationRight_proves_eq {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
       simp [partialRight_andᵣ]
       split <;> simp_all
       have ⟨eq₁, eq₂⟩ := p_def
-      by_cases eq : Interpolant 𝕏 (at encodeVar y) = Interpolant 𝕏 (at encodeVar z) <;> subst eq₁ eq₂
+      by_cases eq : interpolant 𝕏 (at encodeVar y) = interpolant 𝕏 (at encodeVar z) <;> subst eq₁ eq₂
       · rw [dif_pos eq]
         simp [Ext.f]
       · rw [dif_neg eq]
@@ -1088,11 +1088,11 @@ lemma partialEquationRight_proves_eq {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x 
 
 set_option maxHeartbeats 1000000 in
 noncomputable def partialInterpolationRight {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) : Ext.PreProof x (@rightInterpolantSequent 𝕏 _) :=
-  if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
+  if eq : interpolant 𝕏 (at (encodeVar x)) = interpolant 𝕏 (equation x)
   then partialEquationRight x
   else
-    have equiv : Interpolant 𝕏 (at (encodeVar x)) ≅ Interpolant 𝕏 (equation x) := by
-      have := (Interpolant_prop x).1
+    have equiv : interpolant 𝕏 (at (encodeVar x)) ≅ interpolant 𝕏 (equation x) := by
+      have := (interpolant_prop x).1
       simp_all
     let 𝕐₁ := partialEquationRight x
     let y₁ := 𝕐₁.root
@@ -1101,7 +1101,7 @@ noncomputable def partialInterpolationRight {𝕏 : Proof} [fin_X : Fintype 𝕏
     let y₂ := equiv.2.choose_spec.choose
     have y₂_prop := equiv.2.choose_spec.choose_spec
     { X := Unit ⊕ 𝕐₁.X ⊕ 𝕐₂.X
-      α | Sum.inl u => ⟨Ext.RuleApp.cutₗ (rightInterpolantSequent x) (~Interpolant 𝕏 (equation x)), [Sum.inr (Sum.inl y₁), Sum.inr (Sum.inr y₂)]⟩
+      α | Sum.inl u => ⟨Ext.RuleApp.cutₗ (rightInterpolantSequent x) (~interpolant 𝕏 (equation x)), [Sum.inr (Sum.inl y₁), Sum.inr (Sum.inr y₂)]⟩
         | Sum.inr (Sum.inl z₁) => ⟨Ext.r 𝕐₁.α z₁, List.map (Sum.inr ∘ Sum.inl) (Ext.p 𝕐₁.α z₁)⟩
         | Sum.inr (Sum.inr z₂) => ⟨Split_to_Ext (r 𝕐₂.α z₂), List.map (Sum.inr ∘ Sum.inr) (p 𝕐₂.α z₂)⟩
       step
@@ -1318,7 +1318,7 @@ noncomputable def partialInterpolationRight {𝕏 : Proof} [fin_X : Fintype 𝕏
 
 lemma partialInterpolationRight_proves_int {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
   Ext.Proves x (partialInterpolationRight x) (rightInterpolantSequent x) :=
-  if eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x) then (by
+  if eq : interpolant 𝕏 (at (encodeVar x)) = interpolant 𝕏 (equation x) then (by
     convert partialEquationRight_proves_eq x using 1
     · unfold partialInterpolationRight
       simp [eq]
@@ -1345,7 +1345,7 @@ theorem partialInterpolationRight_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.
   have 𝕏_h := 𝕏.step x
   cases r_def : r 𝕏.α x <;> simp_all [RuleApp.isBox]
   case boxₗ =>
-    by_cases eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
+    by_cases eq : interpolant 𝕏 (at (encodeVar x)) = interpolant 𝕏 (equation x)
     · unfold partialInterpolationRight
       rw [dif_pos eq, partialEquationRight]
       split <;> simp_all
@@ -1404,7 +1404,7 @@ theorem partialInterpolationRight_box_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.
           · simp [f_last_def] at f_last
             exact @Split_to_Ext_notNonAxLeaf 𝕏 x rightInterpolantSequent _ f_last
   case boxᵣ =>
-    by_cases eq : Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
+    by_cases eq : interpolant 𝕏 (at (encodeVar x)) = interpolant 𝕏 (equation x)
     · unfold partialInterpolationRight
       rw [dif_pos eq, partialEquationRight]
       split <;> simp_all
@@ -1476,11 +1476,8 @@ theorem interpolantProofRight_proves_interpolant {𝕏 : Proof} [fin_X : Fintype
   exact partialInterpolationRight_proves_int x
 
 
-/-- ## Syntactic interpolation
-
-Given a finite split proof, `interpolantProofLeft` proves the left interpolation correctness
+/-- Given a finite split proof, `interpolantProofLeft` proves the left interpolation correctness
 statement and `interpolantProofRight` proves the right interpolation correctness statement. -/
-
 theorem syntacticInterpolation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
     (@interpolantProofLeft 𝕏 fin_X  ⊢ leftInterpolantSequent  x)
   ∧ (@interpolantProofRight 𝕏 fin_X ⊢ rightInterpolantSequent x) :=

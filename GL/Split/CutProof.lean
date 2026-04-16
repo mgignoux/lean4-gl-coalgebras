@@ -93,7 +93,7 @@ def f : RuleApp → SplitSequent
 def fₙ : RuleApp → SplitSequent := fun r ↦ f r \ fₚ r
 
 /-- Relating principal formulas, non-principal formulas, and the split sequent. -/
-theorem fₙ_alternate (r : RuleApp) : fₙ r = match r with
+lemma fₙ_alternate (r : RuleApp) : fₙ r = match r with
   | RuleApp.skp Δ => Δ
   | RuleApp.cutₗ Δ _ => Δ
   | RuleApp.cutᵣ Δ _ => Δ

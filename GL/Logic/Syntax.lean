@@ -93,8 +93,7 @@ def isBox : Formula → Bool
 
 
 /-- Negation is injective. -/
-@[simp]
-theorem neg_eq {φ ψ : Formula} : (~φ) = (~ψ) → φ = ψ := by
+@[simp] lemma neg_eq {φ ψ : Formula} : (~φ) = (~ψ) → φ = ψ := by
   intro mpp
   cases φ <;> cases ψ <;> simp [Formula.neg] at mpp <;> try grind
   case and.and φ₁ φ₂ φ₃ φ₄ =>
@@ -114,7 +113,7 @@ theorem neg_eq {φ ψ : Formula} : (~φ) = (~ψ) → φ = ψ := by
 
 /-- Negation is involutive. -/
 @[simp]
-theorem neg_neg_eq (φ : Formula) : (~~φ) = φ := by induction φ <;> simp_all
+lemma neg_neg_eq (φ : Formula) : (~~φ) = φ := by induction φ <;> simp_all
 
 /-- Length of a BML Formula. -/
 def length : Formula → Nat
@@ -186,10 +185,10 @@ def FL : Formula → Sequent
 /-! # Lemmas about FL Closure of BML Formulas -/
 
 /-- Fischer-Ladner closure is reflexive. -/
-theorem FL_refl {φ : Formula} : φ ∈ FL φ := by cases φ <;> simp [FL]
+lemma FL_refl {φ : Formula} : φ ∈ FL φ := by cases φ <;> simp [FL]
 
 /-- Fischer-Ladner closure is monotone. -/
-theorem FL_mon {φ ψ : Formula} (ψ_sub_φ : ψ ∈ FL φ) : FL ψ ⊆ FL φ := by
+lemma FL_mon {φ ψ : Formula} (ψ_sub_φ : ψ ∈ FL φ) : FL ψ ⊆ FL φ := by
   cases φ <;> simp_all [FL]
   · rcases ψ_sub_φ with _|ψ_sub|ψ_sub <;> subst_eqs
     · simp [FL]
@@ -253,19 +252,19 @@ def FL : Sequent → Sequent := fun Δ ↦ Finset.biUnion Δ Formula.FL
 /-! # Lemmas about FL Closure of Sequents -/
 
 /- Fischer-Ladner closure is reflexive. -/
-theorem FL_refl {Δ : Sequent} : Δ ⊆ FL Δ := by
+lemma FL_refl {Δ : Sequent} : Δ ⊆ FL Δ := by
   simp [Finset.subset_iff, FL]
   intro x x_in
   exact ⟨x, x_in, Formula.FL_refl⟩
 
 /- Fischer-Ladner closure is monotone. -/
-theorem FL_mon {Δ Γ : Sequent} (Δ_sub_Γ : Δ ⊆ Γ) : FL Δ ⊆ FL Γ := by
+lemma FL_mon {Δ Γ : Sequent} (Δ_sub_Γ : Δ ⊆ Γ) : FL Δ ⊆ FL Γ := by
   simp_all [Finset.subset_iff, FL]
   intro φ ψ ψ_in_Δ φ_sub_ψ
   exact ⟨ψ, Δ_sub_Γ ψ_in_Δ, φ_sub_ψ⟩
 
 /- Fischer-Ladner closure is idempotent. -/
-theorem FL_idem {Δ : Sequent} : FL (FL Δ) = FL Δ := by
+lemma FL_idem {Δ : Sequent} : FL (FL Δ) = FL Δ := by
   simp [Finset.Subset.antisymm_iff]
   constructor
   · simp [Finset.subset_iff, FL]
@@ -370,14 +369,14 @@ namespace SplitSequent
 def FL : SplitSequent → SplitSequent := fun Δ ↦ Finset.biUnion Δ SplitFormula.FL
 
 /-- Fischer-Ladner Closure is reflexive. -/
-theorem FL_refl {Δ : SplitSequent} : Δ ⊆ FL Δ := by
+lemma FL_refl {Δ : SplitSequent} : Δ ⊆ FL Δ := by
   simp [Finset.subset_iff, FL]
   constructor
   · exact fun x x_in ↦ Or.inl ⟨x, x_in, SplitFormula.FL_refl⟩
   · exact fun x x_in ↦ Or.inr ⟨x, x_in, SplitFormula.FL_refl⟩
 
 /-- Fischer-Ladner Closure is monotone. -/
-theorem FL_mon {Δ Γ : SplitSequent} (Δ_sub_Γ : Δ ⊆ Γ) : FL Δ ⊆ FL Γ := by
+lemma FL_mon {Δ Γ : SplitSequent} (Δ_sub_Γ : Δ ⊆ Γ) : FL Δ ⊆ FL Γ := by
   simp_all [Finset.subset_iff, FL]
   constructor
   all_goals
@@ -389,7 +388,7 @@ theorem FL_mon {Δ Γ : SplitSequent} (Δ_sub_Γ : Δ ⊆ Γ) : FL Δ ⊆ FL Γ 
       exact Or.inr ⟨ψ, Δ_sub_Γ.2 _ ψ_in_Δ, φ_sub_ψ⟩
 
 /-- Fischer-Ladner Closure is idempotent. -/
-theorem FL_idem {Δ : SplitSequent} : FL (FL Δ) = FL Δ := by
+lemma FL_idem {Δ : SplitSequent} : FL (FL Δ) = FL Δ := by
   simp [Finset.Subset.antisymm_iff]
   constructor
   · simp [Finset.subset_iff, FL]
@@ -469,19 +468,19 @@ def single (n : Nat) (ψ : Formula) : Formula → Formula
   | ◇ φ => ◇ (single n ψ φ)
 
 /- Single substitution preserves negation. -/
-theorem single_neg (n : Nat) (φ ψ : Formula) : single n ψ (~φ) = (~ (single n ψ φ)) := by
+lemma single_neg (n : Nat) (φ ψ : Formula) : single n ψ (~φ) = (~ (single n ψ φ)) := by
   induction φ <;> simp [Formula.neg, single] <;> aesop
 
 /- Single substitution preserves implication. -/
-theorem single_imp (n : Nat) (C D E : Formula) : single n C (D ↣ E) = (single n C D) ↣ (single n C E) := by
+lemma single_imp (n : Nat) (C D E : Formula) : single n C (D ↣ E) = (single n C D) ↣ (single n C E) := by
   simp [single, single_neg]
 
 /- Single substitution preserves bi-implication. -/
-theorem single_iff (n : Nat) (C D E : Formula) : single n C (D ⟷ E) = (single n C D) ⟷ (single n C E) := by
+lemma single_iff (n : Nat) (C D E : Formula) : single n C (D ⟷ E) = (single n C D) ⟷ (single n C E) := by
   simp [single, single_neg]
 
 @[simp]
-theorem single_identity (n : ℕ) (φ : Formula) : (single n (at n) φ) = φ := by
+lemma single_identity (n : ℕ) (φ : Formula) : (single n (at n) φ) = φ := by
   induction φ <;> simp_all [single]
 
 /-- Simultaneous substitution for `p` meeting criteria `c`. --/
@@ -514,10 +513,10 @@ decreasing_by
 /-! # Properties of Vocab -/
 
 /- `p` is in the vocabulary of `φ` if and only if `p` is in the vocabulary of `~φ`. -/
-@[simp] theorem in_neg_voc_iff {n : Nat} {φ : Formula} : n ∈ (~φ).vocab ↔ n ∈ φ.vocab := by
+@[simp] lemma in_neg_voc_iff {n : Nat} {φ : Formula} : n ∈ (~φ).vocab ↔ n ∈ φ.vocab := by
   induction φ <;> simp_all [Formula.vocab]
 
-theorem in_single_voc (m n : Nat) (φ ψ : Formula) :
+lemma in_single_voc (m n : Nat) (φ ψ : Formula) :
   m ∉ φ.vocab → (m ≠ n → m ∉ ψ.vocab) → n ∉ φ.vocab → m ∉ (single n φ ψ).vocab
   := by
     intro mp
@@ -528,7 +527,7 @@ theorem in_single_voc (m n : Nat) (φ ψ : Formula) :
       by_cases k = n <;> simp_all [Formula.vocab]
       aesop
 
-theorem not_in_single_voc (n : Nat) (φ ψ : Formula) :
+lemma not_in_single_voc (n : Nat) (φ ψ : Formula) :
   n ∉ φ.vocab → (single n ψ φ) = φ := by
   intro h
   induction φ <;> simp_all [single, Formula.vocab] <;> aesop
@@ -545,7 +544,7 @@ lemma not_in_single_bot_voc (n : ℕ) (φ : Formula) :  n ∉ (single n ⊥ φ).
   rename_i k
   by_cases k = n <;> simp_all [Formula.vocab]; grind
 
-theorem in_single_voc' {m n : ℕ} {φ ψ : Formula} : m ∈ (single n φ ψ).vocab → (m ∈ φ.vocab ∧ n ∈ ψ.vocab) ∨ (m ∈ ψ.vocab ∧ m ≠ n) := by
+lemma in_single_voc' {m n : ℕ} {φ ψ : Formula} : m ∈ (single n φ ψ).vocab → (m ∈ φ.vocab ∧ n ∈ ψ.vocab) ∨ (m ∈ ψ.vocab ∧ m ≠ n) := by
   intro m_in
   induction ψ <;> simp_all [single] <;> try grind [Formula.vocab, in_neg_voc_iff, Formula.instTop, Formula.instBot]
 

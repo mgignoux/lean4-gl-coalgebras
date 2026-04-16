@@ -6,7 +6,7 @@ Here we prove the fixed-point theorem for formulas of form `□φ` and `◇φ`.
 -/
 
 /-- Semantic Substitution Lemma for logics with transitive frames. -/
-theorem semantic_substitution_lemma {α : Type} (M : Model α) (u : α) (n : ℕ) (φ ψ χ : Formula)  :
+lemma semantic_substitution_lemma {α : Type} (M : Model α) (u : α) (n : ℕ) (φ ψ χ : Formula)  :
   evaluate ⟨M, u⟩ (⊡ (φ ⟷ ψ)) → evaluate ⟨M, u⟩ ((single n φ χ) ⟷ (single n ψ χ)) := by
     intro mp
     induction χ generalizing u
@@ -69,7 +69,7 @@ decreasing_by
   simp [WellFounded.wrap, Function.swap, u_w]
 
 /-- Helper lemma for the fixed point theorem for `□φ`. -/
-theorem FPT_box_helper (φ : Formula) (n : Nat)
+lemma FPT_box_helper (φ : Formula) (n : Nat)
   : ⊨ (⊡ (at n ⟷ single n ⊤ (□ φ))) ↣ (at n ⟷ □ φ) := by
   simp only [Formula.isValid, evaluate_imp, evaluate_and]
   intro α M u ⟨⟨mp1, mp2⟩, mp3⟩
@@ -103,7 +103,7 @@ theorem FPT_box_helper (φ : Formula) (n : Nat)
     exact w2 (this.1 (mpp w u_w))
 
 /-- Helper lemma for the fixed point theorem for `◇φ`. -/
-theorem FPT_diamond_helper (φ : Formula) (n : Nat)
+lemma FPT_diamond_helper (φ : Formula) (n : Nat)
   : ⊨ (⊡ (at n ⟷ single n ⊥ (◇ φ))) ↣ (at n ⟷ ◇ φ) := by
   simp only [Formula.isValid, evaluate_imp, evaluate_and]
   intro α M u ⟨⟨mp1, mp2⟩, mp3⟩
@@ -152,7 +152,7 @@ theorem FPT_diamond_helper (φ : Formula) (n : Nat)
     simp_all
 
 /-- Simplification lemma for the fixed point theorem. -/
-theorem evaluate_box_dot_iff (φ : Formula) : ⊨ ⊡ (φ ⟷ φ) := by
+lemma evaluate_box_dot_iff (φ : Formula) : ⊨ ⊡ (φ ⟷ φ) := by
   simp only [Formula.isValid, evaluate_and, evaluate_imp]
   intro α M u
   constructor
@@ -202,7 +202,7 @@ theorem FPT_diamond (φ : Formula) (n : Nat) : ⊨ (single n ⊥ (◇ φ)) ⟷ (
   simp_all [single]
 
 /-- Vocabulary condition for □ φ case of the fixed point theorem. -/
-theorem FPT_box_vocab (φ : Formula) (n : ℕ) :
+lemma FPT_box_vocab (φ : Formula) (n : ℕ) :
   n ∉ Formula.vocab (single n ⊤ (□ φ)) ∧ Formula.vocab (single n ⊤ (□ φ)) ⊆ Formula.vocab (□ φ) := by
   constructor
   · apply not_in_single_top_voc
@@ -211,7 +211,7 @@ theorem FPT_box_vocab (φ : Formula) (n : ℕ) :
     simp_all [Formula.vocab]
 
 /-- Vocabulary condition for ◇ φ case of the fixed point theorem. -/
-theorem FPT_diamond_vocab (φ : Formula) (n : ℕ) :
+lemma FPT_diamond_vocab (φ : Formula) (n : ℕ) :
   n ∉ Formula.vocab (single n ⊥ (◇ φ)) ∧ Formula.vocab (single n ⊥ (◇ φ)) ⊆ Formula.vocab (◇ φ) := by
   constructor
   · apply not_in_single_bot_voc

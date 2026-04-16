@@ -17,7 +17,7 @@ def Split.Proof.Sequent (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Sequent :=
 def Split.Proof.freeVar (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Nat :=
   Sequent.freshVar (Proof.Sequent 𝕏)
 
-theorem at_in_lt_freeVar {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {n : Nat} (h : at n ∈ 𝕏.Sequent) : n < 𝕏.freeVar := by
+lemma at_in_lt_freeVar {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {n : Nat} (h : at n ∈ 𝕏.Sequent) : n < 𝕏.freeVar := by
   have 𝕏_ne : 𝕏.Sequent ≠ ∅ := by aesop
   simp [Proof.freeVar, Sequent.freshVar, 𝕏_ne]
   apply Nat.lt_of_succ_le
@@ -60,7 +60,7 @@ lemma at_in_not_encodeVar {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {n : Nat} (h :
   subst con
   simp_all [encodeVar]
 
-theorem encodeVar_eq {𝕏 : Proof} {Fin_X : Fintype 𝕏.X} {x : 𝕏.X} {n : ℕ} {h1} {h2 : n ≥ 𝕏.freeVar} : encodeVar x = n ↔ x = unencodeVar n h1 := by
+lemma encodeVar_eq {𝕏 : Proof} {Fin_X : Fintype 𝕏.X} {x : 𝕏.X} {n : ℕ} {h1} {h2 : n ≥ 𝕏.freeVar} : encodeVar x = n ↔ x = unencodeVar n h1 := by
   constructor
   · intro mp
     subst mp
@@ -106,7 +106,7 @@ noncomputable def extend {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset �
   | □ A => □ (extend Y_sub σ A)
   | ◇ A => ◇ (extend Y_sub σ A)
 
-theorem partial_const {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) (A : Formula) :
+lemma partial_const {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) (A : Formula) :
   (∀ n ∈ Formula.vocab A, ¬ p n) → (A = partial_ σ A) := by
   contrapose
   intro hyp
@@ -117,7 +117,7 @@ theorem partial_const {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → F
 
 lemma Finset.doubleton_subset_iff {α : Type} [DecidableEq α] {s : Finset α} {a b : α} : {a, b} ⊆ s ↔ a ∈ s ∧ b ∈ s := by simp [Finset.subset_iff]
 
-theorem extend_in {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} (Y_sub : Y ⊆ fin_X.elems) (σ : {x : 𝕏.X // x ∈ Y} → Formula) (A : Formula) :
+lemma extend_in {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} (Y_sub : Y ⊆ fin_X.elems) (σ : {x : 𝕏.X // x ∈ Y} → Formula) (A : Formula) :
   (∀ y ∈ Y, encodeVar y ∉ Formula.vocab A) → (A = extend Y_sub σ A) := by
   contrapose
   intro hyp
@@ -126,7 +126,7 @@ theorem extend_in {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {Y : Finset 𝕏.X} (Y
     aesop
 
 /-- From the paper: If py ∈ χx then x ◁ y. -/
-theorem encodeVar_in_equation_imp_edge {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {x y : 𝕏.X} :
+lemma encodeVar_in_equation_imp_edge {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {x y : 𝕏.X} :
   encodeVar y ∈ (equation x).vocab → (edge 𝕏.α) x y := by
   unfold equation
   split <;> simp [Formula.vocab, encodeVar, ←Fin.ext_iff, edge]
@@ -148,7 +148,7 @@ theorem encodeVar_in_equation_imp_edge {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {
     aesop
 
 /-- From the paper: If p ∈ χx then p ∈ Voc(fˡ(x)) ∩ Voc(fʳ(x)) or p = py and x ◁ y. -/
-theorem var_in_equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {x : 𝕏.X} (n : ℕ) :
+lemma var_in_equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {x : 𝕏.X} (n : ℕ) :
   n ∈ (equation x).vocab → n ∈ (SplitSequent.left (f (r 𝕏.α x))).vocab ∩ (SplitSequent.right (f (r 𝕏.α x))).vocab
   ∨ ∃ y, encodeVar y = n ∧ (edge 𝕏.α) x y := by
   unfold equation
@@ -161,7 +161,7 @@ theorem var_in_equation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] {x : 𝕏.X} (n 
     grind [Formula.vocab]
 
 /-- Helper for Solution strong, gives interaction between single substitution and partial substitution. -/
-theorem interpolant_strong_helper {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) (n : ℕ) {B A : Formula}
+lemma interpolant_strong_helper {p : Nat → Prop} [DecidablePred p] (σ : Subtype p → Formula) (n : ℕ) {B A : Formula}
   : single n B (partial_ σ A) = @partial_ (fun m ↦ p m ∨ m = n) _ (fun m ↦ single n B (if h : p m then σ ⟨m, h⟩ else at m)) A := by
   induction A
   case top => simp only [partial_, single]
@@ -724,31 +724,28 @@ decreasing_by
   · have leaf_in : leaf_in_Y.choose ∈ Y := leaf_in_Y.choose_spec.1
     simp [←Finset.card_sdiff_add_card_inter Y {leaf_in_Y.choose}, leaf_in]
 
-noncomputable def Interpolant (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Formula → Formula
+noncomputable def interpolant (𝕏 : Proof) [fin_X : Fintype 𝕏.X] : Formula → Formula
   := partial_ $ @interpolant_strong 𝕏 _ fin_X.elems (by aesop)
 
-lemma eq_chain {α : Type} {a b c d : α} {r : α → α → Prop} (h₁ : r a c) (h₂ : a = b) (h₃ : c = d) : r b d :=
-by
-  aesop
-
-theorem Interpolant_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
-    (Interpolant 𝕏 (at (encodeVar x)) = Interpolant 𝕏 (equation x)
-  ∨ (Interpolant 𝕏 (at (encodeVar x)) ≅ Interpolant 𝕏 (equation x)))
-  ∧ (Interpolant 𝕏 (at (encodeVar x))).vocab ⊆ ((SplitSequent.left (f (r 𝕏.α x))).vocab ∩ (SplitSequent.right (f (r 𝕏.α x))).vocab)
+theorem interpolant_prop {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
+    (interpolant 𝕏 (at (encodeVar x)) = interpolant 𝕏 (equation x)
+  ∨ (interpolant 𝕏 (at (encodeVar x)) ≅ interpolant 𝕏 (equation x)))
+  ∧ (interpolant 𝕏 (at (encodeVar x))).vocab ⊆ ((SplitSequent.left (f (r 𝕏.α x))).vocab ∩ (SplitSequent.right (f (r 𝕏.α x))).vocab)
  := by
-  unfold Interpolant
+  unfold interpolant
   have h : ∀ y : 𝕏.X, encodeVar y ∈ Finset.image encodeVar fin_X.elems := by simp [Fintype.complete]
   have := @interpolant_strong_prop 𝕏 _ fin_X.elems (by aesop) ⟨encodeVar x, by simp [h]⟩
+  have eq_chain : ∀ α, ∀ a b c d : α, ∀ r : α → α → Prop, r a c → a = b → c = d → r b d := by grind
   refine ⟨?_, ?_⟩
   · rcases this.1 with l | r
     · left
-      refine eq_chain l ?_ ?_
+      refine eq_chain _ _ _ _ _ _ l ?_ ?_
       · simp [partial_, h]
       · apply congrArg₂
         · rfl
         · simp [encodeVar_inv]
     · right
-      refine eq_chain r ?_ ?_
+      refine eq_chain _ _ _ _ _ _ r ?_ ?_
       · simp [partial_, h]
       · apply congrArg₂
         · rfl

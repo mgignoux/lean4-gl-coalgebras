@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is a Lean 4 formalization of Craig interpolation for Gödel-Löb provability logic (GL). The proof of Craig interpolation is done proof-theoretically rather than semantically, building on a coalgebraic notion of proof for GL. This formalization accompanies my Master's thesis, which introduces the coalgebraic proof framework and studies it using the case study of GL along with two other proof systems.
+This project is a Lean 4 formalization of Craig interpolation for Gödel-Löb provability logic (GL). The proof of Craig interpolation is done proof-theoretically rather than semantically, building on a coalgebraic notion of proof for GL. This formalization accompanies my Master's thesis, which introduces the coalgebraic proof framework we use and studies it using the case study of GL along with another proof system for the alternation-free $\mu$-calculus.
 
 ## Status
 

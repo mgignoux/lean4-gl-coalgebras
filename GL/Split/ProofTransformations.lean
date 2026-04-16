@@ -145,7 +145,7 @@ def Proves {𝕏 : Split.Proof} (x : 𝕏.X) {σ} (𝕐 : PreProof x σ) (Δ : S
 
 end Ext
 
-namespace Split
+open Split
 
 /- ## Proof Transormations
 

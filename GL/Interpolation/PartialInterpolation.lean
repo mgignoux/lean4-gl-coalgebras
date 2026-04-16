@@ -1478,7 +1478,7 @@ theorem interpolantProofRight_proves_interpolant {𝕏 : Proof} [fin_X : Fintype
 
 /-- Given a finite split proof, `interpolantProofLeft` proves the left interpolation correctness
 statement and `interpolantProofRight` proves the right interpolation correctness statement. -/
-theorem syntacticInterpolation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
+theorem syntactic_interpolation {𝕏 : Proof} [fin_X : Fintype 𝕏.X] (x : 𝕏.X) :
     (@interpolantProofLeft 𝕏 fin_X  ⊢ leftInterpolantSequent  x)
   ∧ (@interpolantProofRight 𝕏 fin_X ⊢ rightInterpolantSequent x) :=
   ⟨interpolantProofLeft_proves_interpolant x, interpolantProofRight_proves_interpolant x⟩
